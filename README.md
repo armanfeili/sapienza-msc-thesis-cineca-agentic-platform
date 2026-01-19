@@ -2,12 +2,15 @@
 
 A production-ready, enterprise-grade **Agentic AI Platform** built with FastAPI that enables intelligent LLM-powered agents to interact with graph databases (Memgraph), execute tools via MCP (Model Context Protocol), and orchestrate complex multi-step workflows—all with comprehensive security, observability, and multi-tenancy support.
 
+🚀 **[Live Demo](https://armanfeili.github.io/sapienza-msc-thesis-cineca-agentic-platform/)** — See the Agent Chat UI in action
+
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg)](https://fastapi.tiangolo.com)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-3000%2B-brightgreen.svg)](#testing-strategy)
 [![API Endpoints](https://img.shields.io/badge/endpoints-76-blue.svg)](#api-endpoints)
 [![MCP Tools](https://img.shields.io/badge/MCP_tools-34-orange.svg)](#mcp-tools--tooling-ecosystem)
+[![Demo](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://armanfeili.github.io/sapienza-msc-thesis-cineca-agentic-platform/)
 
 ---
 
