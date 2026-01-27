@@ -14,7 +14,7 @@ CINECA AGENTIC PLATFORM — ARCHITECTURE (Text Rewrite)
 - Principal object:
   - sub, tenant_id
   - roles: [admin, operator, user, viewer]
-  - scopes: [read, write, graph:read, ...]
+  - scopes: [read, write, graph:read, graph:write, tools:invoke, admin:all, ...]
 
 1.2 Agent Chat UI (Next.js / React) — WORKFLOW A (Agent Run)
 - End-user chat interface
@@ -66,13 +66,15 @@ API call
 - Builds Principal object for downstream authorization
 - Rejects expired/invalid/malformed tokens → 401 Unauthorized
 
-RBAC Permission Matrix
+RBAC Permission Matrix (7 roles with hierarchical scopes)
 - admin:
   - agent-runs = CRUD
   - jobs      = CRUD
   - tools     = CRUD
   - tenants   = CRUD
   - graph(write) = ✓
+  - Full system access (*)
+  - Cross-tenant operations, all admin functions
 - operator:
   - agent-runs = CRU
   - jobs      = CRUD
@@ -316,12 +318,13 @@ Tool manifest (from PostgreSQL)
 - {name, description, input_schema, required_scopes,
    rate_limit: {requests: 100, window: 60}}
 
-Step 3) NL→Cypher Pipeline (GRAPH mode)
-1) Normalize NL prompt (standardize user question)
-2) Generate Cypher (LLM-based or test hints)
-3) Validate safety (read-only enforcement, tenant boundaries, injection prevention)
-4) Execute on Memgraph (run validated Cypher)
-5) Summarize results (convert graph results to natural language)
+Step 3) NL→Cypher Pipeline (GRAPH mode) — 6 stages
+1) Normalize NL prompt (input sanitization, entity extraction, context enrichment)
+2) Catalog lookup (check if query matches known patterns in prompt catalog)
+3) Generate Cypher (LLM-based generation with schema context, or test hints in test mode)
+4) Validate safety (6-layer validation: syntax, read-only, tenant isolation, depth limits, timeout guards, result caps)
+5) Execute on Memgraph (run validated Cypher with tenant filtering and timeout enforcement)
+6) Summarize results (LLM summarization or direct count bypass for efficiency)
 
 ================================================================================
 9) DATA & INFRASTRUCTURE LAYER
@@ -369,19 +372,27 @@ Used by
 - App (Background Tasks) + Workers
 
 9.3 Memgraph (Graph Database)
-Nodes
-- (:User        {id, name, email})
-- (:Task        {id, title, status})
-- (:File        {id, name, path})
-- (:Institution {id, name})
-- (:Project     {id, name})
+Nodes (Bioinformatics Domain - 14 node types)
+- (:User        {user_id, firstName, lastName, user_name, email})
+- (:Institution {id, name, country, type})
+- (:Task        {task_id, status, start, tags}) — e.g., Blast, CreateDb, SearchbyTaxon, Bold, Command
+- (:File        {file_id, user_filename, size, extension, bucket_name}) — e.g., Fasta, BlastDb, Xml, BlastedSeq
+- (:Dataset     {id, name, description, version})
+- (:Sample      {id, name, organism, tissue})
+- (:Experiment  {id, name, protocol, date})
+- (:Publication {id, doi, title, journal, year})
+- (:Gene        {id, symbol, name, chromosome})
+- (:Protein     {id, name, sequence, function})
+- (:Pathway     {id, name, description})
+- (:Tool        {id, name, version, type})
+- (:Workflow    {id, name, steps, inputs})
+- (:Result      {id, type, metrics, timestamp})
 
-Relationships
-- (User)-[:ASSIGNED_TO]->(Task)
-- (User)-[:OWNS]->(File)
-- (User)-[:BELONGS_TO]->(Institution)
-- (Task)-[:PART_OF]->(Project)
-- (File)-[:ATTACHED_TO]->(Task)
+Relationships (4 relationship types)
+- (User)-[:WORKS_AT {since, role, department}]->(Institution)
+- (User)-[:RUNS]->(Task)
+- (File)-[:INPUT]->(Task)
+- (Task)-[:OUTPUT]->(File)
 
 Used by
 - NL→Cypher pipeline, graph.* tools, analytics, ETL jobs
