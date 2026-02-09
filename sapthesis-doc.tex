@@ -3,7 +3,9 @@
 % !TeX spellcheck = en_US
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%  SAPTHESIS TEMPLATE FOR: CINECA AGENTIC PLATFORM THESIS
+%%  SAPTHESIS TEMPLATE FOR: CINECA AGENTIC PLATFORM
+%%  Enterprise-Grade AI Agent Orchestration Platform
+%%  Connecting Multi-Tenant Architecture, MCP Tools, and Secure Graph Querying
 %%  
 %%  Master's Thesis in Data Science
 %%  Sapienza Università di Roma
@@ -114,14 +116,14 @@
 % [x] Identify repeated explanations (MCP, NL-to-Cypher, multi-tenancy definitions) - COMPLETED: Canonical locations identified (MCP in Section 2.3, NL-to-Cypher in Section 5.4, multi-tenancy in Section 8.3)
 % [x] Keep canonical explanation in most appropriate chapter - COMPLETED: Canonical locations verified
 % [x] Replace duplicates with brief pointers: "introduced in Chapter X / Section Y" - COMPLETED: Added cross-references where appropriate (MCP, multi-tenancy)
-% [x] Verify no contradictory statements across chapters (tool counts, endpoint counts, test counts) - VERIFIED: All counts consistent (34 tools, 76 endpoints, 2,700+ tests, 8,263 lines)
-% [x] Reconcile quantitative claims to single source-of-truth - DONE: Standardized to consistent values
-% [x] Add TODO: verify latest counts if uncertain - DONE: Quantitative claims standardized and verified
+% [x] Verify no contradictory statements across chapters (tool counts, endpoint counts, test counts) - VERIFIED: All counts consistent (34 tools, 76 endpoints, 3,000+ tests, ~411,700 LOC, 8,263 orchestrator lines)
+% [x] Reconcile quantitative claims to single source-of-truth - DONE: Standardized to README.md/slides.md authoritative values
+% [x] Add TODO: verify latest counts if uncertain - DONE: Quantitative claims standardized and verified against README.md
 
 % ============================================================================
 % 6. METRICS, EVALUATION, AND CLAIMS HYGIENE
 % ============================================================================
-% [x] Verify quantitative claims are consistent: "34 tools", "76 endpoints", "2,700+ tests", "8,263 lines" - DONE (standardized to consistent values)
+% [x] Verify quantitative claims are consistent: "34 tools", "76 endpoints", "3,000+ tests", "~411,700 LOC", "8,263 orchestrator lines" - DONE (synchronized with README.md)
 % [x] Verify metrics are located in appropriate places (Implementation/Appendix/Evaluation) - VERIFIED: Metrics appear in appropriate chapters
 % [x] Add qualifiers where needed: "at time of writing", "current repository snapshot" - COMPLETED: Added qualifiers to key quantitative metrics (tools, endpoints, code lines)
 % [x] Verify Evaluation chapter methodology, setup, metrics are internally consistent - VERIFIED: Chapter 12 structure is sound with clear sections for methodology, functional/performance/security evaluation, and comparison. Metrics are consistently presented.
@@ -216,7 +218,7 @@
 
 % hypersetup: Following sapthesis documentation examples format
 \hypersetup{
-    pdftitle={Design and Implementation of an Enterprise-Grade AI Agent Orchestration Platform: The Cineca Agentic Platform},
+    pdftitle={CINECA AGENTIC PLATFORM: Enterprise-Grade AI Agent Orchestration Platform Connecting Multi-Tenant Architecture, MCP Tools, and Secure Graph Querying},
     pdfauthor={Arman Feili},
     pdfsubject={Master's Thesis in Data Science},
     pdfkeywords={AI Agents, LLM, Orchestration, MCP, Graph Database, Multi-tenancy, Enterprise},
@@ -293,9 +295,10 @@
 
 % * MANDATORY: Title of the thesis
 % Use \\ for manual line breaks to compose a beautiful title
-\title{Design and Implementation of an Enterprise-Grade\\
-       AI Agent Orchestration Platform:\\
-       The Cineca Agentic Platform}
+\title{CINECA AGENTIC PLATFORM\\
+       Enterprise-Grade AI Agent Orchestration Platform\\
+       Connecting Multi-Tenant Architecture, MCP Tools,\\
+       and Secure Graph Querying}
 
 % OPTIONAL: Alternative title (e.g., in another language)
 % If both \subtitle and \alttitle are used, alttitle is discarded
@@ -374,10 +377,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Platform metrics (snapshot: commit 9b3e4c19a7853cc003e4ea094317255f7401e554, 2025-12-18)
+% Values synchronized with README.md and slides.md (authoritative sources)
 \newcommand{\ToolCount}{34}
 \newcommand{\EndpointCount}{76}
-\newcommand{\TestCount}{2,700+}
-\newcommand{\TotalLOC}{77,000}
+\newcommand{\TestCount}{3,000+}
+\newcommand{\TotalLOC}{411,700}
 \newcommand{\OrchestratorLOC}{8,263}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1311,7 +1315,7 @@ SO6: Tool Ecosystem & Challenge 6 & Chapter~\ref{ch:mcp-tools} & Section~\ref{se
 Each objective will be validated through a combination of:
 
 \begin{description}
-    \item[Functional Testing:] Automated tests verifying that implemented features meet specifications. The test suite includes over 2,700 test functions covering all major subsystems.
+    \item[Functional Testing:] Automated tests verifying that implemented features meet specifications. The test suite includes over 3,000 test functions covering all major subsystems.
     
     \item[Performance Benchmarking:] Quantitative measurements of latency, throughput, and resource utilization under realistic workloads.
     
@@ -1696,8 +1700,8 @@ Beyond the primary contributions, this thesis provides:
 
 A complete, working implementation of all described components:
 \begin{itemize}
-    \item Approximately 77,000 lines of Python source code
-    \item Over 2,700 test functions across 236+ test files
+    \item Approximately 411,700 total lines of code across all formats
+    \item Over 3,000 test functions across 236+ test files
     \item Comprehensive API documentation (76 endpoints at time of writing, OpenAPI specification)
     \item Docker-based deployment configuration
     \item Operational runbooks and troubleshooting guides
@@ -1800,7 +1804,7 @@ Details the observability stack implementation. Covers Prometheus metrics catalo
 \subsection{Part V: Implementation, Deployment, and Evaluation}
 
 \paragraph{Chapter~\ref{ch:implementation}: Implementation and Engineering Practices}
-Describes the technical implementation. Covers the technology stack (Python, FastAPI, PostgreSQL, Redis, Memgraph, Next.js, Streamlit), codebase organization with approximately 77,000 lines of code, coding standards, testing strategy with over 2,700 test functions, and platform engineering utilities (pagination, idempotency, JSON handling, deprecation framework).
+Describes the technical implementation. Covers the technology stack (Python, FastAPI, PostgreSQL, Redis, Memgraph, Next.js, Streamlit), codebase organization with approximately 411,700 total lines of code, coding standards, testing strategy with over 3,000 test functions, and platform engineering utilities (pagination, idempotency, JSON handling, deprecation framework).
 
 \paragraph{Chapter~\ref{ch:deployment}: Configuration and Deployment}
 Addresses deployment concerns. Covers the Pydantic-based configuration system, environment profiles (development, testing, production), Docker Compose deployment, deployment topologies and scaling strategies, production hardening considerations (TLS, security headers, GPU support), operational scripts, and troubleshooting guidance.
@@ -2423,65 +2427,80 @@ whereas Neo4j-centered ecosystems (e.g., Aura, Neo4j-specific tooling) may be be
 
 \subsection{Extended Framework Comparison}
 
-To provide a more comprehensive comparison, Table~\ref{tab:extended-comparison} presents additional dimensions of comparison across the major frameworks discussed in this section.
+To provide a more comprehensive comparison, Table~\ref{tab:extended-comparison} presents a capability-by-capability comparison of the Cineca Agentic Platform against the top-10 similar platforms in the AI orchestration and workflow automation space, based on research conducted in February 2025.
 
 \begin{table}[ht]
 \centering
-\caption{Extended comparison of agent orchestration frameworks across production readiness dimensions.}
+\caption{Extended comparison of the Cineca Agentic Platform against top-10 AI orchestration and workflow platforms across production readiness dimensions.}
 \label{tab:extended-comparison}
 \small
 \setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.15}
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{lcccccccc}
+\begin{tabular}{lccccccccccc}
     \hline
-    Capability & Cineca & LangChain & LlamaIndex & Semantic Kernel & OpenAI Assistants & AutoGen & CrewAI \\
+    Capability & Cineca & Temporal & Argo & LangGraph & OpenAI SDK & Sem.\ Kernel & LlamaIndex & Haystack & n8n & Windmill & Langfuse \\
     \hline
-    Multi-Agent Support & N & P & P & P & N & Y & Y \\
-    RAG Pipeline & N & Y & Y & P & Y & N & N \\
-    Memory Systems & P & Y & Y & Y & Y & P & P \\
-    Real-time Streaming & P & Y & Y & Y & Y & P & P \\
-    Multi-Tenancy & Y & N & N & P & P & N & N \\
-    Enterprise Auth (OIDC/RBAC) & Y & N & N & Y & P & N & N \\
-    Observability Stack & Y & P & P & P & N & N & N \\
-    Graph Integration & Y & P & P & N & N & N & N \\
-    Self-Hosted Deployment & Y & Y & Y & P & N & Y & Y \\
-    Production Ready & Y & P & P & Y & Y & N & N \\
+    Full Stack (UI+API+Jobs) & Y & N & P & N & N & N & N & N & Y & Y & N \\
+    Durability (Retries, Resume) & Y & Y$^*$ & Y & Y & P & P & P & P & Y & Y & N \\
+    Agent Planning Loop & Y & N & N & Y & Y & Y & Y & P & P & N & N \\
+    Tool Ecosystem \& Schema & Y & P & P & Y & Y & Y & Y & Y & Y & Y & P \\
+    Security (RBAC, Audit) & Y & Y & P & N & N & P & N & N & P & Y & P \\
+    Graph NL$\rightarrow$Cypher & Y & N & N & P & P & P & P & P & N & N & N \\
+    Observability (Tracing, Metrics) & Y & Y & P & P & P & P & P & P & P & P & Y$^*$ \\
+    LLM-Agnostic & Y & Y & Y & Y & P & Y & Y & Y & Y & P & Y \\
+    \hline
+    License & Internal & MIT/Paid & Apache-2.0 & MIT & MIT/Paid & MIT & MIT/Paid & Apache-2.0 & SUL/Paid & AGPL/Paid & MIT/Paid \\
+    Fit Score & 5.0 & 4.0 & 3.5 & 4.0 & 3.5 & 3.5 & 3.0 & 3.0 & 2.5 & 3.5 & 3.0 \\
     \hline
 \end{tabular}%
 }
 \vspace{2mm}
-\caption*{Legend: Y = yes (built-in/strong), P = partial/community support, N = not available.}
+\caption*{Legend: Y = yes (built-in), Y$^*$ = best-in-class, P = partial/depends on integration, N = not in scope. Fit Score: 5.0 = complete fit, 4.0 = strong fit, 3.5 = good fit, 3.0 = moderate fit, 2.5 = partial fit.}
 \end{table}
+
+\paragraph{Platform Categories}
+
+The compared platforms fall into distinct categories:
+\begin{itemize}
+    \item \textbf{Workflow Orchestration Engines}: Temporal (best-in-class durability), Argo Workflows (Kubernetes-native)
+    \item \textbf{Agent Frameworks}: LangGraph (state machine orchestration), OpenAI Agents SDK (Python-first agents), Semantic Kernel (Microsoft middleware)
+    \item \textbf{RAG/Data Frameworks}: LlamaIndex (document processing), Haystack (pipeline composition)
+    \item \textbf{Automation Platforms}: n8n (visual workflow), Windmill (developer-centric)
+    \item \textbf{Observability}: Langfuse (best-in-class LLM tracing)
+\end{itemize}
 
 \paragraph{Evaluation Dimensions}
 
-This comparison evaluates frameworks across five critical dimensions for enterprise deployment:
+This comparison evaluates frameworks across eight critical dimensions for enterprise deployment:
 
 \begin{enumerate}
-    \item \textbf{Multi-tenancy}: Native support for tenant isolation at the data, API, and tool invocation levels. Frameworks lacking multi-tenancy require significant customization for enterprise deployments.
-    \item \textbf{Tool Protocol Standardization}: Standardized interfaces for tool discovery and invocation (e.g., MCP compliance, OpenAI function calling format). Standardization enables interoperability and reduces vendor lock-in.
-    \item \textbf{Observability and SLOs}: Built-in metrics, distributed tracing, structured logging, and health probes enabling production monitoring and service-level objective (SLO) tracking.
-    \item \textbf{Security Model}: Authentication (OIDC/JWT), authorization (RBAC), audit logging, PII protection, and rate limiting as first-class features rather than add-ons.
-    \item \textbf{NL→DB Reliability}: Natural language to database query translation with safety validation (syntax checking, read-only enforcement, tenant isolation, depth limits) to prevent malicious or erroneous queries.
+    \item \textbf{Full Stack}: Unified UI + API + Background Jobs as a complete solution, versus library-only or engine-only approaches.
+    \item \textbf{Durability}: Workflow persistence with retries, checkpoints, and resume capabilities for long-running processes.
+    \item \textbf{Agent Planning Loop}: Built-in multi-step reasoning with tool invocation loops (e.g., ReAct, MCP-style orchestration).
+    \item \textbf{Tool Ecosystem}: Native tool registry with schema validation and standardized invocation patterns.
+    \item \textbf{Security \& Governance}: JWT/OIDC authentication, RBAC, multi-tenancy, audit logging, and I/O guards.
+    \item \textbf{Graph NL$\rightarrow$Cypher}: Natural language to Cypher translation with validation and tenant-aware query execution.
+    \item \textbf{Observability}: Integrated Prometheus metrics, OpenTelemetry tracing, structured logging, and LLM evaluation.
+    \item \textbf{LLM-Agnostic}: Support for multiple LLM providers (OpenAI, Ollama, Anthropic, etc.) without vendor lock-in.
 \end{enumerate}
-
-The Cineca Agentic Platform provides comprehensive coverage across all five dimensions, distinguishing it from research-oriented frameworks that typically address only subsets of these concerns.
 
 \paragraph{Key Observations}
 
 Several patterns emerge from this comparison:
 
 \begin{enumerate}
-    \item \textbf{Library vs.\ Platform Trade-off}: Frameworks like LangChain and LlamaIndex offer flexibility and extensive integrations but require significant additional work to deploy in production. Platforms like the Cineca Agentic Platform provide more out-of-the-box but are more opinionated.
+    \item \textbf{Full-Stack Gap}: Only Cineca, n8n, and Windmill provide complete UI + API + Jobs stacks. Other platforms require assembling multiple tools for production deployment.
     
-    \item \textbf{Multi-Agent Gap}: While AutoGen and CrewAI specialize in multi-agent collaboration, they lack production infrastructure. The Cineca Agentic Platform focuses on single-agent orchestration with robust production features, leaving multi-agent as a future extension.
+    \item \textbf{Durability Leaders}: Temporal offers best-in-class workflow durability but lacks agentic planning. Cineca combines durability with agent orchestration.
     
-    \item \textbf{Enterprise Features}: Authentication, authorization, multi-tenancy, and audit logging are consistently missing from research-oriented frameworks. These features require significant implementation effort and are often overlooked in academic settings.
+    \item \textbf{Agent Loop Leaders}: LangGraph and OpenAI SDK excel at agent planning but lack production infrastructure (security, multi-tenancy, observability).
     
-    \item \textbf{Observability Deficit}: Most frameworks provide basic logging but lack integrated metrics, tracing, and health checking. Production deployments typically require adding third-party observability solutions.
+    \item \textbf{Graph Database Niche}: Native graph NL$\rightarrow$Cypher support with tenant isolation is unique to Cineca. Other platforms require custom integration or external libraries.
     
-    \item \textbf{Graph Database Niche}: Native graph database integration with natural language interfaces remains relatively rare. The Cineca Agentic Platform's Memgraph integration and NL-to-Cypher pipeline address a gap in the ecosystem.
+    \item \textbf{Observability Specialization}: Langfuse provides best-in-class LLM tracing but is monitoring-only---no workflow execution or agent orchestration.
+    
+    \item \textbf{Enterprise Features}: Authentication, authorization, multi-tenancy, and audit logging are consistently missing from research-oriented frameworks. These features distinguish production platforms from prototyping libraries.
 \end{enumerate}
 
 \subsection{Positioning of the Cineca Agentic Platform}
@@ -6376,2637 +6395,866 @@ This chapter has formalized the requirements and design goals for the Cineca Age
 \chapter{System Architecture}
 \label{ch:architecture}
 
-% =========================
-% TODO(CHAPTER): System Architecture
-% Source folder: docs/general/sapthesis/sections/System_Architecture/
-% Status: COMPLETED
-% Checklist:
-% [x] Enumerated sections in this chapter (sapthesis-doc.tex)
-% [x] Matched each section to a file in sections folder
-% [x] Inlined sections in order (no duplicates)
-% [x] Verified labels preserved
-% [x] Verified no nested heading duplication introduced
-% [x] Compile check after chapter integration
-% Notes:
-% - Missing section files (if any): None
-% - Fixups applied in sapthesis-doc.tex (if any): None
-%
-% [x] Architectural Overview -> docs/general/sapthesis/sections/System_Architecture/section_architectural_overview.tex
-% [x] Domain Model and Core Concepts -> docs/general/sapthesis/sections/System_Architecture/section_domain_model_and_core_concepts.tex
-% [x] Core Backend Layer -> docs/general/sapthesis/sections/System_Architecture/section_core_backend_layer.tex
-% [x] Data and Persistence Layer -> docs/general/sapthesis/sections/System_Architecture/section_data_and_persistence_layer.tex
-% [x] Presentation Layer -> docs/general/sapthesis/sections/System_Architecture/section_presentation_layer.tex
-% =========================
+This chapter presents the comprehensive architectural design of the CINECA Agentic Platform, an enterprise-grade AI agent orchestration system designed to bridge the gap between natural language queries and secure, auditable database operations. The platform enables researchers and operators to interact with complex graph databases using conversational language while maintaining enterprise-grade security, multi-tenancy, and full compliance auditability.
 
-This chapter presents the high-level architectural design of the Cineca Agentic Platform, translating the requirements established in Chapter~\ref{ch:requirements} into a concrete system architecture. The chapter describes the three-layer architectural pattern separating core backend services, data persistence, and presentation concerns; details the domain model and core concepts; and explains how the architecture addresses enterprise requirements for multi-tenancy, security, observability, and scalability. This architectural foundation underpins the detailed design discussions in subsequent chapters covering orchestration, tools, security, and observability.
+%------------------------------------------------------------------------------
+\section{Executive Summary}
+\label{sec:arch-executive-summary}
 
-\section{Architectural Overview}
-\label{sec:arch-overview}
+\subsection{Platform Overview}
+\label{subsec:platform-overview}
 
-The Cineca Agentic Platform employs a \textbf{three-layer architecture} designed to provide clear separation of concerns, maintainability, and scalability for enterprise AI agent orchestration. This architectural design reflects production requirements gathered from CINECA's operational context, including multi-tenancy, security, observability, and integration with high-performance computing infrastructure.
+The CINECA Agentic Platform is a production-grade AI agent orchestration system that provides the following key capabilities:
 
-\subsection{High-Level Architecture}
+\begin{itemize}
+    \item \textbf{NL-to-Cypher}: Translate natural language to validated Cypher queries for graph database interactions
+    \item \textbf{Multi-Tenant}: Complete data isolation between organizations with tenant-specific configurations
+    \item \textbf{Model-Agnostic}: Switch between OpenAI, Azure OpenAI, and Ollama without code changes
+    \item \textbf{34 MCP Tools}: Extensible tool ecosystem with RBAC enforcement across 17 categories
+    \item \textbf{Full Observability}: OpenTelemetry tracing, Prometheus metrics, and Grafana dashboards
+    \item \textbf{Resilience}: Circuit breakers, exponential backoff retries, and provider fallback chains
+\end{itemize}
 
-The platform architecture consists of three primary layers, each with distinct responsibilities:
+\subsection{Platform Statistics}
+\label{subsec:platform-stats}
 
-\begin{enumerate}
-    \item \textbf{Presentation Layer}: User-facing interfaces for different personas
-    \item \textbf{Core Backend Layer}: Business logic, orchestration, and API services
-    \item \textbf{Data and Persistence Layer}: Persistence, caching, and external integrations
-\end{enumerate}
-
-Figure~\ref{fig:high-level-architecture} illustrates the high-level system architecture with the primary components and their interactions.
-
-\begin{figure}[htbp]
-    \centering
-    \begin{tikzpicture}[
-        node distance=1.5cm,
-        layer/.style={rectangle, draw=black, thick, minimum width=12cm, minimum height=1.8cm, align=center},
-        component/.style={rectangle, draw=blue!60, fill=blue!10, thick, minimum width=2.5cm, minimum height=1cm, align=center, font=\small},
-        db/.style={cylinder, draw=green!60, fill=green!10, thick, minimum width=2cm, minimum height=1cm, cylinder uses custom fill, cylinder end fill=green!10, align=center, font=\small},
-        arrow/.style={->, thick, >=stealth}
-    ]
-        % Presentation Layer
-        \node[layer, fill=orange!10] (pres) at (0, 4) {};
-        \node[above] at (0, 5.1) {\textbf{Presentation Layer}};
-        \node[component] (chat) at (-3, 4) {Next.js\\Agent Chat UI};
-        \node[component] (panel) at (0, 4) {Streamlit\\Control Panel};
-        \node[component] (api) at (3, 4) {REST API\\Clients};
-        
-        % Core Backend Layer
-        \node[layer, fill=blue!10] (core) at (0, 1.5) {};
-        \node[above] at (0, 2.6) {\textbf{Core Backend Layer}};
-        \node[component] (fastapi) at (-3.5, 1.5) {FastAPI\\App};
-        \node[component] (orch) at (-0.5, 1.5) {Orchestrator\\Service};
-        \node[component] (mcp) at (2.5, 1.5) {MCP Tools\\(34 tools)};
-        
-        % Data Layer
-        \node[layer, fill=green!10] (data) at (0, -1.5) {};
-        \node[above] at (0, -0.4) {\textbf{Data \& Infrastructure Layer}};
-        \node[db] (pg) at (-4, -1.5) {PostgreSQL};
-        \node[db] (redis) at (-1, -1.5) {Redis};
-        \node[db] (mg) at (2, -1.5) {Memgraph};
-        \node[component] (llm) at (4.5, -1.5) {LLM\\Providers};
-        
-        % Arrows
-        \draw[arrow] (chat) -- (fastapi);
-        \draw[arrow] (panel) -- (fastapi);
-        \draw[arrow] (api) -- (fastapi);
-        \draw[arrow] (fastapi) -- (orch);
-        \draw[arrow] (orch) -- (mcp);
-        \draw[arrow] (orch) -- (pg);
-        \draw[arrow] (orch) -- (redis);
-        \draw[arrow] (mcp) -- (mg);
-        \draw[arrow] (orch) -- (llm);
-    \end{tikzpicture}
-    \caption{High-level architecture of the Cineca Agentic Platform showing the three-layer design with primary components.}
-    \label{fig:high-level-architecture}
-\end{figure}
-
-\subsection{Three-Layer Design Rationale}
-
-The three-layer architecture was selected based on several enterprise requirements and design principles:
-
-\paragraph{Separation of Concerns}
-Each layer has a single, well-defined responsibility. The Presentation Layer handles user interaction and visualization; the Core Backend Layer encapsulates business logic, agent orchestration, and security enforcement; the Data Layer manages persistence and external system integration. This separation enables independent development, testing, and scaling of each layer.
-
-\paragraph{Horizontal Scalability}
-The stateless design of the Core Backend Layer allows horizontal scaling through container replication. Session state and job queues are externalized to Redis, enabling multiple FastAPI instances to share workload while maintaining consistency.
-
-\paragraph{Technology Flexibility}
-The adapter pattern employed in the Data Layer abstracts external dependencies (LLM providers, databases) behind consistent interfaces. This design enables swapping implementations without affecting business logic---for example, switching between OpenAI and Ollama providers, or migrating between graph database vendors.
-
-\paragraph{Observability by Design}
-Cross-cutting concerns (logging, metrics, tracing) are implemented as middleware and decorators that wrap all layer boundaries. This ensures consistent observability across the entire request lifecycle without polluting business logic.
-
-\subsection{Architecture-to-Requirements Traceability}
-\label{subsec:arch-to-req-traceability}
-
-This subsection maps key requirements from Chapter~\ref{ch:requirements} to the architectural mechanisms that implement them. Table~\ref{tab:arch-req-traceability} provides a compact mapping of requirements to architectural components.
+Table~\ref{tab:platform-scale} summarizes the scale and scope of the platform implementation.
 
 \begin{table}[htbp]
 \centering
-\caption{Architecture-to-Requirements Traceability}
-\label{tab:arch-req-traceability}
-\small
-\begin{tabularx}{\textwidth}{|l|X|}
-\hline
-\textbf{Requirement Category} & \textbf{Architectural Mechanism} \\
+\caption{Platform scale metrics}
+\label{tab:platform-scale}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Metric} & \textbf{Value} \\
 \midrule
-Multi-tenancy & \texttt{tenant\_id} column scoping in all PostgreSQL tables; tenant context propagation via \texttt{X-Tenant-Id} header; tenant isolation enforced at API, service, and data access layers \\
-\midrule
-Security & OpenID Connect (OIDC) authentication; JSON Web Token (JWT) validation; Role-Based Access Control (RBAC) with scope-based permissions; audit logging for all security-relevant actions \\
-\midrule
-Observability & Prometheus metrics exposed at \texttt{/metrics}; OpenTelemetry (OTel) distributed tracing; structured logging with \texttt{structlog}; health probes at \texttt{/health} and \texttt{/ready} \\
-\midrule
-Scalability & Stateless Core Backend Layer (FastAPI) enabling horizontal scaling; Redis for session state and job queues (reconstructable); connection pooling and caching strategies \\
-\midrule
-Reliability & Circuit breaker pattern for LLM provider resilience; fallback chains for degraded operation; PostgreSQL as authoritative state source; Redis as performance cache (reconstructable) \\
-\midrule
-Tool Integration & Model Context Protocol (MCP) runtime with 34 tools across 17 categories; decorator-based tool registration; capability-based access control \\
-\midrule
-\end{tabularx}
+API Endpoints & 76 \\
+FastAPI Routers & 16 \\
+Automated Tests & 3,000+ \\
+Lines of Code & $\sim$411,700 \\
+MCP Tools & 34 \\
+Tool Categories & 17 \\
+Infrastructure Components & 16+ \\
+Database Architecture & 3-Database \\
+\bottomrule
+\end{tabular}
 \end{table}
 
-\subsection{Component Inventory}
+%------------------------------------------------------------------------------
+\section{High-Level Architecture Overview}
+\label{sec:arch-overview}
 
-Table~\ref{tab:component-inventory} provides a quantitative overview of the platform's major components, reflecting the scale and complexity of the implementation.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Quantitative inventory of major platform components.}
-    \label{tab:component-inventory}
-    \begin{tabular}{llr}
-        \toprule
-        \textbf{Category} & \textbf{Component} & \textbf{Count/Size} \\
-        \midrule
-        API Layer & Endpoint count & 76 \\
-        API Layer & Router modules & 23 \\
-        API Layer & Schema definitions & 200+ \\
-        \midrule
-        Services & Orchestrator (lines) & 8,263 \\
-        Services & Background tasks & 4 \\
-        Services & Health probes & 6 \\
-        \midrule
-        MCP Tools & Tool categories & 17 \\
-        MCP Tools & Total tools & 34 \\
-        \midrule
-        Data Layer & PostgreSQL tables & 15+ \\
-        Data Layer & Alembic migrations & 26 \\
-        Data Layer & Redis key patterns & 10+ \\
-        Data Layer & Memgraph node types & 14 \\
-        \midrule
-        Testing & Test files & 236+ \\
-        Testing & Test lines & $\sim$64,500 \\
-        \midrule
-        Total & Python source lines & $\sim$77,000 \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-\subsection{Deployment Topology}
-
-The platform is designed for containerized deployment using Docker Compose for development and Kubernetes for production. The deployment topology includes:
-
-\begin{itemize}
-    \item \textbf{Application containers}: FastAPI backend (1--N replicas), background workers
-    \item \textbf{Database containers}: PostgreSQL (primary + optional replica), Redis (standalone or Sentinel), Memgraph
-    \item \textbf{Observability stack}: Prometheus, Grafana, optional OpenTelemetry Collector
-    \item \textbf{Reverse proxy}: Nginx for TLS termination, rate limiting, and load balancing
-    \item \textbf{UI containers}: Next.js (static or SSR), Streamlit
-\end{itemize}
-
-Figure~\ref{fig:deployment-topology} illustrates the container orchestration and network topology for a production deployment.
+The platform is organized into 13 distinct architectural layers, each responsible for specific functionality. Figure~\ref{fig:simplified-architecture} shows the simplified architecture diagram, while Figure~\ref{fig:full-architecture} presents the complete system with all components.
 
 \begin{figure}[htbp]
     \centering
-    \begin{tikzpicture}[
-        node distance=1.2cm,
-        container/.style={rectangle, draw=black, thick, minimum width=2.2cm, minimum height=0.8cm, align=center, font=\footnotesize},
-        network/.style={rectangle, draw=gray, dashed, thick, minimum width=10cm, minimum height=2cm},
-        arrow/.style={->, thick, >=stealth}
-    ]
-        % External
-        \node[container, fill=yellow!20] (nginx) at (0, 3) {Nginx};
-        \node[above] at (0, 3.6) {\footnotesize External Network};
-        
-        % Application Network
-        \node[network] (appnet) at (0, 1) {};
-        \node[above left] at (-4.5, 2.1) {\footnotesize Application Network};
-        \node[container, fill=blue!20] (api1) at (-3, 1) {FastAPI\\(replica 1)};
-        \node[container, fill=blue!20] (api2) at (-0.5, 1) {FastAPI\\(replica 2)};
-        \node[container, fill=purple!20] (worker) at (2, 1) {Worker};
-        \node[container, fill=orange!20] (ui) at (4, 1) {Next.js};
-        
-        % Data Network
-        \node[network] (datanet) at (0, -1.5) {};
-        \node[above left] at (-4.5, -0.4) {\footnotesize Data Network};
-        \node[container, fill=green!20] (pg) at (-3.5, -1.5) {PostgreSQL};
-        \node[container, fill=red!20] (redis) at (-1, -1.5) {Redis};
-        \node[container, fill=cyan!20] (mg) at (1.5, -1.5) {Memgraph};
-        \node[container, fill=gray!20] (prom) at (4, -1.5) {Prometheus};
-        
-        % Arrows
-        \draw[arrow] (nginx) -- (api1);
-        \draw[arrow] (nginx) -- (api2);
-        \draw[arrow] (nginx) -- (ui);
-        \draw[arrow] (api1) -- (pg);
-        \draw[arrow] (api1) -- (redis);
-        \draw[arrow] (api2) -- (pg);
-        \draw[arrow] (api2) -- (redis);
-        \draw[arrow] (worker) -- (redis);
-        \draw[arrow] (worker) -- (pg);
-        \draw[arrow] (api1) -- (mg);
-        \draw[arrow] (prom) -- (api1);
-        \draw[arrow] (prom) -- (api2);
-    \end{tikzpicture}
-    \caption{Production deployment topology showing container orchestration across network segments.}
-    \label{fig:deployment-topology}
+    \includegraphics[width=\textwidth]{figures/DIAGRAM_SIMPLE.png}
+    \caption{Simplified architecture diagram of the Cineca Agentic Platform showing the main components and data flow.}
+    \label{fig:simplified-architecture}
 \end{figure}
-
-\subsection{Cross-Cutting Concerns Overview}
-
-The platform implements fourteen cross-cutting concerns that span all architectural layers. These concerns are enforced through middleware, decorators, and shared utilities rather than being embedded in business logic. Table~\ref{tab:cross-cutting-summary} summarizes these concerns; detailed implementations are discussed in Section~\ref{sec:core-backend}.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Summary of cross-cutting concerns implemented across all layers.}
-    \label{tab:cross-cutting-summary}
-    \small
-    \begin{tabular}{lll}
-        \toprule
-        \textbf{Concern} & \textbf{Implementation} & \textbf{Layer(s)} \\
-        \midrule
-        Logging & Structlog with JSON/console output & All \\
-        Metrics & Prometheus counters, histograms, gauges & All \\
-        Tracing & OpenTelemetry spans & All \\
-        Security & JWT validation, RBAC, tenant isolation & Core, Data \\
-        Rate Limiting & Sliding window (Redis-backed) & Core \\
-        PII Scrubbing & Detection and redaction & Core \\
-        Error Handling & RFC 7807 Problem Details & Core \\
-        Pagination & Cursor-based, stateless & Core \\
-        ETags/Caching & Conditional requests & Core \\
-        Idempotency & Redis-backed keys & Core \\
-        Deprecation & Headers and version tracking & Core \\
-        Request ID & Trace-request correlation & All \\
-        Circuit Breakers & Resilience for external calls & Data \\
-        Health Probes & Kubernetes liveness/readiness & Core \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-\subsection{Request Flow}
-
-A typical request through the platform follows this path:
-
-\begin{enumerate}
-    \item \textbf{Ingress}: Request arrives at Nginx, which terminates TLS and performs initial rate limiting.
-    \item \textbf{Middleware}: FastAPI middleware extracts request ID, validates JWT, resolves tenant context, and binds logging context.
-    \item \textbf{Router}: The appropriate router handler is invoked based on URL path and HTTP method.
-    \item \textbf{Service}: Business logic is executed in the service layer, potentially invoking the orchestrator for agent runs.
-    \item \textbf{Persistence}: Data is read from or written to PostgreSQL (authoritative state), with Redis providing caching and queuing.
-    \item \textbf{Response}: Results are serialized through Pydantic schemas, response headers are added (ETag, X-Request-ID), and metrics are recorded.
-\end{enumerate}
-
-This layered flow ensures consistent application of security policies, observability instrumentation, and error handling regardless of the specific endpoint being accessed.
-
-\section{Domain Model and Core Concepts}
-\label{sec:domain-model}
-
-This section defines the core domain entities and their relationships within the Cineca Agentic Platform. Understanding these concepts is essential for comprehending the system's behavior, data flows, and architectural decisions. The domain model reflects enterprise requirements including multi-tenancy, auditability, and extensibility.
-
-\subsection{Entity Overview}
-
-The platform's domain model comprises ten primary entity categories, organized hierarchically from organizational context to operational artifacts. Figure~\ref{fig:domain-model} illustrates the relationships between these entities.
 
 \begin{figure}[htbp]
     \centering
-    \begin{tikzpicture}[
-        node distance=1.5cm,
-        entity/.style={rectangle, draw=black, thick, minimum width=2.5cm, minimum height=1cm, align=center, font=\small},
-        relation/.style={->, thick, >=stealth},
-        label/.style={font=\tiny, midway, above}
-    ]
-        % Top level - Tenant
-        \node[entity, fill=yellow!30] (tenant) at (0, 5) {Tenant};
-        
-        % Second level - Principal and Provider
-        \node[entity, fill=blue!20] (principal) at (-3, 3) {Principal\\(User)};
-        \node[entity, fill=green!20] (provider) at (0, 3) {Provider};
-        \node[entity, fill=purple!20] (tool) at (3, 3) {Tool};
-        
-        % Third level - Session and Model
-        \node[entity, fill=blue!30] (session) at (-4.5, 1) {Agent\\Session};
-        \node[entity, fill=green!30] (model) at (0, 1) {Model\\Instance};
-        
-        % Fourth level - Runs and Jobs
-        \node[entity, fill=orange!30] (run) at (-4.5, -1) {Agent Run};
-        \node[entity, fill=red!20] (job) at (1.5, -1) {Job};
-        
-        % Fifth level - Steps and Events
-        \node[entity, fill=orange!20] (step) at (-4.5, -3) {Agent Step};
-        \node[entity, fill=red!10] (event) at (1.5, -3) {Job Event};
-        
-        % Audit (side)
-        \node[entity, fill=gray!20] (audit) at (4.5, 1) {Audit Log};
-        
-        % Relationships
-        \draw[relation] (tenant) -- node[label, left] {owns} (principal);
-        \draw[relation] (tenant) -- node[label] {configures} (provider);
-        \draw[relation] (tenant) -- node[label, right] {enables} (tool);
-        \draw[relation] (principal) -- node[label, left] {creates} (session);
-        \draw[relation] (provider) -- node[label] {hosts} (model);
-        \draw[relation] (session) -- node[label, left] {contains} (run);
-        \draw[relation] (run) -- node[label, left] {executes} (step);
-        \draw[relation] (model) -- node[label] {powers} (run);
-        \draw[relation] (principal) -- node[label, right] {submits} (job);
-        \draw[relation] (job) -- node[label, right] {emits} (event);
-        \draw[relation] (run) -- node[label, below] {recorded in} (audit);
-        \draw[relation] (step) -- node[label, below] {invokes} (tool);
-    \end{tikzpicture}
-    \caption{Domain model showing primary entities and their relationships.}
-    \label{fig:domain-model}
+    \includegraphics[width=\textwidth]{figures/DIAGRAM_FULL_WORKFLOWS.png}
+    \caption{Full architecture diagram of the Cineca Agentic Platform showing both execution workflows, security middleware, service layer, data infrastructure, and observability components.}
+    \label{fig:full-architecture}
 \end{figure}
 
-\subsection{Tenant}
+\subsection{Architectural Layers}
+\label{subsec:arch-layers}
 
-A \textbf{Tenant} represents an organizational boundary for resource isolation and access control. In the CINECA context, tenants correspond to research institutions, departments, or project groups that share the platform infrastructure while maintaining data separation.
+The system comprises the following layers:
 
-\paragraph{Key Attributes}
-\begin{itemize}
-    \item \texttt{id}: UUID primary key
-    \item \texttt{name}: Human-readable tenant name
-    \item \texttt{slug}: URL-safe identifier for routing
-    \item \texttt{config\_json}: Tenant-specific configuration overrides (JSONB)
-    \item \texttt{enabled}: Boolean flag for tenant activation
-    \item \texttt{created\_at}, \texttt{updated\_at}: Timestamps for lifecycle tracking
-\end{itemize}
-
-\paragraph{Tenant Isolation}
-All user-facing data includes a \texttt{tenant\_id} foreign key, enforced through:
 \begin{enumerate}
-    \item \textbf{Middleware}: Extracts tenant context from \texttt{X-Tenant-ID} header or JWT claims
-    \item \textbf{Repository Layer}: Automatically scopes queries to the current tenant
-    \item \textbf{Database Constraints}: Foreign key relationships prevent cross-tenant data access
+    \item \textbf{Layer 1: Gateway \& Authentication} --- NGINX reverse proxy and OIDC/Auth0 identity provider
+    \item \textbf{Layer 2: Security Middleware} --- 8-layer security stack including CORS, JWT auth, rate limiting, and guards
+    \item \textbf{Layer 3: API Layer} --- FastAPI routers exposing 76 versioned endpoints
+    \item \textbf{Layer 4: Execution Workflows} --- Dual workflow system for agent runs and long-running jobs
+    \item \textbf{Layer 5: Service Layer} --- Orchestrator service with 4-phase execution pipeline
+    \item \textbf{Layer 6: LLM Providers} --- Model-agnostic adapter layer for multiple AI providers
+    \item \textbf{Layer 7: MCP Runtime \& Tools} --- 34 tools across 17 categories with RBAC enforcement
+    \item \textbf{Layer 8: NL-to-Cypher Pipeline} --- 6-stage pipeline for natural language to graph queries
+    \item \textbf{Layer 9: Data Layer} --- Three-database architecture (Redis, PostgreSQL, Memgraph)
+    \item \textbf{Layer 10: Adapters} --- Swappable interfaces for external services
+    \item \textbf{Layer 11: Resilience Framework} --- Circuit breakers, retries, and fallback chains
+    \item \textbf{Layer 12: Background Framework} --- APScheduler tasks for maintenance operations
+    \item \textbf{Layer 13: Observability} --- OpenTelemetry, Prometheus, and Grafana integration
 \end{enumerate}
 
-\subsection{Principal}
+%------------------------------------------------------------------------------
+\section{Layer 1: Identity and Authentication}
+\label{sec:layer1-auth}
 
-A \textbf{Principal} represents an authenticated identity---either a human user or a machine client---that can perform actions within the platform. Principals are identified by their \texttt{sub} (subject) claim from the OIDC identity provider.
+\subsection{Identity Provider (OIDC / Auth0)}
+\label{subsec:identity-provider}
 
-\paragraph{Principal Types}
+The platform uses industry-standard OAuth 2.0 / OpenID Connect for authentication. The identity provider handles user authentication and issues JWT tokens containing essential claims for authorization decisions.
+
+\subsubsection{JWT Token Claims}
+
+Each authenticated request carries a JWT token with the following claims:
+
 \begin{itemize}
-    \item \textbf{User}: Human operator authenticated via Auth0 password realm
-    \item \textbf{Admin}: User with elevated privileges (e.g., \texttt{admin:all} scope)
-    \item \textbf{Machine}: Service account using client credentials flow
+    \item \texttt{sub}: Unique user identifier
+    \item \texttt{tenant\_id}: Organization the user belongs to
+    \item \texttt{roles[]}: Role assignments (admin, operator, user, viewer)
+    \item \texttt{scopes[]}: Permission scopes (read, write, graph:read, graph:write, tools:invoke)
+    \item \texttt{exp}: Token expiration timestamp
+    \item \texttt{iat}: Token issued-at timestamp
 \end{itemize}
 
-\paragraph{Key Attributes}
-\begin{itemize}
-    \item \texttt{sub}: OIDC subject identifier (primary key)
-    \item \texttt{email}: Optional email address
-    \item \texttt{roles}: Array of assigned roles
-    \item \texttt{scopes}: Array of granted OAuth2 scopes
-    \item \texttt{tenant\_id}: Associated tenant context
-\end{itemize}
+\subsubsection{Principal Object}
 
-\subsection{LLM Provider and Model Instance}
+After JWT validation, the system constructs a Principal object that encapsulates the authenticated user's identity and permissions:
 
-The platform decouples LLM configuration into two entities to enable flexible multi-model deployments.
-
-\paragraph{Provider}
-A \textbf{Provider} represents an LLM backend service (e.g., OpenAI API, Ollama server, Azure OpenAI). Key attributes include:
-\begin{itemize}
-    \item \texttt{id}: UUID primary key
-    \item \texttt{name}: Provider identifier (e.g., ``openai'', ``ollama'')
-    \item \texttt{api\_type}: API protocol (``openai'', ``azure'', ``ollama'')
-    \item \texttt{base\_url}: Endpoint URL for API calls
-    \item \texttt{api\_key}: Encrypted credential (nullable for local providers)
-    \item \texttt{enabled}: Activation status
-    \item \texttt{tenant\_id}: Owning tenant (nullable for global providers)
-\end{itemize}
-
-\paragraph{Model Instance}
-A \textbf{Model Instance} represents a specific model deployment on a provider. This two-level hierarchy allows multiple instances of the same model with different configurations:
-\begin{itemize}
-    \item \texttt{id}: UUID primary key
-    \item \texttt{instance\_name}: Human-readable name (e.g., ``gpt-4-turbo-prod'')
-    \item \texttt{model\_name}: Underlying model identifier (e.g., ``gpt-4-turbo-preview'')
-    \item \texttt{provider\_id}: Foreign key to provider
-    \item \texttt{temperature}: Default sampling temperature
-    \item \texttt{max\_tokens}: Token limit for responses
-    \item \texttt{loaded}: Whether model is ready for inference
-    \item \texttt{enabled}: Activation status
-\end{itemize}
-
-\subsection{Agent Session and Run}
-
-Agent execution is organized into sessions containing multiple runs, enabling conversation continuity and context management.
-
-\paragraph{Agent Session}
-An \textbf{Agent Session} groups related agent interactions, providing:
-\begin{itemize}
-    \item \texttt{id}: UUID primary key
-    \item \texttt{owner\_sub}: Principal who created the session
-    \item \texttt{tenant\_id}: Tenant context
-    \item \texttt{title}: Optional session title
-    \item \texttt{context\_json}: Shared context across runs (JSONB)
-    \item \texttt{created\_at}, \texttt{expires\_at}: Session lifecycle
-\end{itemize}
-
-\paragraph{Agent Run}
-An \textbf{Agent Run} represents a single orchestration execution triggered by a user prompt. Key attributes include:
-\begin{itemize}
-    \item \texttt{id}: UUID primary key
-    \item \texttt{session\_id}: Parent session (nullable for standalone runs)
-    \item \texttt{status}: Current state (queued, planning, running, succeeded, failed, cancelled)
-    \item \texttt{prompt}: User input that initiated the run
-    \item \texttt{final\_answer}: Agent's response upon completion
-    \item \texttt{model\_instance\_id}: LLM used for orchestration
-    \item \texttt{started\_at}, \texttt{finished\_at}: Execution timestamps
-    \item \texttt{total\_tokens}, \texttt{llm\_cost\_usd}: Usage metrics
-    \item \texttt{todos\_json}: Planned tasks (JSONB)
-    \item \texttt{metadata\_json}: Additional execution metadata
-\end{itemize}
-
-\paragraph{Agent Step}
-Each run comprises multiple \textbf{Agent Steps} representing individual reasoning or action cycles:
-\begin{itemize}
-    \item \texttt{id}: UUID primary key
-    \item \texttt{run\_id}: Parent run
-    \item \texttt{step\_number}: Sequential index within run
-    \item \texttt{action}: Step type (``think'', ``tool\_call'', ``answer'')
-    \item \texttt{tool\_name}: Tool invoked (nullable)
-    \item \texttt{tool\_input\_json}: Tool parameters (JSONB)
-    \item \texttt{tool\_output\_json}: Tool result (JSONB)
-    \item \texttt{reasoning}: LLM's reasoning text
-    \item \texttt{duration\_ms}: Step execution time
-    \item \texttt{tokens\_used}: Token consumption
-\end{itemize}
-
-\subsection{MCP Tool}
-
-An \textbf{MCP Tool} (Model Context Protocol Tool) represents a capability that agents can invoke during execution. Unlike other entities, tools are defined in code rather than the database, with metadata exposed through discovery endpoints.
-
-\paragraph{Tool Metadata}
-\begin{itemize}
-    \item \texttt{name}: Qualified name (e.g., ``graph.query'', ``jobs.create'')
-    \item \texttt{description}: Human-readable purpose
-    \item \texttt{schema}: JSON Schema for input validation
-    \item \texttt{capabilities}: Feature flags (e.g., ``writes\_db'', ``external\_api'')
-    \item \texttt{required\_scopes}: OAuth2 scopes needed for invocation
-    \item \texttt{timeout\_ms}: Maximum execution time
-    \item \texttt{category}: Organizational grouping
-\end{itemize}
-
-\paragraph{Tool Categories}
-The platform provides 34 tools organized into 17 categories:
-\begin{itemize}
-    \item \textbf{Graph}: Cypher query, NL-to-Cypher, schema introspection
-    \item \textbf{Jobs}: Creation, status, cancellation
-    \item \textbf{Files}: Read, write, list operations
-    \item \textbf{Models}: Provider and instance management
-    \item \textbf{Admin}: Tenant operations, system configuration
-    \item \textbf{Utility}: Date/time, formatting, validation
-\end{itemize}
-
-\subsection{Job and Job Event}
-
-The \textbf{Job} entity represents asynchronous background work that executes independently of HTTP request lifecycles.
-
-\paragraph{Job Attributes}
-\begin{itemize}
-    \item \texttt{id}: UUID primary key
-    \item \texttt{type}: Job classification (e.g., ``batch\_export'', ``graph\_sync'')
-    \item \texttt{status}: Current state (queued, running, finished, failed, cancelled)
-    \item \texttt{owner\_sub}: Submitting principal
-    \item \texttt{tenant\_id}: Tenant context
-    \item \texttt{payload\_json}: Input parameters (JSONB)
-    \item \texttt{result\_json}: Output data (JSONB)
-    \item \texttt{error}: Failure message (nullable)
-    \item \texttt{priority}: Queue ordering (0 = normal, higher = more urgent)
-    \item \texttt{idempotency\_key}: For duplicate detection
-    \item \texttt{created\_at}, \texttt{started\_at}, \texttt{completed\_at}: Lifecycle timestamps
-\end{itemize}
-
-\paragraph{Job Events}
-\textbf{Job Events} provide an append-only log of job state changes and progress updates:
-\begin{itemize}
-    \item \texttt{seq\_id}: Monotonic sequence number (primary key)
-    \item \texttt{job\_id}: Parent job
-    \item \texttt{event\_type}: Category (``status'', ``log'', ``progress'', ``heartbeat'', ``end'')
-    \item \texttt{event\_json}: Event payload (JSONB)
-    \item \texttt{created\_at}: Event timestamp
-\end{itemize}
-
-Events are streamed to clients via Server-Sent Events (SSE), enabling real-time progress monitoring without polling.
-
-\subsection{Audit Log}
-
-The \textbf{Audit Log} provides an immutable record of security-relevant actions for compliance and forensics.
-
-\paragraph{Audit Entry Attributes}
-\begin{itemize}
-    \item \texttt{id}: UUID primary key
-    \item \texttt{timestamp}: Event time (with timezone)
-    \item \texttt{actor\_sub}: Principal performing the action
-    \item \texttt{tenant\_id}: Tenant context
-    \item \texttt{action}: Operation type (e.g., ``agent.run.create'', ``tool.invoke'')
-    \item \texttt{resource\_type}: Entity type affected
-    \item \texttt{resource\_id}: Entity identifier
-    \item \texttt{details\_json}: Additional context (JSONB)
-    \item \texttt{outcome}: Success or failure indicator
-    \item \texttt{client\_ip}: Source IP address
-    \item \texttt{request\_id}: Correlation identifier
-\end{itemize}
-
-\subsection{Entity Lifecycle Summary}
-
-Table~\ref{tab:entity-lifecycle} summarizes the state machines governing primary entity lifecycles.
-
-\begin{table}[htbp]
-    \centering
-    \caption{State transitions for primary domain entities.}
-    \label{tab:entity-lifecycle}
-    \small
-    \begin{tabular}{lll}
-        \toprule
-        \textbf{Entity} & \textbf{States} & \textbf{Terminal States} \\
-        \midrule
-        Agent Run & queued $\to$ planning $\to$ running & succeeded, failed, cancelled \\
-        Job & queued $\to$ running & finished, failed, cancelled \\
-        Session & active $\to$ expired & expired, archived \\
-        Provider & enabled, disabled & (soft delete) \\
-        Model Instance & loading $\to$ loaded, unloaded & (soft delete) \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-\subsection{Glossary of Terms}
-
-For reference, Table~\ref{tab:domain-glossary} provides concise definitions of key domain terminology used throughout this thesis.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Glossary of domain terminology.}
-    \label{tab:domain-glossary}
-    \small
-    \begin{tabularx}{\textwidth}{lX}
-        \toprule
-        \textbf{Term} & \textbf{Definition} \\
-        \midrule
-        Tenant & Organizational unit for resource isolation and access control \\
-        Principal & Authenticated identity (user or machine) with assigned permissions \\
-        Provider & LLM backend service hosting one or more model instances \\
-        Model Instance & Specific model deployment with configuration parameters \\
-        Agent Session & Container for related agent runs enabling conversation continuity \\
-        Agent Run & Single orchestration execution from prompt to final answer \\
-        Agent Step & Individual reasoning or action cycle within a run \\
-        MCP Tool & Capability that agents can invoke during execution \\
-        Job & Asynchronous background work independent of HTTP requests \\
-        Audit Log & Immutable record of security-relevant actions \\
-        Scope & OAuth2 permission grant (e.g., \texttt{tools:invoke:basic}) \\
-        RBAC & Role-Based Access Control for authorization decisions \\
-        \bottomrule
-    \end{tabularx}
-\end{table}
-
-\section{Core Backend Layer}
-\label{sec:core-backend}
-
-The Core Backend Layer implements the platform's business logic, API surface, and orchestration engine. Built on FastAPI, this layer processes all client requests, enforces security policies, orchestrates agent execution, and coordinates with the data layer. This section details the implementation of cross-cutting concerns, API design, schemas, error handling, services, and adapters.
-
-\subsection{Cross-Cutting Concerns}
-\label{subsec:cross-cutting}
-
-Cross-cutting concerns are implemented through middleware, decorators, and shared utilities to ensure consistent behavior across all endpoints without polluting business logic. The platform implements fourteen distinct concerns, each discussed below.
-
-\subsubsection{Logging}
-
-The platform employs \texttt{structlog} for structured, machine-readable logging with automatic context enrichment. Configuration is centralized in \path{src/logging\_setup.py}.
-
-\paragraph{Key Features}
-\begin{itemize}
-    \item \textbf{Format Selection}: JSON output in production, colored console in development (controlled by \texttt{APP\_ENV})
-    \item \textbf{Context Binding}: Request ID, tenant ID, and user subject are automatically bound to all log entries
-    \item \textbf{Access Filtering}: High-frequency paths (\texttt{/metrics}, \texttt{/health}) are filtered to reduce noise
-    \item \textbf{Trace Correlation}: OpenTelemetry trace IDs are included when tracing is enabled
-\end{itemize}
-
-\begin{lstlisting}[language=Python, caption={Structured logging configuration pattern (excerpt)}]
-import structlog
-
-structlog.configure(
-    processors=[
-        structlog.stdlib.filter_by_level,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.add_logger_name,
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-    ],
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    wrapper_class=structlog.stdlib.BoundLogger,
-)
+\begin{lstlisting}[language=Python, caption={Principal object structure}]
+@dataclass
+class Principal:
+    sub: str
+    tenant_id: str
+    roles: List[str]  # [admin|operator|user|viewer]
+    scopes: List[str]  # [user:me, admin:all, tools:invoke:*, graph:*]
 \end{lstlisting}
 
-\subsubsection{Metrics}
+\subsection{User Interfaces}
+\label{subsec:user-interfaces}
 
-Prometheus metrics are exposed via the \texttt{/metrics} endpoint, providing real-time observability into platform behavior. Implementation resides in \path{src/observability/metrics.py}.
+The platform provides two primary user interfaces:
 
-\paragraph{Metric Categories}
-Table~\ref{tab:metric-categories} summarizes the primary metric categories and their purposes.
+\subsubsection{Agent Chat UI (Next.js/React)}
 
-\begin{table}[htbp]
-    \centering
-    \caption{Prometheus metric categories and examples.}
-    \label{tab:metric-categories}
-    \small
-    \begin{tabular}{llll}
-        \toprule
-        \textbf{Category} & \textbf{Metric Name} & \textbf{Type} & \textbf{Labels} \\
-        \midrule
-        HTTP & \texttt{http\_requests\_total} & Counter & method, path, status \\
-        HTTP & \texttt{http\_request\_duration\_seconds} & Histogram & method, path, status \\
-        Tools & \texttt{tools\_invocations\_total} & Counter & tool\_name, status \\
-        Tools & \texttt{tools\_invocation\_duration\_seconds} & Histogram & tool\_name \\
-        Agent & \texttt{agent\_run\_duration\_seconds} & Histogram & status, tenant\_id \\
-        Agent & \texttt{agent\_llm\_tokens\_total} & Counter & model, token\_type \\
-        Rate Limit & \texttt{rate\_limit\_exceeded\_total} & Counter & action, scope \\
-        Provider & \texttt{provider\_health\_status} & Gauge & provider, model \\
-        \bottomrule
-    \end{tabular}
-\end{table}
+The Agent Chat UI serves as the end-user interface for AI agent interactions, implementing Workflow A (synchronous agent runs):
 
-\paragraph{Multiprocess Support}
-For Gunicorn deployments with multiple workers, the platform supports Prometheus multiprocess mode via the \texttt{PROMETHEUS\_MULTIPROC\_DIR} environment variable.
-
-\subsubsection{Tracing}
-
-Distributed tracing is implemented using OpenTelemetry, providing end-to-end visibility into request flows across services. Configuration is in \path{src/observability/tracing.py}.
-
-\paragraph{Configuration}
 \begin{itemize}
-    \item \textbf{Exporter}: OTLP over gRPC (port 4317) or HTTP/protobuf (port 4318)
-    \item \textbf{Sampling}: 100\% in development, 20\% in production (configurable)
-    \item \textbf{Instrumentations}: FastAPI (automatic spans), Requests library (outbound calls), logging correlation
+    \item JWT-based authentication with automatic token refresh
+    \item Server-Sent Events (SSE) streaming for real-time updates
+    \item Agent runs and steps visualization
+    \item Real-time polling for status updates
 \end{itemize}
 
-\paragraph{Resource Attributes}
-Each span includes standardized resource attributes:
+\subsubsection{Control Panel UI (Streamlit)}
+
+The Control Panel provides administrative capabilities for platform management, implementing Workflow B (long-running jobs):
+
 \begin{itemize}
-    \item \texttt{service.name}: ``cineca-agentic-platform''
-    \item \texttt{service.version}: Current application version
-    \item \texttt{deployment.environment}: Environment identifier (dev, staging, prod)
-    \item \texttt{host.name}: Container/pod hostname
+    \item Jobs, models, and tools management
+    \item Graph and NL-to-Cypher experiments
+    \item SSE streaming for job events
+    \item ETL, backup, and maintenance triggers
 \end{itemize}
 
-\subsubsection{Security}
+\subsection{Reverse Proxy / API Gateway (NGINX)}
+\label{subsec:nginx-gateway}
 
-Security enforcement spans multiple layers, implementing defense in depth. The complete security architecture is detailed in Chapter~\ref{ch:security}; this subsection provides an overview of integration points.
+NGINX serves as the API gateway providing:
 
-\paragraph{JWT Validation}
-All authenticated endpoints validate JWT tokens through middleware:
+\begin{itemize}
+    \item TLS termination for secure communications
+    \item Request routing to backend services
+    \item CORS handling for cross-origin requests
+    \item Load balancing across application instances
+\end{itemize}
+
+%------------------------------------------------------------------------------
+\section{Layer 2: Security Middleware Stack}
+\label{sec:layer2-security}
+
+Every request passes through eight security middleware layers before reaching business logic. This defense-in-depth approach ensures comprehensive protection at multiple levels.
+
+\subsection{Middleware Pipeline}
+\label{subsec:middleware-pipeline}
+
+The security middleware executes in the following order:
+
 \begin{enumerate}
-    \item Extract \texttt{Authorization: Bearer <token>} header
-    \item Fetch JWKS from Auth0 (cached in Redis)
-    \item Validate signature, expiration, and issuer
-    \item Extract claims (sub, scopes, tenant\_id, roles)
-    \item Bind user context to request state
+    \item \textbf{CORS Handler}: Validates allowed origins and handles preflight requests
+    \item \textbf{Trace Context}: Injects/extracts W3C trace-context headers for distributed tracing
+    \item \textbf{Auth JWT}: Validates Bearer tokens via JWKS endpoint and builds Principal objects
+    \item \textbf{Rate Limiter}: Enforces per-user, per-tenant, and per-endpoint rate limits
+    \item \textbf{Tenant Resolver}: Resolves tenant configuration and injects tenant filters
+    \item \textbf{Input Guard}: Validates and sanitizes all request inputs
+    \item \textbf{Output Guard}: Scrubs PII and applies compliance filtering
+    \item \textbf{Error Handler}: Normalizes exceptions and attaches correlation IDs
 \end{enumerate}
 
-\paragraph{RBAC Enforcement}
-Scope-based access control is enforced at the router level using FastAPI dependencies:
+\subsection{RBAC Permission Matrix}
+\label{subsec:rbac-matrix}
 
-\begin{lstlisting}[language=Python, caption={Scope-based authorization dependency (simplified)}]
-from fastapi import Depends, Security
-from src.security.auth import get_current_user, require_scope
+Table~\ref{tab:rbac-matrix} shows the role-based access control permissions for different resource types.
 
-@router.post("/admin/tenants")
-async def create_tenant(
-    request: TenantCreate,
-    user: UserInfo = Security(get_current_user, scopes=["admin:all"])
-):
-    # Only accessible with admin:all scope
-    ...
-\end{lstlisting}
+\begin{table}[htbp]
+\centering
+\caption{RBAC permission matrix by role}
+\label{tab:rbac-matrix}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Role} & \textbf{agent-runs} & \textbf{jobs} & \textbf{tools} & \textbf{tenants} & \textbf{graph:write} \\
+\midrule
+admin & CRUD & CRUD & CRUD & CRUD & \checkmark \\
+operator & CRU & CRUD & R & R & --- \\
+user & CR & CRD & R & --- & --- \\
+viewer & R & R & R & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\subsubsection{Rate Limiting}
+\subsection{Rate Limiter}
+\label{subsec:rate-limiter}
 
-The platform implements a sliding window rate limiter backed by Redis sorted sets. Configuration resides in \path{src/middleware/rate\_limit.py}.
+The rate limiter uses Redis-backed storage with multi-dimensional limiting:
 
-\paragraph{Rate Limit Levels}
 \begin{itemize}
-    \item \textbf{User-level}: Limits per authenticated user (e.g., 100 requests/minute)
-    \item \textbf{Tenant-level}: Aggregate limits per tenant (e.g., 1000 requests/minute)
-    \item \textbf{Endpoint-level}: Specific limits for expensive operations (e.g., 10 agent runs/minute)
+    \item \texttt{ratelimit:user:\{sub\}}: Per-user limits
+    \item \texttt{ratelimit:tenant:\{tenant\_id\}}: Per-tenant limits
+    \item \texttt{ratelimit:endpoint:\{method\}:\{path\}}: Per-endpoint limits
 \end{itemize}
 
-\paragraph{Implementation}
-\begin{lstlisting}[language=Python, caption={Sliding window rate limit check using Redis ZSET (simplified)}]
-async def check_rate_limit(key: str, limit: int, window_seconds: int) -> bool:
-    now = time.time()
-    window_start = now - window_seconds
-    
-    pipe = redis.pipeline()
-    pipe.zremrangebyscore(key, 0, window_start)  # Remove old entries
-    pipe.zadd(key, {str(uuid4()): now})          # Add current request
-    pipe.zcard(key)                               # Count entries
-    pipe.expire(key, window_seconds)
-    results = await pipe.execute()
-    
-    return results[2] <= limit
-\end{lstlisting}
-
-\paragraph{Response Headers}
-Rate-limited responses include informative headers:
+Response headers communicate limit status:
 \begin{itemize}
     \item \texttt{X-RateLimit-Limit}: Maximum requests allowed
     \item \texttt{X-RateLimit-Remaining}: Requests remaining in window
-    \item \texttt{X-RateLimit-Reset}: Unix timestamp when window resets
-    \item \texttt{Retry-After}: Seconds to wait (on 429 responses)
+    \item \texttt{X-RateLimit-Reset}: Unix timestamp when limit resets
 \end{itemize}
 
-\subsubsection{PII Scrubbing}
+\subsection{Input Guard}
+\label{subsec:input-guard}
 
-Personally Identifiable Information (PII) is detected and redacted from logs, tool outputs, and audit records to ensure compliance with data protection regulations.
+The Input Guard provides multiple protection mechanisms:
 
-\paragraph{Detection Patterns}
-The scrubber identifies common PII patterns:
 \begin{itemize}
-    \item Email addresses
-    \item Phone numbers (international formats)
-    \item Social Security Numbers
-    \item Credit card numbers (with Luhn validation)
-    \item IP addresses (v4 and v6)
+    \item Pydantic schema validation for all request bodies
+    \item SQL injection detection (DROP TABLE, UNION SELECT patterns)
+    \item Cypher injection detection for graph database attacks
+    \item Command injection detection (shell metacharacters)
+    \item Content-type validation
+    \item Request size limits
 \end{itemize}
 
-\paragraph{Redaction Strategy}
-Detected PII is replaced with type-tagged placeholders (e.g., \texttt{[EMAIL\_REDACTED]}, \texttt{[PHONE\_REDACTED]}) while preserving context for debugging.
+\subsection{Output Guard}
+\label{subsec:output-guard}
 
-\subsubsection{Error Handling}
+The Output Guard ensures compliance and privacy:
 
-The platform implements RFC 7807 ``Problem Details for HTTP APIs'' for consistent, machine-readable error responses. Implementation is in \path{src/errors/}.
+\begin{itemize}
+    \item PII scrubbing (email addresses, phone numbers, SSNs)
+    \item Content filtering for sensitive patterns
+    \item Response size validation and truncation
+    \item Audit logging with correlation IDs
+\end{itemize}
 
-\paragraph{Problem Detail Structure}
-\begin{lstlisting}[language=Python, caption={RFC 7807 Problem Detail response model (simplified)}]
-class ProblemDetail(BaseModel):
-    type: str = "about:blank"           # URI reference for error type
-    title: str                          # Short human-readable summary
-    status: int                         # HTTP status code
-    detail: str | None = None           # Human-readable explanation
-    instance: str | None = None         # URI for specific occurrence
-    errors: list[dict] | None = None    # Validation error details
-\end{lstlisting}
+%------------------------------------------------------------------------------
+\section{Layer 3: API Layer}
+\label{sec:layer3-api}
 
-\paragraph{Example Error Response}
-\begin{lstlisting}[language=json, caption={Example 403 Forbidden error response (illustrative)}]
+The platform exposes 76 endpoints organized into 16 versioned API groups. Table~\ref{tab:api-endpoints} summarizes the major endpoint categories.
+
+\begin{table}[htbp]
+\centering
+\caption{API endpoint categories}
+\label{tab:api-endpoints}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Endpoint} & \textbf{Description} \\
+\midrule
+/v1/health & Health probes (live, ready, startup, components) \\
+/v1/auth & Token introspection, identity verification \\
+/v1/agents & Agent definitions and configurations \\
+/v1/agent-runs & Agent run lifecycle (create, poll, cancel) \\
+/v1/tools & MCP tool registry and invocation \\
+/v1/jobs & Async job lifecycle (create, stream, cancel) \\
+/v1/models & Model and provider management \\
+/v1/admin & Administrative operations \\
+/v1/tenants & Multi-tenant configuration \\
+/v1/sessions & Session management \\
+/v1/graph & Graph query endpoints \\
+/v1/batch & Batch operations \\
+/v1/export & Data export utilities \\
+/v1/internal & Internal diagnostics \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Layer 4: Execution Workflows}
+\label{sec:layer4-workflows}
+
+The platform supports two distinct execution paths optimized for different use cases.
+
+\subsection{Workflow Comparison}
+\label{subsec:workflow-comparison}
+
+Table~\ref{tab:workflow-comparison} compares the two workflow types.
+
+\begin{table}[htbp]
+\centering
+\caption{Comparison of execution workflows}
+\label{tab:workflow-comparison}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Aspect} & \textbf{Workflow A: Agent Runs} & \textbf{Workflow B: Long Jobs} \\
+\midrule
+Execution & In-process & Worker pool \\
+Via & BackgroundTasks & Redis queue \\
+Duration & Short/Medium & Long \\
+Fault-tolerance & Basic & High \\
+Scaling & Vertical & Horizontal \\
+Use Case & Chat, quick Q\&A & ETL, batch, heavy \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Workflow A: Agent Runs}
+\label{subsec:workflow-a}
+
+Agent runs follow a synchronous execution model with the following state machine:
+
+\begin{center}
+\texttt{queued} $\rightarrow$ \texttt{running} $\rightarrow$ \texttt{succeeded} $|$ \texttt{failed}
+\end{center}
+
+Key endpoints:
+\begin{itemize}
+    \item \texttt{POST /v1/agent-runs}: Start synchronous execution
+    \item \texttt{POST /v1/agent-runs?use\_jobs=true}: Route to async worker
+    \item \texttt{GET /v1/agent-runs/\{id\}}: Retrieve run with ETag caching
+    \item \texttt{GET /v1/agent-runs/\{id\}/steps}: Get execution trace
+\end{itemize}
+
+\subsection{Workflow B: Long-Running Jobs}
+\label{subsec:workflow-b}
+
+Long-running jobs use Redis queues and dedicated workers:
+
+\begin{center}
+\texttt{queued} $\rightarrow$ \texttt{running} $\rightarrow$ \texttt{finished} $|$ \texttt{failed} $|$ \texttt{cancelled}
+\end{center}
+
+Key endpoints:
+\begin{itemize}
+    \item \texttt{POST /v1/jobs}: Create job (returns 202 + Location header)
+    \item \texttt{GET /v1/jobs/\{id\}}: Get status and results
+    \item \texttt{GET /v1/jobs/\{id\}/events}: SSE streaming
+    \item \texttt{DELETE /v1/jobs/\{id\}}: Cancel via Redis Lua script
+\end{itemize}
+
+Job types include: demo, test, long-running, and agent.run.
+
+\subsection{Job Creation Flow}
+\label{subsec:job-creation-flow}
+
+The job creation process follows these steps:
+
+\begin{enumerate}
+    \item \textbf{Validate}: Pydantic schema + Job-type JSON Schema validation
+    \item \textbf{Idempotency Check}: Check Redis + PostgreSQL for existing job
+    \item \textbf{Create Record}: INSERT INTO jobs with status='queued'
+    \item \textbf{Enqueue}: LPUSH job\_id to Redis jobs:queue:\{type\}
+    \item \textbf{Cache Key}: Store idempotency:\{key\} $\rightarrow$ job\_id
+    \item \textbf{Respond}: HTTP 202 Accepted with Location header
+\end{enumerate}
+
+\subsection{Worker Processing Loop}
+\label{subsec:worker-processing}
+
+Workers process jobs through the following loop:
+
+\begin{enumerate}
+    \item \textbf{Pop Job}: BRPOP from jobs:queue:\{type\} (blocking wait)
+    \item \textbf{Load Metadata}: SELECT from jobs table
+    \item \textbf{Check Cancel}: EXISTS jobs:cancel:\{id\}
+    \item \textbf{Transition Status}: queued $\rightarrow$ running, emit SSE event
+    \item \textbf{Heartbeat}: SETEX jobs:heartbeat:\{id\} every 30 seconds
+    \item \textbf{Execute Handler}: Route to handler by job type
+    \item \textbf{Emit Events}: RPUSH to jobs:events:\{id\} for SSE stream
+    \item \textbf{Finalize}: Update status, persist result to PostgreSQL
+\end{enumerate}
+
+%------------------------------------------------------------------------------
+\section{Layer 5: Service Layer (Orchestrator)}
+\label{sec:layer5-orchestrator}
+
+The Orchestrator Service is the core execution engine, processing prompts through four phases.
+
+\subsection{Phase 1: Intent Classification}
+\label{subsec:phase1-intent}
+
+The orchestrator first classifies the user's intent:
+
+\begin{itemize}
+    \item \textbf{CHAT}: Conversational responses (``What is ML?'')
+    \item \textbf{GRAPH}: NL-to-Cypher queries (``Which institutions?'')
+    \item \textbf{SECURITY}: Permission/access questions
+    \item \textbf{ADMIN}: Administrative write operations
+    \item \textbf{DANGEROUS}: Destructive operations (refused, offer EXPLAIN)
+    \item \textbf{EXPLAIN}: Query analysis without execution
+\end{itemize}
+
+\subsection{Phase 2: TODO Planning}
+\label{subsec:phase2-planning}
+
+Based on intent, the orchestrator creates a plan:
+
+\begin{itemize}
+    \item \textbf{full}: LLM generates detailed plan for each TODO
+    \item \textbf{optional}: Try direct execution; fall back to planning
+    \item \textbf{none}: Deterministic execution without LLM planning
+\end{itemize}
+
+Output: TODO Array with actions and parameters.
+
+\subsection{Phase 3: Step Execution}
+\label{subsec:phase3-execution}
+
+For each TODO item:
+
+\begin{enumerate}
+    \item Call LLM provider via resilient adapter layer
+    \item Invoke MCP tools with RBAC check
+    \item Execute NL-to-Cypher pipeline if GRAPH intent
+    \item Persist step to PostgreSQL immediately
+    \item Use Redis for session state and cancellation checks
+\end{enumerate}
+
+\subsection{Phase 4: Finalization}
+\label{subsec:phase4-finalization}
+
+The final phase produces the response:
+
+\begin{enumerate}
+    \item Build response aggregating results from all steps
+    \item Create canonical output with goal, steps, outputs, todos, metrics
+    \item Normalize to text + optional JSON payload
+    \item Apply PII scrubbing and output guard
+    \item Persist final state to PostgreSQL
+    \item Emit Prometheus metrics and OpenTelemetry traces
+\end{enumerate}
+
+%------------------------------------------------------------------------------
+\section{Layer 6: LLM Providers}
+\label{sec:layer6-llm}
+
+The platform implements a model-agnostic architecture supporting multiple LLM providers.
+
+\subsection{Supported Providers}
+\label{subsec:llm-providers}
+
+\subsubsection{Ollama (Local)}
+
+Benefits:
+\begin{itemize}
+    \item Data sovereignty (prompts never leave infrastructure)
+    \item No API costs (compute-only)
+    \item Offline capable
+    \item Customization through fine-tuning
+\end{itemize}
+
+Supported models: Phi-3 Mini, Mistral/Mixtral, LLaMA 2/3, Qwen, Gemma.
+
+\subsubsection{OpenAI (Cloud)}
+
+Benefits: Zero infrastructure, automatic updates.
+
+Models: GPT-4, GPT-4o, GPT-4 Turbo, GPT-3.5 Turbo.
+
+\subsubsection{Azure OpenAI}
+
+Benefits: Compliance certifications, regional data residency, SLA guarantees.
+
+\subsection{Provider Selection Hierarchy}
+\label{subsec:provider-selection}
+
+Provider selection follows a hierarchical resolution:
+
+\begin{enumerate}
+    \item Request-level override (user specifies in API call)
+    \item Session-level default (team/user preference)
+    \item Tenant-level default (organization policy)
+    \item Global platform default (system-wide fallback)
+\end{enumerate}
+
+%------------------------------------------------------------------------------
+\section{Layer 7: MCP Runtime and Tools}
+\label{sec:layer7-mcp}
+
+The Model Context Protocol (MCP) runtime manages 34 tools across 17 categories.
+
+\subsection{Tool Categories}
+\label{subsec:tool-categories}
+
+Table~\ref{tab:tool-categories} lists the available tool categories.
+
+\begin{table}[htbp]
+\centering
+\caption{MCP tool categories}
+\label{tab:tool-categories}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Category} & \textbf{Tools} \\
+\midrule
+GRAPH & query, secure\_query, generate\_cypher, schema, explain \\
+SECURITY & describe\_principal, allowed\_operations, validate \\
+SYSTEM & health, metrics, config, status \\
+CACHE & get, set, delete, invalidate \\
+CATALOG & discover, describe, search \\
+MODEL & list, info, warmup, switch \\
+AGENT & context, history, state \\
+ANALYTICS & query, aggregate, visualize \\
+ADMIN & create\_index, drop\_index, constraint \\
+ETL & import, export, transform \\
+CRUD & create\_node, update\_node, delete\_node \\
+EXPORT & csv, json, cypher \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Tool Invocation Flow}
+\label{subsec:tool-invocation}
+
+Each tool invocation follows this flow:
+
+\begin{enumerate}
+    \item \textbf{Input Validation}: JSON Schema validation (invalid $\rightarrow$ 400)
+    \item \textbf{RBAC Check}: Verify caller has required scopes (missing $\rightarrow$ 403)
+    \item \textbf{Execute Tool}: Perform actual operation (error $\rightarrow$ 500)
+    \item \textbf{Audit Log}: Log all attempts including failures
+    \item \textbf{Return Result}: Success response with data
+\end{enumerate}
+
+\subsection{Tool Manifest Schema}
+\label{subsec:tool-manifest}
+
+Each tool is defined by a manifest:
+
+\begin{lstlisting}[language=Python, caption={Tool manifest example}]
 {
-    "type": "https://api.cineca.it/problems/forbidden",
-    "title": "Forbidden",
-    "status": 403,
-    "detail": "Scope 'admin:all' required for this operation",
-    "instance": "/v1/admin/tenants"
-}
-\end{lstlisting}
-
-\subsubsection{Pagination}
-
-The platform uses cursor-based pagination for list endpoints, providing consistent performance regardless of offset depth.
-
-\paragraph{Implementation}
-\begin{itemize}
-    \item \textbf{Cursor}: Base64-encoded tuple of (last\_id, last\_created\_at)
-    \item \textbf{Page Size}: Configurable via \texttt{limit} parameter (default: 20, max: 100)
-    \item \textbf{Navigation}: \texttt{next\_cursor} returned when more results exist
-\end{itemize}
-
-\paragraph{Response Schema}
-\begin{lstlisting}[language=Python, caption={Paginated response model (simplified)}]
-class PaginatedResponse(BaseModel, Generic[T]):
-    items: list[T]
-    total: int | None = None     # Optional total count
-    next_cursor: str | None      # Cursor for next page
-    has_more: bool               # Whether more results exist
-\end{lstlisting}
-
-\subsubsection{ETags and Conditional Requests}
-
-ETags enable efficient caching and conflict detection for resource updates.
-
-\paragraph{ETag Generation}
-ETags are computed from resource content using weak validation:
-\begin{lstlisting}[language=Python, caption={ETag generation for resources (simplified)}]
-def compute_etag(resource: BaseModel) -> str:
-    content = resource.model_dump_json(exclude={"updated_at"})
-    hash_value = hashlib.md5(content.encode()).hexdigest()[:16]
-    return f'W/"{hash_value}"'
-\end{lstlisting}
-
-\paragraph{Conditional Headers}
-\begin{itemize}
-    \item \texttt{If-None-Match}: Returns 304 Not Modified if ETag matches
-    \item \texttt{If-Match}: Returns 412 Precondition Failed if ETag doesn't match (for updates)
-\end{itemize}
-
-\subsubsection{Idempotency}
-
-Idempotency keys enable safe retries for non-idempotent operations, particularly job creation and agent runs.
-
-\paragraph{Implementation}
-\begin{enumerate}
-    \item Client provides \texttt{Idempotency-Key} header with unique value
-    \item Server checks Redis cache for existing result
-    \item If found, returns cached response without re-execution
-    \item If not found, executes operation and caches result
-    \item Keys expire after 24 hours
-\end{enumerate}
-
-\subsubsection{Request ID Correlation}
-
-Every request is assigned a unique identifier for tracing across logs, metrics, and external systems.
-
-\paragraph{Propagation}
-\begin{itemize}
-    \item \texttt{X-Request-ID} header is read (if present) or generated
-    \item ID is bound to structlog context for all log entries
-    \item ID is returned in response \texttt{X-Request-ID} header
-    \item ID is stored with audit log entries
-\end{itemize}
-
-\subsubsection{Circuit Breakers}
-
-Circuit breakers protect the platform from cascading failures when external services (LLM providers, databases) become unavailable.
-
-\paragraph{State Machine}
-\begin{enumerate}
-    \item \textbf{CLOSED}: Normal operation; failures increment counter
-    \item \textbf{OPEN}: Requests fail immediately; entered after threshold failures
-    \item \textbf{HALF-OPEN}: Probe requests allowed; success closes, failure re-opens
-\end{enumerate}
-
-\paragraph{Configuration}
-\begin{itemize}
-    \item Failure threshold: 5 consecutive failures
-    \item Recovery timeout: 30 seconds before HALF-OPEN (configurable)
-    \item Probe requests: 1 request allowed in HALF-OPEN
-\end{itemize}
-
-\subsubsection{Health Probes}
-
-Kubernetes-compatible health probes enable infrastructure orchestration. Detailed implementation is in Chapter~\ref{ch:observability}.
-
-\paragraph{Probe Types}
-\begin{itemize}
-    \item \texttt{GET /health/live}: Liveness probe (process alive)
-    \item \texttt{GET /health/ready}: Readiness probe (dependencies healthy)
-    \item \texttt{GET /health/startup}: Startup probe (initialization complete)
-    \item \texttt{GET /health/components}: Component-level health details
-\end{itemize}
-
-\subsection{API Layer Design}
-\label{subsec:api-design}
-
-The API layer exposes 76 RESTful endpoints across 16 categories, following OpenAPI 3.1 specification. Design principles include resource-oriented URLs, consistent HTTP semantics, and comprehensive schema documentation.
-
-\paragraph{Versioning Strategy}
-The platform supports API versioning through URL prefixes:
-\begin{itemize}
-    \item \texttt{/v1/*}: Stable, production API
-    \item \texttt{/v2/*}: Preview features (when applicable)
-    \item Version negotiation via \texttt{Accept} header for future use
-\end{itemize}
-
-\paragraph{Authentication Patterns}
-\begin{itemize}
-    \item \textbf{Bearer Token}: \texttt{Authorization: Bearer <jwt>}
-    \item \textbf{Tenant Context}: \texttt{X-Tenant-ID: <tenant-uuid>}
-    \item \textbf{Idempotency}: \texttt{Idempotency-Key: <client-uuid>}
-\end{itemize}
-
-\subsubsection{Router Modules}
-\label{subsubsec:router-modules}
-
-The platform organizes endpoints into 23 router modules, grouped by domain. Table~\ref{tab:router-modules} provides a complete inventory.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Router modules organized by domain.}
-    \label{tab:router-modules}
-    \small
-    \begin{tabular}{llr}
-        \toprule
-        \textbf{Domain} & \textbf{Module} & \textbf{Endpoints} \\
-        \midrule
-        Agent & \texttt{agents.py} & 6 \\
-        Agent & \texttt{agent\_runs.py} & 8 \\
-        Agent & \texttt{sessions.py} & 5 \\
-        \midrule
-        Jobs & \texttt{jobs.py} & 7 \\
-        Jobs & \texttt{job\_events.py} & 2 \\
-        \midrule
-        Models & \texttt{models\_providers.py} & 6 \\
-        Models & \texttt{models\_instances.py} & 8 \\
-        Models & \texttt{models\_manifests\_builtins.py} & 3 \\
-        \midrule
-        Admin & \texttt{admin\_tenants.py} & 5 \\
-        Admin & \texttt{admin\_db.py} & 4 \\
-        Admin & \texttt{admin\_ops.py} & 6 \\
-        Admin & \texttt{admin\_processes.py} & 3 \\
-        \midrule
-        Tools & \texttt{tools.py} & 4 \\
-        \midrule
-        Infrastructure & \texttt{health.py} & 5 \\
-        Infrastructure & \texttt{internal.py} & 2 \\
-        Infrastructure & \texttt{auth.py} & 3 \\
-        Infrastructure & \texttt{meta.py} & 2 \\
-        \midrule
-        Data & \texttt{batch.py} & 3 \\
-        Data & \texttt{export\_import.py} & 2 \\
-        \midrule
-        Graph & \texttt{graph.py} & 3 \\
-        Graph & \texttt{cypher.py} & 2 \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-\paragraph{Router Registration}
-Routers are registered in \path{src/app.py} with appropriate prefixes and tags:
-
-\begin{lstlisting}[language=Python, caption={Router registration pattern (simplified)}]
-from src.routers import agents, jobs, tools, health
-
-app.include_router(agents.router, prefix="/v1/agents", tags=["agents"])
-app.include_router(jobs.router, prefix="/v1/jobs", tags=["jobs"])
-app.include_router(tools.router, prefix="/v1/tools", tags=["tools"])
-app.include_router(health.router, prefix="/health", tags=["health"])
-\end{lstlisting}
-
-\subsection{Domain Schemas}
-\label{subsec:schemas}
-
-Pydantic v2 schemas define the contract between API consumers and the backend, providing automatic validation, serialization, and OpenAPI documentation generation.
-
-\paragraph{Schema Organization}
-Schemas are organized in \path{src/schemas/} by domain:
-\begin{itemize}
-    \item \texttt{agents.py}: AgentRunCreate, AgentRunResponse, AgentStepResponse
-    \item \texttt{jobs.py}: JobCreate, JobResponse, JobEventResponse
-    \item \texttt{models.py}: ProviderCreate, ModelInstanceCreate, ModelInstanceResponse
-    \item \texttt{tools.py}: ToolInvokeRequest, ToolInvokeResponse, ToolMetadata
-    \item \texttt{tenants.py}: TenantCreate, TenantResponse
-    \item \texttt{auth.py}: TokenResponse, UserInfo
-\end{itemize}
-
-\paragraph{Schema Patterns}
-\begin{lstlisting}[language=Python, caption={Example request and response schemas (illustrative)}]
-from pydantic import BaseModel, Field
-from uuid import UUID
-from datetime import datetime
-
-class AgentRunCreate(BaseModel):
-    """Request schema for creating an agent run."""
-    prompt: str = Field(..., min_length=1, max_length=10000)
-    model_instance_id: UUID | None = None
-    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
-    max_steps: int = Field(default=10, ge=1, le=50)
-    session_id: UUID | None = None
-
-class AgentRunResponse(BaseModel):
-    """Response schema for agent run details."""
-    id: UUID
-    status: str
-    prompt: str
-    final_answer: str | None
-    created_at: datetime
-    finished_at: datetime | None
-    total_tokens: int | None
-    llm_cost_usd: float | None
-    
-    model_config = {"from_attributes": True}
-\end{lstlisting}
-
-\subsection{Error Handling}
-\label{subsec:error-handling}
-
-Error handling follows the RFC 7807 ``Problem Details for HTTP APIs'' specification, providing consistent, machine-readable error responses across all endpoints.
-
-\paragraph{Exception Hierarchy}
-The platform defines a custom exception hierarchy in \path{src/errors/exceptions.py}:
-
-\begin{lstlisting}[language=Python, caption={Custom exception hierarchy (simplified)}]
-class PlatformError(Exception):
-    """Base exception for platform errors."""
-    status_code: int = 500
-    error_type: str = "internal_error"
-    
-class NotFoundError(PlatformError):
-    status_code = 404
-    error_type = "not_found"
-
-class ForbiddenError(PlatformError):
-    status_code = 403
-    error_type = "forbidden"
-
-class RateLimitError(PlatformError):
-    status_code = 429
-    error_type = "rate_limit_exceeded"
-
-class ValidationError(PlatformError):
-    status_code = 422
-    error_type = "validation_error"
-\end{lstlisting}
-
-\paragraph{Global Exception Handler}
-A global exception handler converts exceptions to Problem Detail responses:
-
-\begin{lstlisting}[language=Python, caption={Global exception handler (simplified)}]
-@app.exception_handler(PlatformError)
-async def platform_error_handler(request: Request, exc: PlatformError):
-    return JSONResponse(
-        status_code=exc.status_code,
-        content=ProblemDetail(
-            type=f"https://api.cineca.it/problems/{exc.error_type}",
-            title=exc.error_type.replace("_", " ").title(),
-            status=exc.status_code,
-            detail=str(exc),
-            instance=str(request.url.path),
-        ).model_dump(),
-        headers={"Content-Type": "application/problem+json"},
-    )
-\end{lstlisting}
-
-\subsection{Service Layer}
-\label{subsec:service-layer}
-
-The service layer encapsulates business logic, coordinating between routers, repositories, and external adapters. Key services include:
-
-\paragraph{Orchestrator Service}
-The orchestrator (\path{src/services/orchestrator.py}, 8,263 lines) is the platform's core, managing agent execution from prompt to final answer. Responsibilities include:
-\begin{itemize}
-    \item Intent classification (determining execution mode)
-    \item Task planning (breaking prompts into actionable tasks)
-    \item Step execution (tool invocation, LLM calls)
-    \item Safety checks (content filtering, token limits)
-    \item Cost tracking and metrics recording
-\end{itemize}
-
-\paragraph{Jobs Service}
-The jobs service manages asynchronous work execution:
-\begin{itemize}
-    \item Job creation with idempotency support
-    \item Status transitions with validation
-    \item Event emission for SSE streaming
-    \item Cancellation handling
-\end{itemize}
-
-\paragraph{Session Service}
-The session service manages agent conversation context:
-\begin{itemize}
-    \item Session creation and expiration
-    \item Context persistence across runs
-    \item Message history management
-\end{itemize}
-
-\paragraph{Default Model Resolver (DMR)}
-The DMR service resolves which model instance to use for a given request:
-\begin{enumerate}
-    \item Check explicit model\_instance\_id in request
-    \item Check user-level default (stored in user preferences)
-    \item Check tenant-level default (stored in tenant config)
-    \item Fall back to global default
-\end{enumerate}
-
-\subsection{Orchestrator Responsibilities and Design Trade-offs}
-\label{subsec:orchestrator-design}
-
-The orchestrator service represents the largest and most complex component of the platform. This subsection discusses its responsibilities and the design trade-offs involved.
-
-\paragraph{Core Responsibilities}
-\begin{enumerate}
-    \item \textbf{Intent Classification}: Analyzing prompts to determine execution mode (chat, graph query, tool invocation, information retrieval)
-    \item \textbf{Planning}: Decomposing complex prompts into task lists
-    \item \textbf{Step Execution}: Iteratively processing steps until completion or limit
-    \item \textbf{Tool Routing}: Selecting and invoking appropriate MCP tools
-    \item \textbf{Safety Enforcement}: Content filtering, PII detection, output validation
-    \item \textbf{Cost Management}: Token tracking, budget enforcement, cost estimation
-    \item \textbf{Observability}: Metrics emission, step logging, trace propagation
-\end{enumerate}
-
-\subsubsection{Design Alternatives Considered}
-
-During the design of the orchestration engine, several architectural alternatives were evaluated:
-
-\paragraph{Alternative 1: Microservices Architecture}
-The orchestrator could be decomposed into separate microservices (intent classifier, task planner, step executor, response assembler). This approach was considered but rejected because: (1) it introduces network latency and distributed system complexity for what is fundamentally a sequential workflow; (2) it increases deployment and operational overhead without clear benefit for the use case; (3) the orchestrator's state machine benefits from co-location of components within a single process.
-
-\paragraph{Alternative 2: Event-Driven Architecture}
-Orchestration steps could communicate via an event bus (e.g., Redis Pub/Sub, Apache Kafka). This approach was not chosen because: (1) event-driven systems introduce eventual consistency challenges; (2) debugging distributed event flows is significantly more complex than sequential execution; (3) the orchestrator's synchronous execution model (required for maintaining conversation context) does not benefit from event-driven asynchrony.
-
-\paragraph{Alternative 3: State Machine Library}
-A generic state machine library could manage run state transitions. This approach was considered but rejected because: (1) the orchestrator's logic is tightly coupled to LLM interactions, tool invocations, and safety checks; (2) custom state management provides clearer control flow and easier debugging; (3) the complexity of orchestrator logic (8,263 lines) justifies a custom implementation over generic state machine abstraction.
-
-The chosen monolithic orchestrator design prioritizes performance, debuggability, and tight integration of orchestration logic while accepting that it represents a large, complex component requiring careful maintenance.
-
-\paragraph{Design Trade-offs}
-
-\begin{description}
-    \item[Centralization vs. Modularity] The orchestrator consolidates all agent logic into a single module, simplifying reasoning about execution flow but creating a large, complex file. Alternative designs (e.g., separate planner, executor, and monitor components) would improve modularity but add coordination complexity.
-    
-    \item[Flexibility vs. Type Safety] The orchestrator uses JSONB for step metadata and TODO storage, enabling schema evolution without migrations but sacrificing compile-time type checking.
-    
-    \item[Synchronous vs. Asynchronous] Agent runs execute synchronously within a request context for simplicity, with background jobs handling truly long-running work. This limits single-run duration but simplifies error handling and state management.
-\end{description}
-
-\subsection{Adapter Layer}
-\label{subsec:adapter-layer}
-
-The adapter layer provides consistent interfaces to external systems, enabling implementation swapping without affecting business logic.
-
-\paragraph{LLM Adapter}
-The LLM adapter (\path{src/adapters/llm.py}) supports multiple providers through a unified interface:
-
-\begin{lstlisting}[language=Python, caption={LLM adapter interface (simplified)}]
-def complete(
-    prompt: str,
-    model: str | None = None,
-    temperature: float = 0.7,
-    max_tokens: int = 1024,
-    **kwargs
-) -> dict:
-    """Generate completion using configured provider."""
-    provider = _get_provider()
-    
-    if provider == "openai":
-        return _openai_complete(prompt, model, temperature, max_tokens, **kwargs)
-    elif provider == "ollama":
-        return _ollama_complete(prompt, model, temperature, max_tokens, **kwargs)
-    elif provider == "azure":
-        return _azure_complete(prompt, model, temperature, max_tokens, **kwargs)
-    else:
-        return _demo_complete(prompt, model, **kwargs)
-\end{lstlisting}
-
-\paragraph{Provider-Specific Implementations}
-\begin{itemize}
-    \item \textbf{OpenAI}: Uses \texttt{openai} Python SDK with retry logic
-    \item \textbf{Ollama}: HTTP client to local Ollama server
-    \item \textbf{Azure OpenAI}: Azure SDK with managed identity support
-    \item \textbf{Demo}: Returns mock responses for testing
-\end{itemize}
-
-\paragraph{Memgraph Adapter}
-The Memgraph adapter (\path{src/adapters/memgraph.py}) provides Cypher query execution with connection pooling:
-
-\begin{lstlisting}[language=Python, caption={Memgraph adapter interface (simplified)}]
-class MemgraphAdapter:
-    def __init__(self, host: str, port: int):
-        self.driver = GraphDatabase.driver(f"bolt://{host}:{port}")
-    
-    def execute(self, query: str, params: dict = None) -> list[dict]:
-        with self.driver.session() as session:
-            result = session.run(query, params or {})
-            return [record.data() for record in result]
-    
-    def close(self):
-        self.driver.close()
-\end{lstlisting}
-
-\paragraph{Redis Adapter}
-Redis connectivity is managed through the \texttt{redis-py} async client with connection pooling:
-
-\begin{lstlisting}[language=Python, caption={Async Redis client initialization.}]
-from redis.asyncio import Redis, ConnectionPool
-
-_pool: ConnectionPool | None = None
-
-async def get_async_redis() -> Redis:
-    global _pool
-    if _pool is None:
-        _pool = ConnectionPool.from_url(
-            settings.REDIS_URL,
-            max_connections=20,
-            decode_responses=True,
-        )
-    return Redis(connection_pool=_pool)
-\end{lstlisting}
-
-\section{Data and Persistence Layer}
-\label{sec:data-layer}
-
-The Data and Persistence Layer implements a polyglot persistence strategy, employing three specialized databases to address distinct requirements: PostgreSQL for authoritative state and transactional integrity, Redis for high-performance caching and real-time operations, and Memgraph for graph-based knowledge representation and querying. This section details the design and implementation of each data store.
-
-\subsection{Data Authority and Source of Truth}
-\label{subsec:data-authority}
-
-The platform follows a clear data authority model to ensure consistency and enable recovery strategies:
-
-\begin{description}
-    \item[PostgreSQL = Entity State Source of Truth:] All persistent entity state (tenants, users, agent runs, jobs, model configurations, audit logs) is stored in PostgreSQL. This database is the single source of truth for entity existence, relationships, and lifecycle state. All writes to entity state must go through PostgreSQL; reads may be cached but must be consistent with PostgreSQL state.
-    
-    \item[Redis = Cache/Ephemeral/Queues Reconstructable:] Redis stores transient data that can be reconstructed from PostgreSQL or recomputed: session caches, rate limit counters, job queues, SSE event buffers, and provider health caches. If Redis data is lost, the system can reconstruct it from PostgreSQL state or regenerate it through normal operation. Redis serves as a performance optimization layer, not a source of truth.
-    
-    \item[Memgraph = Derived/Rebuildable:] Memgraph stores graph-based knowledge derived from external data sources or user-provided content. The graph can be rebuilt from source data or regenerated through ETL processes. Graph data is domain-specific (e.g., bioinformatics relationships) and does not represent core platform entity state.
-\end{description}
-
-This authority model enables clear recovery strategies: PostgreSQL backups are critical for entity state recovery; Redis failures cause temporary performance degradation but do not result in data loss; Memgraph can be rebuilt from source data if needed.
-
-\subsection{PostgreSQL Control Plane}
-\label{subsec:postgresql}
-
-PostgreSQL serves as the \textbf{control plane} database, storing all authoritative state including tenants, users, agent runs, jobs, model configurations, and audit logs. The platform uses SQLAlchemy 2.0 as the ORM with Alembic for schema migrations.
-
-\paragraph{Database Schema Overview}
-The PostgreSQL schema comprises 15+ tables organized by domain. Figure~\ref{fig:postgres-schema} illustrates the core entity relationships.
-
-\begin{figure}[htbp]
-    \centering
-    \begin{tikzpicture}[
-        node distance=1.5cm,
-        table/.style={rectangle, draw=black, thick, minimum width=2.3cm, minimum height=0.8cm, align=center, font=\footnotesize},
-        pk/.style={font=\tiny\bfseries},
-        fk/.style={->, thick, >=stealth, dashed}
-    ]
-        % Core tables
-        \node[table, fill=yellow!30] (tenant) at (0, 4) {tenants};
-        \node[table, fill=blue!20] (provider) at (-4, 2) {providers};
-        \node[table, fill=blue!20] (model) at (-4, 0) {model\_instances};
-        \node[table, fill=green!20] (session) at (0, 2) {agent\_sessions};
-        \node[table, fill=green!20] (run) at (0, 0) {agent\_runs};
-        \node[table, fill=green!20] (step) at (0, -2) {agent\_steps};
-        \node[table, fill=orange!20] (job) at (4, 2) {jobs};
-        \node[table, fill=orange!20] (event) at (4, 0) {job\_events};
-        \node[table, fill=gray!20] (audit) at (4, -2) {audit\_logs};
-        
-        % Relationships
-        \draw[fk] (provider) -- (tenant);
-        \draw[fk] (model) -- (provider);
-        \draw[fk] (session) -- (tenant);
-        \draw[fk] (run) -- (session);
-        \draw[fk] (run) -- (model);
-        \draw[fk] (step) -- (run);
-        \draw[fk] (job) -- (tenant);
-        \draw[fk] (event) -- (job);
-        \draw[fk] (audit) -- (tenant);
-    \end{tikzpicture}
-    \caption{Core PostgreSQL schema showing table relationships.}
-    \label{fig:postgres-schema}
-\end{figure}
-
-\paragraph{Table Inventory}
-Table~\ref{tab:postgres-tables} provides a complete inventory of PostgreSQL tables with their purposes and key columns.
-
-\begin{table}[htbp]
-    \centering
-    \caption{PostgreSQL table inventory.}
-    \label{tab:postgres-tables}
-    \small
-    \begin{tabularx}{\textwidth}{llX}
-        \toprule
-        \textbf{Table} & \textbf{Key Columns} & \textbf{Purpose} \\
-        \midrule
-        \texttt{tenants} & id, name, slug, config\_json & Organizational units \\
-        \texttt{providers} & id, name, api\_type, base\_url & LLM provider configs \\
-        \texttt{model\_instances} & id, instance\_name, model\_name & Model deployments \\
-        \texttt{agent\_sessions} & id, owner\_sub, context\_json & Conversation containers \\
-        \texttt{agent\_runs} & id, status, prompt, final\_answer & Orchestration executions \\
-        \texttt{agent\_steps} & id, run\_id, action, tool\_name & Execution steps \\
-        \texttt{jobs} & id, type, status, payload\_json & Background tasks \\
-        \texttt{job\_events} & seq\_id, job\_id, event\_type & Job state changes \\
-        \texttt{audit\_logs} & id, actor\_sub, action, resource & Security audit trail \\
-        \texttt{rate\_limits} & id, scope, limit, window & Rate limit configs \\
-        \texttt{tool\_invocations} & id, tool\_name, input\_json & Tool call records \\
-        \texttt{user\_preferences} & id, user\_sub, preferences\_json & User settings \\
-        \texttt{tenant\_defaults} & id, tenant\_id, defaults\_json & Tenant configurations \\
-        \texttt{manifests} & id, version, manifest\_json & Built-in model manifests \\
-        \texttt{alembic\_version} & version\_num & Migration state \\
-        \bottomrule
-    \end{tabularx}
-\end{table}
-
-\paragraph{Schema Design Principles}
-\begin{itemize}
-    \item \textbf{UUID Primary Keys}: All tables use UUID v4 for primary keys, avoiding sequence contention and enabling distributed ID generation.
-    \item \textbf{Tenant Scoping}: All user-facing tables include \texttt{tenant\_id} foreign key with cascading deletes.
-    \item \textbf{JSONB Flexibility}: Complex, evolving data (configurations, metadata, tool I/O) uses JSONB columns.
-    \item \textbf{Timestamp Tracking}: All tables include \texttt{created\_at} and \texttt{updated\_at} with automatic updates.
-    \item \textbf{Soft Deletes}: Critical tables support soft deletion via \texttt{deleted\_at} column.
-\end{itemize}
-
-\paragraph{Migration Strategy}
-The platform uses Alembic for declarative schema migrations, with 26 migrations tracking the schema evolution:
-
-\begin{lstlisting}[language=Python, caption={Example Alembic migration for adding job events table.}]
-def upgrade():
-    op.create_table(
-        'job_events',
-        sa.Column('seq_id', sa.BigInteger, primary_key=True, autoincrement=True),
-        sa.Column('job_id', postgresql.UUID(as_uuid=True), 
-                  sa.ForeignKey('jobs.id', ondelete='CASCADE'), nullable=False),
-        sa.Column('event_type', sa.String(100), nullable=False),
-        sa.Column('event_json', postgresql.JSONB, default=dict),
-        sa.Column('created_at', sa.DateTime(timezone=True), 
-                  server_default=sa.func.now()),
-    )
-    op.create_index('ix_job_events_job_id', 'job_events', ['job_id'])
-
-def downgrade():
-    op.drop_table('job_events')
-\end{lstlisting}
-
-\subsubsection{Repository Pattern Implementation}
-\label{subsubsec:repository-pattern}
-
-The platform implements the Repository pattern to abstract data access, providing a consistent interface for CRUD operations while enabling testability through mock implementations.
-
-\paragraph{Repository Architecture}
-Each domain entity has a dedicated repository class in \path{db/postgres\_control/repositories/}:
-
-\begin{lstlisting}[language=Python, caption={Repository base class and implementation pattern.}]
-from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
-from sqlalchemy.orm import Session
-
-T = TypeVar('T')
-
-class BaseRepository(ABC, Generic[T]):
-    """Abstract base for all repositories."""
-    
-    def __init__(self, db: Session, tenant_id: str | None = None):
-        self.db = db
-        self.tenant_id = tenant_id
-    
-    @abstractmethod
-    def get(self, id: UUID) -> T | None:
-        pass
-    
-    @abstractmethod
-    def create(self, entity: T) -> T:
-        pass
-    
-    @abstractmethod
-    def update(self, entity: T) -> T:
-        pass
-    
-    @abstractmethod
-    def delete(self, id: UUID) -> bool:
-        pass
-\end{lstlisting}
-
-\paragraph{Repository Inventory}
-Table~\ref{tab:repository-inventory} lists the repository classes and their responsibilities.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Repository classes and responsibilities.}
-    \label{tab:repository-inventory}
-    \small
-    \begin{tabular}{ll}
-        \toprule
-        \textbf{Repository} & \textbf{Responsibilities} \\
-        \midrule
-        \texttt{TenantRepository} & Tenant CRUD, configuration management \\
-        \texttt{ProviderRepository} & Provider registration, health status \\
-        \texttt{ModelInstanceRepository} & Model instance management, usage tracking \\
-        \texttt{AgentRunRepository} & Run persistence, status transitions, step recording \\
-        \texttt{SessionRepository} & Session lifecycle, context management \\
-        \texttt{JobRepository} & Job CRUD, queue management, idempotency \\
-        \texttt{AuditLogRepository} & Append-only audit records, compliance queries \\
-        \texttt{ToolInvocationRepository} & Tool call logging, error tracking \\
-        \texttt{RateLimitRepository} & Quota configuration, override management \\
-        \texttt{UserPreferencesRepository} & User settings, default model preferences \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-\paragraph{Tenant-Scoped Queries}
-All repositories automatically scope queries to the current tenant:
-
-\begin{lstlisting}[language=Python, caption={Tenant-scoped query implementation.}]
-class AgentRunRepository(BaseRepository[AgentRun]):
-    def list_runs(
-        self,
-        status: str | None = None,
-        limit: int = 20,
-        cursor: str | None = None,
-    ) -> list[AgentRun]:
-        query = self.db.query(AgentRun)
-        
-        # Automatic tenant scoping
-        if self.tenant_id:
-            query = query.filter(AgentRun.tenant_id == self.tenant_id)
-        
-        if status:
-            query = query.filter(AgentRun.status == status)
-        
-        if cursor:
-            cursor_data = decode_cursor(cursor)
-            query = query.filter(AgentRun.created_at < cursor_data['created_at'])
-        
-        return query.order_by(AgentRun.created_at.desc()).limit(limit).all()
-\end{lstlisting}
-
-\paragraph{Transaction Management}
-Repositories participate in SQLAlchemy session transactions:
-
-\begin{lstlisting}[language=Python, caption={Transaction management in service layer.}]
-from contextlib import contextmanager
-
-@contextmanager
-def transaction(db: Session):
-    try:
-        yield db
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
-
-# Usage in service
-with transaction(db) as session:
-    run = run_repo.create(new_run)
-    for step in steps:
-        step_repo.create(step)
-    audit_repo.log_action("run.create", run.id)
-\end{lstlisting}
-
-\subsection{Redis Data Plane}
-\label{subsec:redis}
-
-Redis serves as the \textbf{data plane} database, providing high-performance caching, job queuing, rate limiting, and real-time state management. The platform uses Redis 7.x with the \texttt{redis-py} async client.
-
-\paragraph{Design Rationale}
-Redis complements PostgreSQL by handling:
-\begin{itemize}
-    \item \textbf{Hot data}: Frequently accessed data with sub-millisecond requirements
-    \item \textbf{Ephemeral state}: Session tokens, rate limit windows, circuit breaker state
-    \item \textbf{Pub/Sub}: Real-time event distribution (job updates, SSE)
-    \item \textbf{Queues}: Job queuing with priority support
-\end{itemize}
-
-\subsubsection{Redis Usage Categories}
-\label{subsubsec:redis-usage}
-
-The platform employs Redis across ten distinct usage categories, each with specific key patterns and data structures.
-
-\paragraph{1. Job Queues}
-Jobs are queued using Redis lists with priority-based selection:
-
-\begin{lstlisting}[language=Python, caption={Redis job queue implementation.}]
-# Key pattern: jobs:queue:{job_type}
-# Data structure: List (LPUSH/BRPOP)
-
-async def queue_push_job(job_type: str, job_id: str, priority: int = 0):
-    key = f"jobs:queue:{job_type}"
-    if priority > 0:
-        # High priority: push to front
-        await redis.lpush(key, job_id)
-    else:
-        # Normal priority: push to back
-        await redis.rpush(key, job_id)
-
-async def queue_pop_job(job_type: str, timeout: int = 0) -> str | None:
-    key = f"jobs:queue:{job_type}"
-    result = await redis.brpop(key, timeout=timeout)
-    return result[1] if result else None
-\end{lstlisting}
-
-\paragraph{2. Rate Limiting}
-Sliding window rate limiting uses sorted sets:
-
-\begin{lstlisting}[language=Python, caption={Sliding window rate limit with Redis ZSET.}]
-# Key pattern: ratelimit:{scope}:{identifier}
-# Data structure: Sorted Set (ZADD/ZREMRANGEBYSCORE/ZCARD)
-
-async def check_rate_limit(scope: str, identifier: str, limit: int, window_sec: int) -> tuple[bool, int]:
-    key = f"ratelimit:{scope}:{identifier}"
-    now = time.time()
-    window_start = now - window_sec
-    
-    async with redis.pipeline(transaction=True) as pipe:
-        await pipe.zremrangebyscore(key, 0, window_start)
-        await pipe.zadd(key, {str(uuid4()): now})
-        await pipe.zcard(key)
-        await pipe.expire(key, window_sec)
-        results = await pipe.execute()
-    
-    count = results[2]
-    remaining = max(0, limit - count)
-    return count <= limit, remaining
-\end{lstlisting}
-
-\paragraph{3. Session State}
-Agent session context is cached for fast access:
-
-\begin{lstlisting}[language=Python, caption={Session state caching.}]
-# Key pattern: session:{session_id}:context
-# Data structure: String (JSON-serialized)
-# TTL: 2 hours
-
-async def get_session_context(session_id: str) -> dict | None:
-    key = f"session:{session_id}:context"
-    data = await redis.get(key)
-    return json.loads(data) if data else None
-
-async def set_session_context(session_id: str, context: dict, ttl_seconds: int = 7200):
-    key = f"session:{session_id}:context"
-    await redis.setex(key, ttl_seconds, json.dumps(context))
-\end{lstlisting}
-
-\paragraph{4. Idempotency Keys}
-Request deduplication prevents duplicate job creation:
-
-\begin{lstlisting}[language=Python, caption={Idempotency key implementation.}]
-# Key pattern: idempotency:{owner_sub}:{key}
-# Data structure: String (job_id)
-# TTL: 24 hours
-
-async def check_idempotency(owner_sub: str, key: str) -> str | None:
-    redis_key = f"idempotency:{owner_sub}:{key}"
-    return await redis.get(redis_key)
-
-async def set_idempotency(owner_sub: str, key: str, job_id: str, ttl_hours: int = 24):
-    redis_key = f"idempotency:{owner_sub}:{key}"
-    await redis.setex(redis_key, ttl_hours * 3600, job_id)
-\end{lstlisting}
-
-\paragraph{5. Circuit Breaker State}
-Provider health state is tracked for resilience:
-
-\begin{lstlisting}[language=Python, caption={Circuit breaker state management.}]
-# Key pattern: circuit:{provider}:{model}
-# Data structure: Hash (state, failures, last_failure, last_success)
-
-async def get_circuit_state(provider: str, model: str) -> dict:
-    key = f"circuit:{provider}:{model}"
-    return await redis.hgetall(key)
-
-async def record_failure(provider: str, model: str):
-    key = f"circuit:{provider}:{model}"
-    async with redis.pipeline() as pipe:
-        await pipe.hincrby(key, "failures", 1)
-        await pipe.hset(key, "last_failure", int(time.time()))
-        await pipe.execute()
-\end{lstlisting}
-
-\paragraph{6. LLM Response Caching}
-Deterministic LLM responses are cached to reduce API costs:
-
-\begin{lstlisting}[language=Python, caption={LLM response caching.}]
-# Key pattern: llm_cache:{hash(prompt + model + temperature)}
-# Data structure: String (JSON response)
-# TTL: Configurable (default 1 hour)
-
-def cache_key(prompt: str, model: str, temperature: float) -> str:
-    content = f"{prompt}|{model}|{temperature}"
-    return f"llm_cache:{hashlib.sha256(content.encode()).hexdigest()}"
-\end{lstlisting}
-
-\paragraph{7. JWKS Key Caching}
-OIDC public keys are cached to avoid repeated fetches:
-
-\begin{lstlisting}[language=Python, caption={JWKS caching.}]
-# Key pattern: jwks:{issuer_hash}
-# Data structure: String (JSON JWKS)
-# TTL: 1 hour
-
-async def get_cached_jwks(issuer: str) -> dict | None:
-    key = f"jwks:{hashlib.sha256(issuer.encode()).hexdigest()}"
-    data = await redis.get(key)
-    return json.loads(data) if data else None
-\end{lstlisting}
-
-\paragraph{8. Cancel Flags}
-Job cancellation signals are propagated via Redis:
-
-\begin{lstlisting}[language=Python, caption={Job cancellation flags.}]
-# Key pattern: jobs:cancel:{job_id}
-# Data structure: String ("1")
-# TTL: 1 hour
-
-async def set_cancel_flag(job_id: str):
-    await redis.setex(f"jobs:cancel:{job_id}", 3600, "1")
-
-async def check_cancel_flag(job_id: str) -> bool:
-    return await redis.exists(f"jobs:cancel:{job_id}") > 0
-\end{lstlisting}
-
-\paragraph{9. Default Model Resolution (DMR) Cache}
-Resolved default models are cached per scope:
-
-\begin{lstlisting}[language=Python, caption={DMR caching.}]
-# Key pattern: dmr:{scope}:{tenant_id}:{user_sub}
-# Data structure: String (model_instance_id)
-# TTL: 5 minutes
-
-async def get_cached_default(scope: str, tenant_id: str, user_sub: str) -> str | None:
-    key = f"dmr:{scope}:{tenant_id}:{user_sub}"
-    return await redis.get(key)
-\end{lstlisting}
-
-\paragraph{10. SSE Event Ring Buffer}
-Server-Sent Events are stored in a ring buffer for replay:
-
-\begin{lstlisting}[language=Python, caption={SSE ring buffer implementation.}]
-# Key pattern: sse:job:{job_id}:events
-# Data structure: List (fixed size ring)
-# Max size: Configurable (default 1000)
-
-async def append_sse_event(job_id: str, event: dict, ring_size: int = 1000):
-    key = f"sse:job:{job_id}:events"
-    await redis.lpush(key, json.dumps(event))
-    await redis.ltrim(key, 0, ring_size - 1)
-\end{lstlisting}
-
-\paragraph{Key Pattern Summary}
-Table~\ref{tab:redis-keys} summarizes all Redis key patterns used by the platform.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Redis key patterns and data structures.}
-    \label{tab:redis-keys}
-    \small
-    \begin{tabular}{llll}
-        \toprule
-        \textbf{Category} & \textbf{Key Pattern} & \textbf{Structure} & \textbf{TTL} \\
-        \midrule
-        Job Queue & \texttt{jobs:queue:\{type\}} & List & None \\
-        Rate Limit & \texttt{ratelimit:\{scope\}:\{id\}} & ZSET & Window \\
-        Session & \texttt{session:\{id\}:context} & String & 2h \\
-        Idempotency & \texttt{idempotency:\{sub\}:\{key\}} & String & 24h \\
-        Circuit & \texttt{circuit:\{provider\}:\{model\}} & Hash & None \\
-        LLM Cache & \texttt{llm\_cache:\{hash\}} & String & 1h \\
-        JWKS & \texttt{jwks:\{issuer\_hash\}} & String & 1h \\
-        Cancel & \texttt{jobs:cancel:\{id\}} & String & 1h \\
-        DMR & \texttt{dmr:\{scope\}:\{tenant\}:\{user\}} & String & 5m \\
-        SSE & \texttt{sse:job:\{id\}:events} & List & None \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-\subsection{Memgraph Graph Domain}
-\label{subsec:memgraph}
-
-Memgraph serves as the graph database for domain knowledge representation and natural language querying. The platform implements a bioinformatics-focused schema with 14 node types and 4 relationship types.
-
-\paragraph{Technology Selection}
-Memgraph was selected over Neo4j based on:
-\begin{itemize}
-    \item \textbf{Performance}: In-memory storage for sub-millisecond queries
-    \item \textbf{Cypher Compatibility}: Full Cypher query language support
-    \item \textbf{Licensing}: Open-source with permissive licensing for CINECA
-    \item \textbf{Operational Simplicity}: Single binary deployment
-\end{itemize}
-
-\paragraph{Graph Schema}
-The graph schema represents entities in the bioinformatics domain. Table~\ref{tab:graph-nodes} describes the node types.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Memgraph node types for bioinformatics domain.}
-    \label{tab:graph-nodes}
-    \small
-    \begin{tabularx}{\textwidth}{llX}
-        \toprule
-        \textbf{Label} & \textbf{Key Properties} & \textbf{Description} \\
-        \midrule
-        \texttt{User} & id, name, email, department & Research personnel \\
-        \texttt{Institution} & id, name, country, type & Research institutions \\
-        \texttt{Task} & id, name, status, submitted\_at & Computational tasks \\
-        \texttt{File} & id, path, size, format, checksum & Data files \\
-        \texttt{Dataset} & id, name, description, version & Data collections \\
-        \texttt{Sample} & id, name, organism, tissue & Biological samples \\
-        \texttt{Experiment} & id, name, protocol, date & Lab experiments \\
-        \texttt{Publication} & id, doi, title, journal, year & Research papers \\
-        \texttt{Gene} & id, symbol, name, chromosome & Genetic entities \\
-        \texttt{Protein} & id, name, sequence, function & Protein entities \\
-        \texttt{Pathway} & id, name, description & Biological pathways \\
-        \texttt{Tool} & id, name, version, type & Analysis software \\
-        \texttt{Workflow} & id, name, steps, inputs & Processing pipelines \\
-        \texttt{Result} & id, type, metrics, timestamp & Analysis outputs \\
-        \bottomrule
-    \end{tabularx}
-\end{table}
-
-\paragraph{Relationship Types}
-Table~\ref{tab:graph-relationships} describes the relationship types connecting nodes.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Memgraph relationship types.}
-    \label{tab:graph-relationships}
-    \small
-    \begin{tabularx}{\textwidth}{llX}
-        \toprule
-        \textbf{Type} & \textbf{Properties} & \textbf{Description} \\
-        \midrule
-        \texttt{WORKS\_AT} & since, role, department & User-Institution affiliation \\
-        \texttt{CREATED} & timestamp, role & Authorship (User creates Task/File/etc.) \\
-        \texttt{OUTPUT} & timestamp, type & Task produces File/Result \\
-        \texttt{USES} & version, config & Workflow uses Tool \\
-        \bottomrule
-    \end{tabularx}
-\end{table}
-
-\paragraph{Sample Graph Queries}
-The following Cypher queries demonstrate typical graph operations:
-
-\begin{lstlisting}[language=SQL, caption={Example Cypher queries for common operations.}]
-// Find all tasks created by users at a specific institution
-MATCH (u:User)-[:WORKS_AT]->(i:Institution {name: "CINECA"})
-MATCH (u)-[:CREATED]->(t:Task)
-RETURN u.name AS user, t.name AS task, t.status AS status
-
-// Find publications citing genes in a pathway
-MATCH (p:Pathway {name: "Apoptosis"})<-[:PARTICIPATES_IN]-(g:Gene)
-MATCH (pub:Publication)-[:REFERENCES]->(g)
-RETURN DISTINCT pub.title, pub.doi
-
-// Trace lineage of a result file
-MATCH path = (f:File)<-[:OUTPUT*]-(t:Task)<-[:CREATED]-(u:User)
-WHERE f.path = "/data/results/analysis.csv"
-RETURN path
-\end{lstlisting}
-
-\paragraph{NL-to-Cypher Integration}
-The graph domain integrates with the NL-to-Cypher pipeline (detailed in Section~\ref{sec:nl-cypher} of Chapter~\ref{ch:orchestration}), enabling natural language queries:
-
-\begin{lstlisting}[language=Python, caption={NL-to-Cypher pipeline integration.}]
-# User query: "Show me all tasks created by researchers at CINECA"
-
-# Generated Cypher:
-cypher = """
-MATCH (u:User)-[:WORKS_AT]->(i:Institution {name: "CINECA"})
-MATCH (u)-[:CREATED]->(t:Task)
-RETURN u.name AS researcher, t.name AS task, t.status AS status
-ORDER BY t.submitted_at DESC
-LIMIT 50
-"""
-
-# Execution via adapter
-results = memgraph_adapter.execute(cypher)
-\end{lstlisting}
-
-\paragraph{Graph Adapter Implementation}
-The Memgraph adapter provides connection pooling and query execution:
-
-\begin{lstlisting}[language=Python, caption={Memgraph adapter implementation.}]
-from neo4j import GraphDatabase  # Bolt protocol compatible
-
-class MemgraphAdapter:
-    def __init__(self, host: str, port: int = 7687):
-        self.driver = GraphDatabase.driver(
-            f"bolt://{host}:{port}",
-            auth=None,  # Memgraph default: no auth
-            max_connection_pool_size=20,
-        )
-    
-    def execute(self, query: str, params: dict | None = None) -> list[dict]:
-        with self.driver.session() as session:
-            result = session.run(query, params or {})
-            return [record.data() for record in result]
-    
-    def health_check(self) -> bool:
-        try:
-            result = self.execute("RETURN 1 AS ok")
-            return result[0].get("ok") == 1
-        except Exception:
-            return False
-    
-    def close(self):
-        self.driver.close()
-\end{lstlisting}
-
-\paragraph{Schema Introspection}
-The platform provides schema introspection for the NL-to-Cypher pipeline:
-
-\begin{lstlisting}[language=Python, caption={Graph schema introspection.}]
-def get_schema_metadata() -> dict:
-    """Return graph schema for LLM context."""
-    return {
-        "node_labels": memgraph.execute(
-            "CALL db.labels() YIELD label RETURN collect(label) AS labels"
-        )[0]["labels"],
-        "relationship_types": memgraph.execute(
-            "CALL db.relationshipTypes() YIELD relationshipType "
-            "RETURN collect(relationshipType) AS types"
-        )[0]["types"],
-        "property_keys": memgraph.execute(
-            "CALL db.propertyKeys() YIELD propertyKey "
-            "RETURN collect(propertyKey) AS keys"
-        )[0]["keys"],
-    }
-\end{lstlisting}
-
-\subsection{PostgreSQL Control Plane}
-
-PostgreSQL serves as the authoritative data store for the platform's control plane, managing all persistent state including tenant configurations, agent sessions, tool definitions, model instances, and audit trails. The implementation uses SQLAlchemy as the ORM layer, providing type-safe database operations with comprehensive schema management through Alembic migrations. The database schema design emphasizes multi-tenancy isolation, audit logging, and JSONB support for flexible metadata storage. The platform includes 26+ Alembic migrations tracking schema evolution from initial deployment through production refinements.
-
-\subsubsection{Repository Pattern Implementation}
-
-The platform implements a comprehensive repository pattern for data access, providing a clean separation between business logic and database operations. The implementation consists of 10+ specialized repository classes in \texttt{db/postgres\_control/repositories/}, each encapsulating domain-specific operations with consistent patterns for session management, caching, pagination, and audit trails.
-
-\paragraph{Core Repository Classes}
-
-The repository layer includes the following specialized implementations:
-
-\begin{enumerate}
-    \item \textbf{TenantsRepository} (\texttt{tenants.py}): Manages tenant organization entities with idempotency support, JSONB metadata merging, and case-insensitive name uniqueness. Provides CRUD operations with keyset pagination, ETag computation for HTTP caching, and dependency checking before deletion.
-    
-    \item \textbf{ProviderRepository} (\texttt{provider\_repo.py}): Handles LLM provider registration with Fernet encryption for API keys, secret redaction in API responses, and multi-tenant scope support. Implements PostgreSQL as authoritative source with Redis caching, audit event logging for all mutations, and health status caching.
-    
-    \item \textbf{ModelInstanceRepository} (\texttt{model\_instance\_repo.py}): Manages model instance definitions with provider integration, default model resolution with precedence (tenant-scoped → global → none), and lifecycle event logging. Supports filtering by tenant, provider, loaded status, and enabled status.
-    
-    \item \textbf{AgentRunRepository} (\texttt{agents.py}): Persists agent runs with model instance tracking, LLM error tracking (type, message, timestamp), and performance metrics (latency, LLM calls, tool calls). Stores structured data in JSONB fields for todos, steps, output, warnings, and metrics.
-    
-    \item \textbf{AgentSessionRepository} (\texttt{agents.py}): Manages agent session lifecycle with configuration storage, ownership validation, and cursor-based pagination. Provides ETag computation for HTTP caching and cascading deletion of related steps and runs.
-    
-    \item \textbf{AgentStepRepository} (\texttt{agents.py}): Tracks sequential steps within sessions with JSONB storage for input/output data and status transitions (queued → running → completed/failed). Supports retrieval by session and sequence number.
-    
-    \item \textbf{ToolsRepository} (\texttt{tools.py}): Handles tool definitions and invocations with schema validation, idempotency support for request deduplication, and complete audit trails. Manages tool invocations with status tracking (pending → running → finished/failed/cancelled) and ETag computation.
-    
-    \item \textbf{JobsRepository} (\texttt{jobs.py}): Manages asynchronous job storage with idempotency support, atomic status transitions with event-driven audit trails, and automatic latency computation. Provides priority-based job ordering and terminal state management (finished, failed, cancelled).
-    
-    \item \textbf{ManifestRepository} (\texttt{manifest\_repo.py}): Manages built-in model manifests with content-based idempotency via SHA256 hashing, activation/rollback with history tracking, and Redis locking for atomic operations. Implements state machine transitions (staged → active → archived) with complete audit logging.
-    
-    \item \textbf{UserDefaultModelRepository} (\texttt{user\_default\_models.py}): Handles per-user default model preferences with tenant scoping, instance validation, and cascade cleanup on instance deletion. Supports resolution precedence: user+tenant specific → user global → tenant default → global default.
-\end{enumerate}
-
-\paragraph{Repository Interface Patterns}
-
-All repositories follow consistent architectural patterns:
-
-\begin{itemize}
-    \item \textbf{Session Management}: Each method manages its own database session lifecycle with explicit commit/rollback handling and proper resource cleanup.
-    
-    \item \textbf{Cursor Pagination}: Keyset-based pagination using composite keys (created\_at DESC, id ASC) to avoid OFFSET performance issues and provide stable ordering across requests.
-    
-    \item \textbf{ETag Computation}: Deterministic hash computation from entity identifiers and timestamps for HTTP conditional request support and cache validation.
-    
-    \item \textbf{Redis Caching}: Integration with Redis for performance optimization using short-lived caches (5--60 minutes) with automatic invalidation on mutations.
-    
-    \item \textbf{Idempotency}: Support for idempotent operations with conflict detection, race condition handling, and audit logging for all mutations.
-    
-    \item \textbf{Tenant Isolation}: Automatic tenant\_id filtering in queries with ownership validation for security and multi-tenancy support.
-    
-    \item \textbf{Audit Trails}: Comprehensive audit event logging for all mutations with actor tracking, trace IDs, and payload snapshots for compliance.
-\end{itemize}
-
-The repository pattern provides type-safe, maintainable data access with clear separation of concerns, enabling the platform to scale while maintaining data integrity and security.
-
-\subsection{Redis Data Plane}
-
-Redis serves as the platform's data plane, providing high-performance in-memory storage for caching, job queues, rate limiting, session state, and distributed coordination. The implementation leverages Redis's rich data structures (STRINGS, HASHes, LISTs, ZSETs) to optimize different operational patterns, with comprehensive caching strategies reducing database load and improving response times. The platform implements sophisticated job queue management, sliding window rate limiting algorithms, and distributed locking mechanisms, all with graceful degradation to in-memory fallbacks when Redis is unavailable.
-
-\subsubsection{Redis Usage Categories}
-
-Redis serves as a critical data plane component, providing high-performance caching, job storage, rate limiting, and distributed coordination. The platform leverages Redis across 10+ distinct usage categories, each optimized for specific operational requirements.
-
-\paragraph{Job Queues}
-
-Redis implements job queue management using LIST data structures with BRPOP (blocking right-pop) for efficient worker consumption. The implementation supports priority-based job ordering, dead letter queue handling for failed jobs, and queue depth monitoring. Job documents are stored as Redis HASHes with TTL-based auto-expiry, while ZSET indexes enable efficient querying by owner, status, and creation time.
-
-\paragraph{Session State}
-
-Agent session context is cached in Redis HASHes with 1-hour TTL, storing session configuration, message history, and execution state. The implementation provides heartbeat tracking to refresh TTL on activity, enabling efficient session state management across distributed workers without requiring database queries for every operation.
-
-\paragraph{Rate Limiting}
-
-The platform implements a sophisticated sliding window rate limiting algorithm using Redis ZSETs (sorted sets) to track request timestamps. The algorithm automatically cleans up old entries, supports per-user and per-tenant quotas with configurable window sizes, and provides graceful fallback to in-memory storage when Redis is unavailable. Production limits include 10 sessions:create per user per minute, 100 steps:create per user per minute, and tenant-level quotas of 1000 sessions per hour.
-
-\paragraph{Idempotency Keys}
-
-Request deduplication is implemented using SETNX (set if not exists) operations with configurable expiration windows (default 24 hours). The system generates deterministic idempotency keys from request fingerprints (owner, tenant, type, payload hash) and caches responses for replay, ensuring safe retry semantics for POST operations.
-
-\paragraph{Circuit Breaker State}
-
-Provider health status is cached in Redis with 1-hour TTL, storing failure counts per provider and state transitions (CLOSED/OPEN/HALF\_OPEN). This enables fast health checks without querying the database and supports circuit breaker pattern implementation for LLM provider resilience.
-
-\paragraph{LLM Response Caching}
-
-Prompt-response pairs are cached using content-addressed keys (SHA256 hash of prompt) with configurable TTL. This reduces redundant LLM API calls and improves response times for repeated queries while maintaining cache freshness through TTL expiration.
-
-\paragraph{JWKS Key Caching}
-
-Public keys from OIDC providers are cached in Redis with TTL-based expiration, enabling fast JWT validation without repeated network calls to the identity provider. The cache automatically refreshes on key rotation, ensuring security while maintaining performance.
-
-\paragraph{Health Check Results}
-
-Component health status is cached with short TTL (typically 5--60 seconds) for freshness, aggregating health state from multiple services (PostgreSQL, Redis, Memgraph, external APIs). This enables fast health endpoint responses while minimizing load on underlying systems.
-
-\paragraph{Worker Registration}
-
-Active worker tracking uses Redis to maintain a registry of processing workers with heartbeat timestamps and capability metadata. This supports distributed job processing, worker health monitoring, and dynamic worker discovery in multi-instance deployments.
-
-\paragraph{Distributed Locks}
-
-The platform implements distributed locking using SETNX with automatic expiration (5--10 seconds) for session and step-level exclusive access. This prevents concurrent modifications in distributed environments, ensuring data consistency for agent session updates and step sequencing.
-
-\paragraph{Implementation Characteristics}
-
-All Redis operations implement graceful degradation with in-memory fallbacks when Redis is unavailable, ensuring platform resilience. The implementation uses connection pooling for async operations (max 10 connections), pipelines for multi-operation sequences, and Lua scripts for atomic operations. Maintenance tasks automatically clean orphaned index members and ensure data consistency across all usage categories.
-
-\subsection{Memgraph Graph Domain}
-
-The Memgraph graph domain module provides the graph database infrastructure for the platform, using Memgraph as the graph database backend. The implementation includes configuration management, client utilities, data population scripts, and integration with the Natural Language to Cypher pipeline.
-
-\paragraph{Graph Schema}
-
-The graph models bioinformatics workflows at CINECA, tracking users, their institutions, computational tasks, and file artifacts. The schema consists of four primary node types:
-
-\begin{itemize}
-    \item \textbf{User}: Platform users with properties including \texttt{user\_id}, \texttt{firstName}, \texttt{lastName}, \texttt{user\_name}, and \texttt{email}.
-    
-    \item \textbf{Institution}: Organizations or companies with a \texttt{name} property.
-    
-    \item \textbf{Task Nodes}: Multiple task types including \texttt{SearchbyTaxon}, \texttt{Bold}, \texttt{Blast}, \texttt{BlastSeq}, \texttt{CreateDb}, and \texttt{Command}, each with task-specific properties such as \texttt{task\_id}, \texttt{status}, \texttt{tool}, and output references.
-    
-    \item \textbf{File Nodes}: Various file types including \texttt{File}, \texttt{Fasta}, \texttt{BlastDb}, \texttt{BlastedSeq}, \texttt{Xml}, and \texttt{PhyloTree}, with properties like \texttt{file\_id}, \texttt{user\_filename}, \texttt{size}, and \texttt{extension}.
-\end{itemize}
-
-\paragraph{Relationship Types}
-
-The graph defines three primary relationship types:
-
-\begin{itemize}
-    \item \textbf{WORKS\_AT}: \texttt{(User)-[:WORKS\_AT]->(Institution)} represents user employment relationships.
-    
-    \item \textbf{RUNS}: \texttt{(User)-[:RUNS]->(Task)} indicates that a user executes a computational task.
-    
-    \item \textbf{INPUT/OUTPUT}: \texttt{(File)-[:INPUT]->(Task)} and \texttt{(Task)-[:OUTPUT]->(File)} model data flow, where files serve as inputs to tasks and tasks produce output files.
-\end{itemize}
-
-\paragraph{Implementation Architecture}
-
-The module provides a factory function \texttt{get\_memgraph()} that returns a configured Memgraph client instance using the gqlalchemy library. Configuration is managed through Pydantic Settings with environment variable support, enabling flexible deployment across development, staging, and production environments.
-
-\paragraph{Data Population}
-
-The platform includes comprehensive data population capabilities with two approaches:
-
-\begin{enumerate}
-    \item \textbf{Original Dataset Loader}: Imports reference datasets from JSON/CSV files, creating indexes based on schema hints and preserving original identifiers for traceability.
-    
-    \item \textbf{Synthetic Data Generator}: Generates realistic bioinformatics workflow data using the Faker library, with configurable parameters for users, institutions, and tasks. The generator produces schema-compliant data with reproducible results through fixed random seeds.
-\end{enumerate}
-
-\paragraph{NL-to-Cypher Pipeline Integration}
-
-The Memgraph domain integrates with the Natural Language to Cypher translation pipeline, enabling users to query the graph using natural language questions. The pipeline translates questions into Cypher queries, validates them for safety, and executes them against the Memgraph database, returning structured results that can be consumed by AI agents or displayed in user interfaces.
-
-\paragraph{Client Implementation}
-
-The Memgraph client factory (\texttt{memgraph\_client.py}) provides connection management with optional authentication support. The client uses the Bolt protocol (default port 7687) and integrates seamlessly with the FastAPI application through dependency injection, enabling graph queries from API endpoints and MCP tools.
-
-\section{Presentation Layer}
-\label{sec:presentation-layer}
-
-The Presentation Layer provides two specialized user interfaces optimized for distinct personas and use cases: a \textbf{Next.js Agent Chat UI} for end-user conversational interactions, and a \textbf{Streamlit Control Panel} for administrative operations and system monitoring. This dual-UI strategy enables persona-specific optimization while sharing the common backend API.
-
-\subsection{Agent Chat UI}
-\label{subsec:agent-chat-ui}
-
-The Agent Chat UI is a modern, production-grade web application built with Next.js 14, providing a Copilot-style conversational interface for interacting with AI agents.
-
-\paragraph{Technology Stack}
-Table~\ref{tab:chat-ui-stack} summarizes the technologies used in the Agent Chat UI.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Agent Chat UI technology stack.}
-    \label{tab:chat-ui-stack}
-    \small
-    \begin{tabular}{lll}
-        \toprule
-        \textbf{Component} & \textbf{Technology} & \textbf{Version} \\
-        \midrule
-        Framework & Next.js (App Router) & 14.2.15 \\
-        UI Library & React & 18.3.1 \\
-        State Management & Zustand & 4.5.5 \\
-        UI Components & Radix UI & Latest \\
-        Styling & Tailwind CSS & 3.4.14 \\
-        Icons & Lucide React & Latest \\
-        Type Safety & TypeScript & 5.x \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-\paragraph{Component Architecture}
-The UI follows a component-based architecture with clear separation of concerns:
-
-\begin{lstlisting}[language=bash, caption={Agent Chat UI directory structure.}]
-ui_agent/src/
-|-- app/
-|   |-- page.tsx          # Main chat page with layout
-|   |-- layout.tsx        # Root layout with providers
-|   |-- globals.css       # Global styles (Tailwind)
-|   `-- api/              # API routes (auth token proxy)
-|-- components/
-|   |-- chat-area.tsx     # Message display + step rendering
-|   |-- chat-input.tsx    # Prompt input + model selector
-|   |-- role-toggle.tsx   # Admin/User role switch
-|   `-- ui/               # Radix UI primitives
-|-- stores/
-|   |-- auth-store.ts     # Authentication state (Zustand + persist)
-|   `-- chat-store.ts     # Chat messages and runs (Zustand)
-`-- lib/
-    |-- api.ts            # Backend API client
-    `-- utils.ts          # Utility functions
-\end{lstlisting}
-
-\paragraph{State Management}
-The application uses Zustand for lightweight, performant state management with two primary stores:
-
-\begin{description}
-    \item[Auth Store] Manages role selection (Admin/User), token generation via Auth0, and SSR-safe hydration. Role selection persists in localStorage, but tokens are regenerated on each session for security.
-    
-    \item[Chat Store] Manages chat messages, agent runs with steps and status, model selection, and auto-scroll behavior. Messages are stored as a flat array with run references for efficient rendering.
-\end{description}
-
-\begin{lstlisting}[language=javascript, caption={Zustand store interface pattern.}]
-interface ChatState {
-  messages: ChatMessage[];
-  selectedModel: string;
-  availableModels: Array<{ id: string; name: string }>;
-  currentRunId: string | null;
-  isSubmitting: boolean;
-  isPolling: boolean;
-  
-  addUserMessage: (content: string) => string;
-  addAgentResponse: (messageId: string, run: AgentRun) => void;
-  updateAgentRun: (messageId: string, run: AgentRun) => void;
-}
-\end{lstlisting}
-
-\paragraph{Backend API Interaction}
-The API client in \texttt{lib/api.ts} provides typed functions for all backend communication:
-
-\begin{table}[htbp]
-    \centering
-    \caption{Agent Chat UI API endpoints.}
-    \label{tab:chat-api-endpoints}
-    \small
-    \begin{tabular}{lll}
-        \toprule
-        \textbf{Endpoint} & \textbf{Function} & \textbf{Purpose} \\
-        \midrule
-        \texttt{POST /v1/agent-runs} & \texttt{createAgentRun()} & Create new agent run \\
-        \texttt{GET /v1/agent-runs/\{id\}} & \texttt{getAgentRun()} & Poll run status \\
-        \texttt{GET /v1/agent-runs/\{id\}/steps} & \texttt{getAgentRunSteps()} & Get execution steps \\
-        \texttt{GET /v1/models/instances} & \texttt{listModels()} & List available models \\
-        \texttt{GET /v1/models/defaults} & \texttt{getDefaultModel()} & Get default model \\
-        \texttt{GET /v1/auth/me} & \texttt{getAuthMe()} & Validate token \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-\paragraph{Polling Pattern}
-The chat UI implements a time-based polling pattern for agent run completion:
-
-\begin{lstlisting}[language=JavaScript, caption={Run completion polling implementation.}]
-async function pollRunUntilComplete(
-  runId: string,
-  token: string | null,
-  onUpdate: (run: AgentRun) => void,
-  intervalMs: number = 2000,    // 2 second intervals
-  maxAttempts: number = 300     // 10 minutes max
-): Promise<AgentRun> {
-  let attempts = 0;
-  
-  while (attempts < maxAttempts) {
-    const run = await getAgentRun(runId, token);
-    onUpdate(run);  // Update UI with latest state
-    
-    // Terminal states
-    if (['succeeded', 'failed', 'cancelled'].includes(run.status)) {
-      return run;
-    }
-    
-    await new Promise(resolve => setTimeout(resolve, intervalMs));
-    attempts++;
-  }
-  
-  throw new Error(`Polling timed out after ${maxAttempts} attempts`);
-}
-\end{lstlisting}
-
-\paragraph{Model Selection Flow}
-The chat input component handles dynamic model selection:
-\begin{enumerate}
-    \item On role change, fetch available models from \texttt{/v1/models/instances}
-    \item Query \texttt{/v1/models/defaults} for backend-configured default
-    \item If backend default exists, use it; otherwise use first available model
-    \item User can override via dropdown selection
-\end{enumerate}
-
-\paragraph{Message Display Features}
-The chat area component renders messages with rich step visualization:
-\begin{itemize}
-    \item \textbf{User messages}: Simple text bubbles with timestamp
-    \item \textbf{Agent responses}: Full run timeline including:
-    \begin{itemize}
-        \item Status indicators (loading spinner, success checkmark, error icon)
-        \item Step-by-step execution display with action types
-        \item Tool calls with expandable inputs/outputs
-        \item Cypher query syntax highlighting
-        \item Collapsible JSON output drawers
-        \item Execution metrics (latency, token count)
-    \end{itemize}
-\end{itemize}
-
-\subsection{Control Panel UI}
-\label{subsec:control-panel-ui}
-
-The Control Panel UI is a comprehensive Streamlit-based administration interface providing full API coverage with role-aware access control.
-
-\paragraph{Technology Stack}
-\begin{itemize}
-    \item \textbf{Framework}: Streamlit (Python web apps)
-    \item \textbf{Authentication}: Auth0 OAuth2/OIDC
-    \item \textbf{HTTP Client}: httpx (async-capable)
-    \item \textbf{Data Display}: Pandas DataFrames
-    \item \textbf{Visualization}: Plotly (via Streamlit)
-\end{itemize}
-
-\paragraph{Application Structure}
-\begin{lstlisting}[language=bash, caption={Control Panel directory structure.}]
-ui_control_panel/
-|-- app.py              # Main Streamlit entry point
-|-- api.py              # API client with auth handling
-|-- state.py            # Session state management
-|-- components.py       # Reusable UI components
-`-- views/
-    |-- auth.py         # Authentication tab
-    |-- dashboard.py    # Health monitoring
-    |-- agents.py       # Agent runs & sessions
-    |-- tools.py        # Tool discovery & invocation
-    |-- models.py       # Model management
-    |-- jobs.py         # Job management
-    |-- tenants.py      # Multi-tenancy CRUD
-    |-- admin.py        # Admin operations
-    |-- cypher.py       # NL-to-Cypher workflow
-    `-- explore.py      # API explorer
-\end{lstlisting}
-
-\paragraph{Authentication System}
-The Control Panel supports four identity types with Auth0 integration:
-
-\begin{table}[htbp]
-    \centering
-    \caption{Control Panel identity types.}
-    \label{tab:control-panel-auth}
-    \small
-    \begin{tabular}{lll}
-        \toprule
-        \textbf{Identity Type} & \textbf{Auth Method} & \textbf{Use Case} \\
-        \midrule
-        Admin & Password Realm & Full platform administration \\
-        User & Password Realm & Normal user operations \\
-        Machine & Client Credentials & Service-to-service \\
-        Custom & Manual token & Testing/debugging \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-\paragraph{Scope-Based Access Control}
-Features are enabled based on OAuth2 scopes in the active token:
-
-\begin{table}[htbp]
-    \centering
-    \caption{Control Panel feature scopes.}
-    \label{tab:control-panel-scopes}
-    \small
-    \begin{tabular}{ll}
-        \toprule
-        \textbf{Feature} & \textbf{Required Scopes} \\
-        \midrule
-        Dashboard & None (public health endpoints) \\
-        Agents & \texttt{user:me} \\
-        Tools (Safe) & \texttt{tools:invoke:basic} \\
-        Tools (All) & \texttt{tools:invoke:all} \\
-        Models (Create) & \texttt{admin:all} \\
-        Tenants & \texttt{admin:all} \\
-        Admin Operations & \texttt{admin:all} \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-\paragraph{Tab-Based Navigation}
-The Control Panel uses Streamlit's tab system to organize functionality:
-
-\begin{enumerate}
-    \item \textbf{Auth}: Role selection, token management, scope inspection
-    \item \textbf{Dashboard}: System health, component status, KPI metrics
-    \item \textbf{Agents}: Run creation, session management, step visualization
-    \item \textbf{Tools}: Tool discovery, schema inspection, invocation testing
-    \item \textbf{Models}: Provider management, instance configuration, defaults
-    \item \textbf{Jobs}: Job creation, status monitoring, event streaming
-    \item \textbf{Tenants}: Tenant CRUD, configuration management
-    \item \textbf{Admin}: Database operations, system configuration
-    \item \textbf{Cypher}: NL-to-Cypher testing, query execution
-    \item \textbf{Explore}: OpenAPI specification, raw API requests
-\end{enumerate}
-
-\paragraph{API Client Architecture}
-The API client provides robust backend communication:
-
-\begin{lstlisting}[language=Python, caption={Control Panel API client pattern.}]
-def normalize_endpoint(endpoint: str) -> str:
-    """Ensure all endpoints start with /v1/"""
-    if not endpoint.startswith('/'):
-        endpoint = '/' + endpoint
-    if not endpoint.startswith('/v1'):
-        endpoint = '/v1' + endpoint
-    return endpoint
-
-def get_headers() -> dict:
-    """Build request headers with auth and tenant context"""
-    headers = {"Content-Type": "application/json"}
-    token = get_active_token()
-    if token:
-        headers["Authorization"] = f"Bearer {token.value}"
-    tenant_id = get_state().tenant_id
-    if tenant_id:
-        headers["X-Tenant-ID"] = tenant_id
-    return headers
-\end{lstlisting}
-
-\paragraph{Dashboard Health Monitoring}
-The dashboard tab monitors system health via multiple endpoints:
-
-\begin{table}[htbp]
-    \centering
-    \caption{Dashboard health endpoints.}
-    \label{tab:dashboard-health}
-    \small
-    \begin{tabular}{lll}
-        \toprule
-        \textbf{Endpoint} & \textbf{Purpose} & \textbf{Display} \\
-        \midrule
-        \texttt{/health/live} & Liveness probe & Status card \\
-        \texttt{/health/ready} & Readiness probe & Status card \\
-        \texttt{/health/startup} & Startup probe & Status card \\
-        \texttt{/health/components} & Component health & Grid of cards \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-\paragraph{Agent Execution Interface}
-The agents tab provides a complete agent execution interface:
-\begin{itemize}
-    \item Run creator form with prompt, model selection, temperature, and max steps
-    \item Session management for conversation continuity
-    \item Real-time progress monitoring with step-by-step timeline
-    \item Result display with final answer and execution metrics
-    \item Polling with jitter to prevent thundering herd effects
-\end{itemize}
-
-\paragraph{NL-to-Cypher Testing}
-The Cypher tab enables natural language to Cypher workflow testing:
-\begin{enumerate}
-    \item Natural language query input with example prompts
-    \item Graph schema exploration and visualization
-    \item Generated Cypher display with syntax highlighting
-    \item Query execution with result rendering
-    \item Query history for comparison and iteration
-\end{enumerate}
-
-\subsection{Dual-UI Architecture Analysis}
-\label{subsec:dual-ui-analysis}
-
-The decision to implement two separate user interfaces---rather than a single unified application---reflects a deliberate architectural choice based on persona analysis and technology fit.
-
-\paragraph{Advantages of Dual-UI Approach}
-
-\begin{description}
-    \item[Persona Separation] The Chat UI serves end-users requiring conversational AI interaction, while the Control Panel serves administrators and operators requiring data exploration and system management. Each UI optimizes for its target persona without compromises.
-    
-    \item[Technology Specialization] Next.js excels at real-time, interactive experiences with sub-second feedback, while Streamlit excels at rapid development of data-driven dashboards. Using each framework for its strengths yields better user experiences than a single compromise solution.
-    
-    \item[Parallel Development] Separate codebases enable independent development by different team members or skill sets. Frontend specialists can focus on the Chat UI while backend developers contribute to the Control Panel.
-    
-    \item[Risk Isolation] Bugs or outages in one UI do not affect the other. The Chat UI can remain operational during Control Panel maintenance and vice versa.
-    
-    \item[Deployment Flexibility] Each UI can be deployed, scaled, and updated independently. The Chat UI can be served as static assets via CDN, while the Control Panel runs as a Python process.
-\end{description}
-
-\paragraph{Potential Limitations}
-
-\begin{description}
-    \item[Code Duplication] Both UIs implement their own API clients, authentication handling, and error formatting. Changes to API contracts require updates in both codebases.
-    
-    \item[State Inconsistency] Session state and user preferences are managed independently in each UI. A user switching between UIs may encounter inconsistent defaults or cached data.
-    
-    \item[Cognitive Overhead] Users who require both interfaces (e.g., developers testing agents and monitoring jobs) must context-switch between different visual languages and interaction patterns.
-    
-    \item[Testing Complexity] End-to-end tests must cover both interfaces, potentially with different testing frameworks (Playwright for Next.js, Selenium or direct Python tests for Streamlit).
-    
-    \item[Maintenance Burden] Feature additions (e.g., a new model field) may require changes in both UIs, increasing total development effort.
-\end{description}
-
-\paragraph{Mitigations Implemented}
-
-\begin{itemize}
-    \item \textbf{Shared Backend API}: The REST API serves as the single source of truth, ensuring both UIs reflect consistent data.
-    \item \textbf{Consistent Model Selection}: Both UIs query the same \texttt{/v1/models/defaults} endpoint, ensuring default model consistency.
-    \item \textbf{Common Health Endpoints}: Both UIs display health status from the same \texttt{/health/*} endpoints.
-    \item \textbf{Documentation}: Clear documentation indicates when to use each UI based on task type.
-\end{itemize}
-
-\paragraph{Comparison Summary}
-Table~\ref{tab:ui-comparison} summarizes the key differences between the two interfaces.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Comparison of Chat UI and Control Panel characteristics.}
-    \label{tab:ui-comparison}
-    \small
-    \begin{tabularx}{\textwidth}{lXX}
-        \toprule
-        \textbf{Aspect} & \textbf{Agent Chat UI} & \textbf{Control Panel} \\
-        \midrule
-        Primary Persona & End users, researchers & Administrators, operators \\
-        Interaction Style & Conversational, real-time & Dashboard, form-driven \\
-        Technology & Next.js, React, TypeScript & Streamlit, Python \\
-        State Management & Zustand (client-side) & Session state (server-side) \\
-        Deployment & Static/SSR, CDN-cacheable & Python process, stateful \\
-        Update Latency & Sub-second (polling) & Page refresh \\
-        Development Speed & Moderate (typed, compiled) & Fast (Python, hot reload) \\
-        \bottomrule
-    \end{tabularx}
-\end{table}
-
-\subsection{Developer Experience and API Consumer Patterns}
-\label{subsec:developer-experience}
-
-Beyond the two provided UIs, the platform API is designed for consumption by external clients, scripts, and integrations. This subsection describes patterns for effective API usage.
-
-\paragraph{RESTful Conventions}
-The API follows standard REST conventions:
-\begin{itemize}
-    \item \textbf{Resource-Oriented URLs}: \texttt{/v1/agents}, \texttt{/v1/jobs/\{id\}}
-    \item \textbf{HTTP Methods}: GET (read), POST (create), PUT/PATCH (update), DELETE (remove)
-    \item \textbf{Status Codes}: 200 (success), 201 (created), 204 (no content), 4xx (client error), 5xx (server error)
-    \item \textbf{Content Types}: \texttt{application/json} for requests/responses, \texttt{application/problem+json} for errors
-\end{itemize}
-
-\paragraph{Authentication Pattern}
-API clients authenticate using JWT bearer tokens:
-
-\begin{lstlisting}[language=bash, caption={API authentication example.}]
-# Obtain token from Auth0
-TOKEN=$(curl -s https://${AUTH0_DOMAIN}/oauth/token \
-  -d "grant_type=client_credentials" \
-  -d "client_id=${CLIENT_ID}" \
-  -d "client_secret=${CLIENT_SECRET}" \
-  -d "audience=${API_AUDIENCE}" | jq -r .access_token)
-
-# Make authenticated request
-curl -H "Authorization: Bearer ${TOKEN}" \
-     -H "X-Tenant-ID: ${TENANT_ID}" \
-     https://api.example.com/v1/agents
-\end{lstlisting}
-
-\paragraph{Error Handling}
-Clients should handle RFC 7807 Problem Detail responses:
-
-\begin{lstlisting}[language=Python, caption={Python client error handling.}]
-import httpx
-
-def create_agent_run(prompt: str, token: str) -> dict:
-    response = httpx.post(
-        f"{API_BASE}/v1/agent-runs",
-        headers={"Authorization": f"Bearer {token}"},
-        json={"prompt": prompt},
-    )
-    
-    if response.status_code >= 400:
-        problem = response.json()
-        raise APIError(
-            status=problem["status"],
-            title=problem["title"],
-            detail=problem.get("detail"),
-        )
-    
-    return response.json()
-\end{lstlisting}
-
-\paragraph{Idempotent Requests}
-For safe retries, clients should use idempotency keys:
-
-\begin{lstlisting}[language=Python, caption={Idempotent request pattern.}]
-import uuid
-
-def create_job_idempotent(job_type: str, payload: dict, token: str) -> dict:
-    idempotency_key = str(uuid.uuid4())
-    
-    response = httpx.post(
-        f"{API_BASE}/v1/jobs",
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Idempotency-Key": idempotency_key,
+    "name": "graph.secure_query",
+    "description": "Execute tenant-isolated Cypher query",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "cypher": {"type": "string"},
+            "params": {"type": "object"}
         },
-        json={"type": job_type, "payload": payload},
-    )
-    
-    # Safe to retry with same idempotency_key
-    return response.json()
+        "required": ["cypher"]
+    },
+    "required_scopes": ["graph:read"],
+    "rate_limit": {"requests": 100, "window": 60}
+}
 \end{lstlisting}
 
-\paragraph{Pagination Handling}
-Clients should use cursor-based pagination for list endpoints:
+%------------------------------------------------------------------------------
+\section{Layer 8: NL-to-Cypher Pipeline}
+\label{sec:layer8-nl2cypher}
 
-\begin{lstlisting}[language=Python, caption={Cursor-based pagination example.}]
-def list_all_runs(token: str) -> list[dict]:
-    all_runs = []
-    cursor = None
+The NL-to-Cypher pipeline translates natural language queries into validated Cypher queries through six stages.
+
+\subsection{Pipeline Stages}
+\label{subsec:pipeline-stages}
+
+\begin{enumerate}
+    \item \textbf{Normalize}: Lowercase, remove fillers, sanitize input, extract entities
     
-    while True:
-        params = {"limit": 100}
-        if cursor:
-            params["cursor"] = cursor
-        
-        response = httpx.get(
-            f"{API_BASE}/v1/agent-runs",
-            headers={"Authorization": f"Bearer {token}"},
-            params=params,
-        )
-        data = response.json()
-        all_runs.extend(data["items"])
-        
-        if not data.get("has_more"):
-            break
-        cursor = data["next_cursor"]
+    Example: ``Hey, how many Blast nodes??'' $\rightarrow$ ``count blast nodes''
     
-    return all_runs
+    \item \textbf{Catalog Lookup}: Check if query matches known patterns for cached Cypher
+    
+    \item \textbf{Generate Cypher}: LLM generates Cypher with schema context
+    
+    \item \textbf{Validate (6-Layer)}: 
+    \begin{itemize}
+        \item Syntax check
+        \item Tenant boundary enforcement
+        \item Query depth limits
+        \item Timeout guards
+        \item Result size caps
+        \item Read-only enforcement
+    \end{itemize}
+    
+    \item \textbf{Execute}: Run validated Cypher on Memgraph via graph.secure\_query
+    
+    \item \textbf{Summarize}: LLM converts results to natural language
+\end{enumerate}
+
+\subsection{End-to-End Example}
+\label{subsec:nl2cypher-example}
+
+\begin{lstlisting}[caption={NL-to-Cypher pipeline example}]
+Input: "Show 5 Blast pairs outputting to same BlastedSeq"
+
+1. NORMALIZE  -> "blast pairs same blastedseq limit 5"
+2. CATALOG    -> No match -> LLM
+3. GENERATE   -> MATCH (b1:Blast)-[:OUTPUT]->(s)<-[:OUTPUT]-(b2:Blast) 
+                 WHERE b1<>b2 LIMIT 5
+4. VALIDATE   -> Read-only, Tenant, Depth, Timeout
+5. EXECUTE    -> Returns 5 pairs
+6. SUMMARIZE  -> "Found 5 Blast pairs sharing BlastedSeq targets..."
 \end{lstlisting}
 
-\paragraph{OpenAPI Documentation}
-The API provides OpenAPI 3.1 documentation at \texttt{/v1/openapi.json} (or \path{api/openapi.json} in the repository):
-\begin{itemize}
-    \item Full endpoint documentation with request/response schemas
-    \item Authentication requirements per endpoint
-    \item Example requests and responses
-    \item Interactive exploration via Swagger UI at \texttt{/docs}
-\end{itemize}
+%------------------------------------------------------------------------------
+\section{Layer 9: Data Layer}
+\label{sec:layer9-data}
 
-\paragraph{SDK Generation}
-The OpenAPI specification enables automatic SDK generation for various languages:
+The platform employs a three-database architecture optimized for different data access patterns.
 
-\begin{lstlisting}[language=bash, caption={SDK generation example.}]
-# Generate Python client
-openapi-generator-cli generate \
-  -i https://api.example.com/v1/openapi.json \
-  -g python \
-  -o ./sdk/python
+\subsection{Database Comparison}
+\label{subsec:db-comparison}
 
-# Generate TypeScript client
-openapi-generator-cli generate \
-  -i https://api.example.com/v1/openapi.json \
-  -g typescript-fetch \
-  -o ./sdk/typescript
-\end{lstlisting}
+Table~\ref{tab:database-comparison} compares the three databases.
 
-\subsection{Control Panel UI}
+\begin{table}[htbp]
+\centering
+\caption{Three-database architecture comparison}
+\label{tab:database-comparison}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Aspect} & \textbf{Redis} & \textbf{PostgreSQL} & \textbf{Memgraph} \\
+\midrule
+Role & Speed layer & Durability layer & Relationship layer \\
+Use Case & Cache, queues & State, audit & Graph queries \\
+Data Model & Key-value & Relational & Property graph \\
+Query & Commands & SQL & Cypher \\
+Persistence & Optional & Always (WAL) & Always (WAL) \\
+Consistency & Eventual & Strong (ACID) & Strong (ACID) \\
+Latency & Sub-ms & Low ms & Low ms \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-The Control Panel UI is a comprehensive Streamlit application designed for operators and administrators, providing full coverage of the platform API with role-aware access control and a polished user experience optimized for data exploration and system management.
+\subsection{Redis (Speed Layer)}
+\label{subsec:redis-layer}
 
-\paragraph{Technology Stack}
-
-The application is built with Streamlit (version $\geq$ 1.30.0) and Python 3.11+, leveraging Streamlit's rapid development capabilities and Python integration for seamless backend API interaction. The UI uses Pandas for data manipulation and display, enabling efficient handling of tabular data and exports.
-
-\paragraph{Core Architecture}
-
-The application follows a modular architecture with clear separation between state management, API communication, and view rendering:
+Redis provides high-speed data access for:
 
 \begin{itemize}
-    \item \textbf{State Management} (\texttt{state.py}): Centralized session state management using Streamlit's native session state with initialization, update helpers, and state persistence across page reloads.
-    
-    \item \textbf{API Client} (\texttt{api.py}): HTTP client wrapper with automatic retry logic, error handling, and token management. Implements request/response logging with token masking for security and provides convenience methods for all API endpoints.
-    
-    \item \textbf{Components} (\texttt{components/}): Reusable UI components including health cards, pagination controls, JSON drawers, timeline visualizations, tenant selectors, and error display components.
-    
-    \item \textbf{Views} (\texttt{views/}): Tab-specific view modules that render complete functional areas of the application.
+    \item \textbf{Cache}: Session data, tenant configs, model defaults
+    \item \textbf{Queues}: Job queues (LPUSH/BRPOP), SSE event buffers, job state
+    \item \textbf{Rate Limiting}: Per-user, per-tenant, per-endpoint limits
+    \item \textbf{Control}: Idempotency mapping, circuit breaker state, cancellation flags
 \end{itemize}
 
-\paragraph{Functional Views}
+\subsection{PostgreSQL (Durability Layer)}
+\label{subsec:postgresql-layer}
 
-The Control Panel provides comprehensive coverage through specialized tabs:
+PostgreSQL stores persistent state:
 
 \begin{itemize}
-    \item \textbf{Dashboard}: Real-time health monitoring for all system components (PostgreSQL, Redis, Memgraph, external APIs) with KPI cards, health status indicators, and trend visualization. Displays aggregated system metrics and component availability.
-    
-    \item \textbf{Agents}: Copilot-style agent run interface with live timeline visualization of tool calls, step-by-step execution tracking, and metrics display. Supports searching runs, sessions, and steps with filtering and pagination.
-    
-    \item \textbf{Jobs}: User and admin job management with event streaming, status monitoring, and event log viewing. Provides job creation, cancellation, and result inspection capabilities with real-time updates via polling.
-    
-    \item \textbf{Models \& Providers}: Model instance and provider management with health checks, default model configuration, and provider registration. Supports creating, updating, and deleting model instances with validation and audit trails.
-    
-    \item \textbf{Tools}: Tool discovery with schema inspection, tool invocation with parameter validation, and result display. Includes support for Natural Language to Cypher tool with query generation and execution visualization.
-    
-    \item \textbf{Tenants}: Full CRUD operations for multi-tenancy with tenant creation, metadata management, and dependency checking before deletion. Provides tenant selection and filtering capabilities.
-    
-    \item \textbf{Admin}: Administrative operations including process management, manifest staging and activation, database operations, and system configuration. Restricted to users with \texttt{admin:all} scope.
-    
-    \item \textbf{Cypher/Graph}: Natural Language to Cypher experimentation interface with query generation, validation, and execution. Displays generated Cypher queries, execution results, and query performance metrics.
+    \item \texttt{tenants}: Multi-tenant configurations
+    \item \texttt{agent\_runs}: Agent run records with status
+    \item \texttt{agent\_sessions}: Conversation state
+    \item \texttt{agent\_steps}: Per-step execution records
+    \item \texttt{jobs}: Async job records
+    \item \texttt{job\_events}: Job progress events (append-only)
+    \item \texttt{tools}: MCP tool definitions
+    \item \texttt{tool\_invocations}: Tool execution audit trail
+    \item \texttt{audit\_logs}: Compliance trail (all actions)
 \end{itemize}
 
-\paragraph{User Experience Features}
+\subsection{Memgraph (Graph Layer)}
+\label{subsec:memgraph-layer}
 
-The Control Panel implements sophisticated UX patterns:
+Memgraph provides graph database capabilities for the bioinformatics domain with 14 node types and 4 relationship types:
+
+\textbf{Node Types}: User, Institution, Task, File, Dataset, Sample, Experiment, Publication, Gene, Protein, Pathway, Tool, Workflow, Result.
+
+\textbf{Relationship Types}: WORKS\_AT, RUNS, INPUT, OUTPUT.
+
+%------------------------------------------------------------------------------
+\section{Layer 10: Adapters}
+\label{sec:layer10-adapters}
+
+Adapters provide swappable interfaces for external services, enabling easy replacement of implementations.
+
+\subsection{LLM Adapters}
+\label{subsec:llm-adapters}
+
+All LLM providers implement a unified interface:
 
 \begin{itemize}
-    \item \textbf{Paginated Tables}: Efficient handling of large datasets with cursor-based pagination, sorting, and filtering. Tables support CSV and JSON export for data analysis.
-    
-    \item \textbf{JSON Drawers}: Expandable JSON viewers with sanitized display (token masking, secret redaction) for inspecting API responses, job payloads, and tool results.
-    
-    \item \textbf{Visual Timelines}: Timeline components for visualizing agent execution steps, job event sequences, and audit trails with chronological ordering and status indicators.
-    
-    \item \textbf{Error Tracking}: Comprehensive error display with trace IDs, error messages, and retry suggestions. Errors are logged with masked credentials for security.
-    
-    \item \textbf{Live Updates}: Polling mechanisms for long-running operations (jobs, agent runs) with configurable refresh intervals and automatic status updates.
+    \item Ollama Adapter (local inference)
+    \item OpenAI Adapter (cloud API)
+    \item Azure Adapter (enterprise cloud)
+    \item Stub/Demo Adapter (testing)
 \end{itemize}
 
-\paragraph{Authentication and Authorization}
+\subsection{Database Adapters}
+\label{subsec:db-adapters}
 
-The UI supports four identity types (Admin, User, Machine, auto-managed) with Auth0 integration using Password Realm and Client Credentials grants. Token lifecycle is managed with auto-renewal, and scope-based UI elements show/hide features based on permissions. All tokens are masked in logs and UI displays for security.
-
-\paragraph{Responsive Design}
-
-The application includes responsive design considerations for tablets and mobile devices, with adaptive tab layouts, collapsible sections, and touch-optimized interactions. The layout adjusts gracefully from wide desktop views to narrow mobile viewports while maintaining functionality.
-
-\subsection{Dual-UI Architecture Analysis}
-
-The platform implements a dual-user interface strategy, providing two specialized interfaces optimized for distinct personas and use cases: a Next.js Agent Chat UI for end-user conversational interactions, and a Streamlit Control Panel for administrative operations and system monitoring. This architectural decision balances persona-specific optimization with shared backend infrastructure.
-
-\paragraph{Advantages of Dual-UI Approach}
-
-The dual-UI architecture provides several key benefits:
+Each database has a dedicated adapter:
 
 \begin{itemize}
-    \item \textbf{Persona Separation}: Clear separation between end-user chat interface and admin/operator dashboard enables each interface to be optimized for its specific user base without compromise. End users receive a focused, distraction-free conversational experience, while operators have comprehensive system visibility and management capabilities.
-    
-    \item \textbf{Technology Specialization}: Next.js excels at real-time, interactive user experiences with server-side rendering and client-side reactivity, making it ideal for conversational interfaces. Streamlit's Python-native approach and rapid development capabilities make it perfect for data exploration, administrative dashboards, and integration with Python-based tooling.
-    
-    \item \textbf{Parallel Development}: Separate codebases enable independent development teams to work in parallel without coordination overhead. Frontend teams can iterate on the Next.js UI while backend/DevOps teams enhance the Streamlit interface, reducing development bottlenecks.
-    
-    \item \textbf{Risk Isolation}: UI bugs, performance issues, or deployment problems in one interface do not affect the other. This isolation provides operational resilience and enables independent deployment cycles and rollback strategies.
-    
-    \item \textbf{Different Deployment Patterns}: The Next.js UI can be deployed as static assets to CDN or object storage, providing global distribution and edge caching. The Streamlit application runs as a Python process, enabling server-side computation and direct database access when needed.
+    \item \textbf{Redis Adapter}: cache.get/set, queue.push/pop, ratelimit.check, lock.acquire
+    \item \textbf{PostgreSQL Adapter}: repository.CRUD, transaction.begin/commit, query.execute
+    \item \textbf{Memgraph Adapter}: graph.query, graph.secure\_query, graph.nl\_to\_cypher
 \end{itemize}
 
-\paragraph{Potential Limitations}
+%------------------------------------------------------------------------------
+\section{Layer 11: Resilience Framework}
+\label{sec:layer11-resilience}
 
-The dual-UI approach introduces some challenges:
+The resilience framework ensures system stability under adverse conditions.
+
+\subsection{Circuit Breaker Pattern}
+\label{subsec:circuit-breaker}
+
+Per-provider circuit breakers (stored in Redis) follow three states:
+
+\begin{enumerate}
+    \item \textbf{CLOSED}: Normal operation, all requests pass through
+    \item \textbf{OPEN}: After N consecutive failures, reject immediately with fallback
+    \item \textbf{HALF-OPEN}: After timeout (60s), allow one probe request
+\end{enumerate}
+
+Transitions: Success in HALF-OPEN $\rightarrow$ CLOSED; Failure $\rightarrow$ OPEN.
+
+\subsection{Retry Strategy}
+\label{subsec:retry-strategy}
+
+Exponential backoff prevents overwhelming recovering services:
+
+\begin{center}
+\begin{tabular}{cc}
+\toprule
+Attempt & Delay \\
+\midrule
+1st & 0s \\
+2nd & 1s \\
+3rd & 2s \\
+4th & 4s \\
+5th & 8s \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Provider Fallback Chain}
+\label{subsec:fallback-chain}
+
+When the primary provider fails, the system attempts fallbacks in order:
+
+\begin{enumerate}
+    \item Primary: OpenAI GPT-4
+    \item Fallback 1: Azure GPT-4
+    \item Fallback 2: Ollama (local)
+    \item Return Error (all failed)
+\end{enumerate}
+
+\subsection{Cost Tracking}
+\label{subsec:cost-tracking}
+
+The system tracks LLM costs:
 
 \begin{itemize}
-    \item \textbf{Code Duplication}: Both UIs implement their own API clients, authentication logic, and state management patterns. This duplication increases maintenance effort and requires careful synchronization when API contracts change.
-    
-    \item \textbf{State Drift}: Session states, user preferences, and UI-specific caches can diverge between interfaces. Users switching between UIs may experience inconsistent behavior or need to re-authenticate.
-    
-    \item \textbf{Cognitive Overhead}: Users who need to use both interfaces must maintain context across different interaction paradigms, UI patterns, and navigation structures. This can increase training requirements and reduce efficiency for users who regularly switch between interfaces.
-    
-    \item \textbf{Testing Complexity}: End-to-end testing must cover both interfaces, effectively doubling test coverage requirements. Integration tests must verify that both UIs correctly interact with shared backend APIs and maintain consistency.
-    
-    \item \textbf{Maintenance Burden}: API changes, feature additions, and bug fixes may require updates in both codebases. Documentation, user guides, and training materials must cover both interfaces, increasing maintenance overhead.
+    \item \texttt{tokens\_input}: Tokens in prompt (billing)
+    \item \texttt{tokens\_output}: Tokens in response (billing)
+    \item \texttt{cost\_usd}: Estimated cost (budgets)
+    \item \texttt{latency\_ms}: Response time (performance)
 \end{itemize}
 
-\paragraph{Mitigations Implemented}
+%------------------------------------------------------------------------------
+\section{Layer 12: Background Framework}
+\label{sec:layer12-background}
 
-The platform addresses these limitations through several architectural decisions:
+APScheduler manages periodic maintenance tasks.
+
+\subsection{Scheduled Tasks}
+\label{subsec:scheduled-tasks}
+
+Table~\ref{tab:scheduled-tasks} lists the background tasks.
+
+\begin{table}[htbp]
+\centering
+\caption{APScheduler background tasks}
+\label{tab:scheduled-tasks}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Task} & \textbf{Frequency} & \textbf{Description} \\
+\midrule
+Health Check & 30 seconds & Ping databases, check LLM availability \\
+Cleanup & Hourly & Remove stale sessions, clear cache, archive jobs \\
+Backup & Daily & PostgreSQL dump, Redis snapshot, audit export \\
+Provider Monitor & 60 seconds & Check health, update circuit breakers \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Layer 13: Observability and Monitoring}
+\label{sec:layer13-observability}
+
+Comprehensive observability enables debugging, performance analysis, and operational monitoring.
+
+\subsection{Tracing (OpenTelemetry)}
+\label{subsec:otel-tracing}
+
+OpenTelemetry captures distributed traces across the system:
 
 \begin{itemize}
-    \item \textbf{Shared Backend REST API}: Both UIs consume the same RESTful API, ensuring a single source of truth for business logic, data validation, and security policies. API changes are reflected consistently across both interfaces.
-    
-    \item \textbf{Consistent Model Selection}: Model selection logic is centralized in the backend, with both UIs displaying the same available models and respecting the same tenant defaults and user preferences. This ensures consistent behavior regardless of interface.
-    
-    \item \textbf{Common Health/Status Endpoints}: Health checks, system status, and monitoring endpoints are shared, providing consistent visibility across both interfaces. Operators can monitor system health from either interface with identical information.
-    
-    \item \textbf{Unified Authentication}: Both UIs use the same OIDC/OAuth2 authentication flow and token management, ensuring consistent security policies and user identity across interfaces.
-    
-    \item \textbf{API Documentation}: Comprehensive OpenAPI specification enables both UI teams to stay synchronized on API contracts, reducing integration issues and enabling automated API client generation.
+    \item \texttt{agent\_run}: Full execution from prompt to response
+    \item \texttt{step\_execution}: Each TODO step within a run
+    \item \texttt{tool\_invocation}: Every MCP tool call with inputs/outputs
+    \item \texttt{db\_query}: Database operations with timing
+    \item \texttt{llm\_call}: LLM requests with model, tokens, latency
+    \item \texttt{job\_lifecycle}: Enqueue $\rightarrow$ execute $\rightarrow$ complete/fail/cancel
 \end{itemize}
 
-\paragraph{Architectural Trade-offs}
+Export destinations: Jaeger, Tempo, Datadog.
 
-The dual-UI architecture represents a deliberate trade-off between specialization and unification. While a single unified interface could reduce duplication and maintenance overhead, it would require compromises in user experience optimization and technology choices. The platform's approach prioritizes user experience and operational flexibility over code consolidation, aligning with enterprise requirements for persona-specific optimization and independent deployment cycles.
+\subsection{Prometheus Metrics}
+\label{subsec:prometheus-metrics}
 
-The architecture successfully balances these concerns by maintaining strict API contracts, shared authentication, and consistent data models while allowing each interface to optimize for its specific use case and user base.
+Key metric categories:
 
-\subsection{Developer Experience and API Consumer Patterns}
+\begin{itemize}
+    \item \textbf{HTTP}: request duration, requests total by endpoint/status
+    \item \textbf{Agent Runs}: run duration, run total by status
+    \item \textbf{Steps}: step duration, step total by type
+    \item \textbf{Tools}: invocation duration, invocation total by tool
+    \item \textbf{LLM}: tokens total, cost USD, latency by provider/model
+    \item \textbf{Circuit Breaker}: state (0=closed, 0.5=half-open, 1=open)
+    \item \textbf{Jobs}: queue depth, processing duration
+    \item \textbf{System}: component health (1=healthy, 0=unhealthy)
+\end{itemize}
 
-The platform provides a comprehensive RESTful API designed for external client consumption, with well-documented patterns for authentication, error handling, pagination, and idempotency. The API follows industry-standard practices to ensure reliable integration and optimal developer experience.
+\subsection{Grafana Dashboards}
+\label{subsec:grafana-dashboards}
 
-\paragraph{RESTful API Design}
+Pre-configured dashboards include:
 
-The platform exposes a RESTful API with versioned endpoints under the \texttt{/v1/} prefix, ensuring stability and backward compatibility. The API follows resource-oriented design principles, using nouns in paths (e.g., \texttt{/v1/agents/sessions}, \texttt{/v1/jobs}, \texttt{/v1/tools}) and standard HTTP methods (GET for retrieval, POST for creation, PATCH for updates, DELETE for deletion). All endpoints are documented through OpenAPI 3.1 specification, enabling automatic SDK generation and interactive exploration via Swagger UI at \texttt{/docs}.
+\begin{itemize}
+    \item HTTP Overview: Request rate, latency percentiles, error rate
+    \item Agent Runs: Runs/min, success rate, duration, step count
+    \item Job Processing: Queue depth, processing time, completion rate
+    \item Tool Invocations: Most-used tools, latency, error rates
+    \item LLM Providers: Health, circuit breakers, token usage, costs
+    \item System Health: Component status, DB pools, memory usage
+\end{itemize}
 
-\paragraph{Authentication Patterns}
+\subsection{Health Endpoints}
+\label{subsec:health-endpoints}
 
-All API endpoints require HTTP Bearer token authentication using OAuth2/OIDC tokens. Clients obtain tokens through Auth0 integration using Password Realm or Client Credentials grants, depending on the use case (user authentication vs. machine-to-machine communication). The platform implements scope-based authorization, where tokens contain scopes (e.g., \texttt{user:me}, \texttt{admin:all}) that determine access permissions. The API validates tokens on every request, extracting user identity and scopes from JWT claims, and enforces permission checks at the endpoint level.
+Standard Kubernetes-compatible health probes:
 
-\paragraph{Error Handling and RFC 7807 Problem Details}
+\begin{itemize}
+    \item \texttt{/v1/health/live}: Is the process running?
+    \item \texttt{/v1/health/ready}: Can it serve requests?
+    \item \texttt{/v1/health/startup}: Has initialization completed?
+    \item \texttt{/v1/health/components}: Per-component status
+\end{itemize}
 
-The platform implements RFC 7807 Problem Details for HTTP APIs, providing structured error responses that include type, title, status, and detail fields. This enables clients to programmatically handle errors with appropriate user-facing messages. Error responses include correlation IDs (\texttt{X-Request-Id}) for debugging and traceability. The API uses appropriate HTTP status codes: 400 for bad requests, 401 for authentication failures, 403 for authorization failures, 404 for not found, and 500 for internal server errors.
+%------------------------------------------------------------------------------
+\section{Summary}
+\label{sec:arch-summary}
 
-\paragraph{Idempotency for Safe Retries}
+The CINECA Agentic Platform architecture demonstrates a comprehensive approach to building enterprise-grade AI agent systems. The 13-layer design provides clear separation of concerns, enabling independent scaling, testing, and evolution of each component. Key architectural decisions include:
 
-To handle network failures and enable safe retries, the platform supports idempotency keys via the \texttt{Idempotency-Key} header on POST requests. Clients generate unique keys (typically UUIDs) for each request, and the platform caches responses for 24 hours. Retrying a request with the same idempotency key returns the cached response (200 OK) instead of creating duplicates (201 Created). This pattern is supported on mutation endpoints including \texttt{POST /v1/agents/sessions}, \texttt{POST /v1/agents/sessions/\{session\_id\}/steps}, and \texttt{POST /v1/agent-runs}.
+\begin{itemize}
+    \item Defense-in-depth security with 8 middleware layers
+    \item Dual workflow support for different execution patterns
+    \item Model-agnostic LLM integration with resilient fallbacks
+    \item Three-database architecture optimized for different access patterns
+    \item Full observability through OpenTelemetry, Prometheus, and Grafana
+\end{itemize}
 
-\paragraph{ETag Caching for Efficiency}
-
-The platform implements HTTP ETag caching to reduce bandwidth usage for polling scenarios. GET endpoints return ETag headers computed from response content, and clients can include \texttt{If-None-Match} headers in subsequent requests. When data is unchanged, the API returns 304 Not Modified with no response body, significantly reducing bandwidth for large list endpoints. ETags are supported on \texttt{GET /v1/agents/sessions}, \texttt{GET /v1/agents/sessions/\{session\_id\}}, \texttt{GET /v1/agents/sessions/\{session\_id\}/steps}, and \texttt{GET /v1/agent-runs/\{run\_id\}}.
-
-\paragraph{Cursor-Based Pagination}
-
-List endpoints implement cursor-based pagination to handle large datasets efficiently. Clients specify \texttt{limit} (default 20, max 100) and \texttt{cursor} parameters, receiving responses with \texttt{items}, \texttt{has\_more}, and \texttt{next\_cursor} fields. This approach avoids OFFSET performance issues and provides stable ordering across requests. Pagination is implemented using composite keys (created\_at DESC, id ASC) for deterministic cursor encoding and decoding.
-
-\paragraph{Rate Limiting Awareness}
-
-The API implements rate limiting with per-user and per-tenant quotas, returning \texttt{X-RateLimit-Limit}, \texttt{X-RateLimit-Remaining}, and \texttt{X-RateLimit-Reset} headers. Clients should monitor these headers and implement exponential backoff when rate limits are exceeded. Production limits include 10 sessions:create per user per minute and tenant-level quotas of 1000 sessions per hour.
-
-\paragraph{Developer Workflows}
-
-The platform provides comprehensive documentation to guide developer workflows, including a project map in the README that identifies key entry points (app.py, orchestrator.py, routers/, security/, etc.), API best practices guide covering authentication, idempotency, caching, and pagination patterns, and OpenAPI specification enabling automatic SDK generation for Python, TypeScript, and other languages. The documentation emphasizes common workflows such as creating agent runs with polling, managing sessions with step-by-step execution, and handling long-running jobs with Server-Sent Events for progress streaming.
+The architecture supports the platform's goals of security, scalability, and operational excellence while enabling natural language interaction with complex bioinformatics data.
 
 
 %==============================================================================
@@ -9126,28 +7374,43 @@ The orchestrator processes agent runs through a structured pipeline that transfo
 \label{fig:orchestrator-flow}
 \end{figure}
 
-The execution flow proceeds through the following stages:
+The execution flow proceeds through four distinct phases aligned with the orchestration architecture:
 
-\begin{enumerate}
-    \item \textbf{Request Reception}: The HTTP layer receives the user prompt along with session context, authentication information, and execution parameters.
-    
-    \item \textbf{Intent Classification}: The prompt is analyzed to determine the appropriate processing mode (CHAT, GRAPH, ADMIN, SECURITY, or DANGEROUS).
-    
-    \item \textbf{Mode-Specific Routing}: Based on the classified intent, the orchestrator routes to specialized handlers:
+\paragraph{Phase 1: Intent Classification}
+\begin{itemize}
+    \item The prompt is analyzed to determine the appropriate processing mode using the six intent categories: CHAT, GRAPH, SECURITY, ADMIN, DANGEROUS, or EXPLAIN.
+    \item Classification uses fast regex and keyword matching with optional LLM fallback for ambiguous cases.
+    \item Based on the classified intent, the orchestrator routes to specialized handlers:
     \begin{itemize}
         \item \texttt{\_handle\_chat()}: Direct LLM conversation without tool invocation
         \item \texttt{\_handle\_graph\_query()}: Memgraph database operations via NL-to-Cypher
         \item \texttt{\_handle\_admin\_mode()}: Administrative operations requiring elevated privileges
         \item \texttt{\_handle\_security\_mode()}: Permission and access control queries
         \item \texttt{\_handle\_dangerous\_mode()}: Potentially destructive operations with safety gates
+        \item \texttt{\_handle\_explain\_mode()}: Explanations of previous results or queries
     \end{itemize}
-    
-    \item \textbf{Task Planning}: For complex requests, the orchestrator generates a structured plan as a list of task items, each representing a discrete step to execute.
-    
-    \item \textbf{Step Execution}: The orchestrator iterates through planned steps, invoking tools, making LLM calls, and accumulating results.
-    
-    \item \textbf{Response Assembly}: Final outputs are aggregated, formatted, and returned to the caller with comprehensive metrics.
-\end{enumerate}
+\end{itemize}
+
+\paragraph{Phase 2: TODO Planning}
+\begin{itemize}
+    \item For complex requests, the orchestrator generates a structured plan as a list of task items.
+    \item Planning modes: \textbf{full} (always plan), \textbf{optional} (plan if beneficial), \textbf{none} (skip planning).
+    \item Each TODO item represents a discrete step with description, expected outcome, and dependencies.
+\end{itemize}
+
+\paragraph{Phase 3: Step Execution}
+\begin{itemize}
+    \item The orchestrator iterates through planned steps, invoking tools, making LLM calls, and accumulating results.
+    \item Each step is recorded with timing metrics, tool inputs/outputs, and success status.
+    \item Maximum step limit (default: 25) prevents unbounded execution.
+\end{itemize}
+
+\paragraph{Phase 4: Finalization}
+\begin{itemize}
+    \item Final outputs are aggregated, formatted, and returned to the caller.
+    \item Comprehensive metrics captured: token usage, latency, cost estimates, step count.
+    \item State persistence: final state written to PostgreSQL and cached in Redis.
+\end{itemize}
 
 \subsection{OrchestrationResult Data Structure}
 
@@ -9314,7 +7577,7 @@ The intent classification system, implemented in \path{src/services/intent\_clas
 
 \subsubsection{Intent Modes}
 
-The classifier recognizes five distinct intent modes, each triggering specialized handling in the orchestrator:
+The classifier recognizes six distinct intent categories, each triggering specialized handling in the orchestrator:
 
 \begin{description}
     \item[CHAT] General conversation, greetings, meta-questions about the system, and identity queries. These requests bypass complex planning and tool invocation, routing directly to conversational LLM responses.
@@ -9326,6 +7589,8 @@ The classifier recognizes five distinct intent modes, each triggering specialize
     \item[ADMIN] Administrative operations including write operations, schema changes, and index creation. These requests require elevated privileges and are subject to additional authorization checks.
     
     \item[DANGEROUS] Heavy, destructive, or unbounded operations such as bulk deletions, graph wipes, and unlimited exports. These requests trigger safety gates and require explicit admin authorization.
+    
+    \item[EXPLAIN] Queries requesting explanations of previous results, Cypher queries, or system behavior. These requests provide educational context without executing additional queries.
 \end{description}
 
 \begin{lstlisting}[language=Python, caption={IntentMode enumeration}, label=lst:intent-mode-enum]
@@ -9336,6 +7601,7 @@ class IntentMode(str, Enum):
     SECURITY = "security"
     ADMIN = "admin"
     DANGEROUS = "dangerous"
+    EXPLAIN = "explain"
 \end{lstlisting}
 
 \subsubsection{Classification Priority}
@@ -9438,6 +7704,16 @@ Security patterns detect permission and access control queries:
     \item \textbf{Permission Queries}: Questions about allowed operations (``my permissions'', ``allowed to'')
     \item \textbf{Tenant Queries}: Organization context (``my organization'')
     \item \textbf{Danger Queries}: Questions about dangerous operations
+\end{itemize}
+
+\subsubsection{EXPLAIN Patterns}
+
+Explain patterns detect requests for explanations of results or queries:
+
+\begin{itemize}
+    \item \textbf{Result Explanations}: Questions about previous query results (``explain this result'', ``what does this mean'')
+    \item \textbf{Query Explanations}: Requests to explain Cypher queries (``explain this query'', ``how does this work'')
+    \item \textbf{System Behavior}: Questions about platform behavior (``why did you'', ``how did you get this'')
 \end{itemize}
 
 \subsection{Ambiguity Handling and Edge Cases}
@@ -10583,14 +8859,17 @@ The \texttt{BackgroundManager} class orchestrates task scheduling and execution 
 \subsection{Scheduled Task Categories}
 \label{subsec:scheduled-task-categories}
 
-The background framework includes four categories of scheduled tasks:
+The background framework includes four categories of scheduled tasks, aligned with operational requirements:
 
-\begin{itemize}
-    \item \textbf{Health Monitoring Tasks}: Periodic checks of PostgreSQL, Redis, Memgraph, and LLM providers.
-    \item \textbf{Backup Tasks}: Memgraph snapshots, Redis backup triggers, manifest generation.
-    \item \textbf{Cleanup Tasks}: Expired session removal, old backup pruning, stale cache eviction.
-    \item \textbf{Redis Index Cleanup}: Removal of orphaned ZSET entries for non-existent jobs.
-\end{itemize}
+\begin{description}
+    \item[Health Monitoring (every 30 seconds)] Periodic checks of PostgreSQL ping, Redis ping, Memgraph ping, and LLM provider warmup/availability.
+    
+    \item[Cleanup (hourly)] Removal of stale/old sessions, expired cache entries, expired jobs, old job records, and orphan agent runs.
+    
+    \item[Backup (daily)] PostgreSQL dumps, Redis RDB snapshots, Memgraph archives, and audit log exports.
+    
+    \item[Provider Monitoring (continuous)] Provider health checks and metrics emission for circuit breaker state management.
+\end{description}
 
 \subsection{FastAPI Lifespan Integration}
 
@@ -11129,7 +9408,7 @@ Comprehensive type annotations enforced by mypy with strict settings: check\_unt
 \section{Testing Strategy}
 \label{sec:testing}
 
-The platform employs comprehensive multi-layer testing with 272 test files, $\sim$64,500 lines of test code, and 2,700+ test functions across 27 categories.
+The platform employs comprehensive multi-layer testing with 272 test files, $\sim$64,500 lines of test code, and 3,000+ test functions across 27 categories.
 
 \subsection{Testing Categories and Markers}
 
@@ -11483,7 +9762,7 @@ The evaluation workloads consist of:
 
 \subsection{Test Suite Statistics}
 
-The platform ships with 236+ test files, 2,700+ test functions across 27 categories, and $\sim$64,500 lines of test code. Test markers include: \texttt{unit}, \texttt{integration}, \texttt{e2e}, \texttt{performance}, and \texttt{security}.
+The platform ships with 236+ test files, 3,000+ test functions across 27 categories, and $\sim$64,500 lines of test code. Test markers include: \texttt{unit}, \texttt{integration}, \texttt{e2e}, \texttt{performance}, and \texttt{security}.
 
 \section{Functional Evaluation}
 \label{sec:functional-eval}
@@ -11681,7 +9960,32 @@ Complete workflows validated: Chat/Agent Run (authentication $\rightarrow$ UI $\
 
 \subsection{Feature Comparison}
 
-Cineca leads in: multi-tenancy (native), RBAC/scopes, audit logging, background jobs, graph DB integration, NL-to-Cypher, MCP tools, Prometheus metrics, OpenTelemetry, health probes, dual UI. Cineca trails in: multi-agent collaboration (AutoGen, crewAI lead), RAG pipeline (LlamaIndex leads), memory systems (LangChain leads).
+Based on comprehensive research conducted in February 2025, the Cineca Agentic Platform was compared against 10 leading platforms across 8 capability dimensions (see Table~\ref{tab:extended-comparison} in Section~\ref{sec:orchestration-frameworks}).
+
+\paragraph{Cineca Leaders}
+Cineca leads in the following areas:
+\begin{itemize}
+    \item \textbf{Full-Stack Architecture}: Only CAP, n8n, and Windmill provide complete UI + API + Background Jobs as unified solutions
+    \item \textbf{Graph NL$\rightarrow$Cypher}: Native natural language to Cypher translation with tenant-aware validation is unique to CAP
+    \item \textbf{Enterprise Security}: Comprehensive RBAC, multi-tenancy, audit logging, and I/O guards built from the ground up
+    \item \textbf{Unified Observability}: Full telemetry + LLM evaluation in one platform
+\end{itemize}
+
+\paragraph{Competitive Positioning}
+\begin{itemize}
+    \item \textbf{vs.\ Temporal} (Fit Score: 4.0): Temporal offers best-in-class workflow durability but lacks agentic planning loop, UI, and graph support
+    \item \textbf{vs.\ LangGraph} (Fit Score: 4.0): LangGraph excels at agent state machine orchestration but requires external infrastructure for production (no RBAC, audit, multi-tenancy)
+    \item \textbf{vs.\ Langfuse} (Fit Score: 3.0): Langfuse provides best-in-class LLM tracing but is observability-only---no workflow execution or agent orchestration
+    \item \textbf{vs.\ n8n/Windmill} (Fit Score: 2.5--3.5): Good automation platforms but lack agentic planning loops and graph-native features
+\end{itemize}
+
+\paragraph{Areas for Future Enhancement}
+Cineca trails in:
+\begin{itemize}
+    \item Multi-agent collaboration (AutoGen, CrewAI lead with native multi-agent support)
+    \item RAG pipeline specialization (LlamaIndex leads with LlamaParse document processing)
+    \item Memory systems sophistication (LangChain leads with diverse memory abstractions)
+\end{itemize}
 
 \subsection{Strategic Positioning}
 

@@ -134,64 +134,65 @@ curl -N -H "Authorization: Bearer $ACCESS_TOKEN" \
 3. [Overview](#overview)
 4. [Glossary](#glossary)
 5. [Key Features](#key-features)
-6. [Execution Workflows](#execution-workflows)
+6. [Comparison with SOTA](#comparison-with-sota)
+7. [Execution Workflows](#execution-workflows)
    - [Workflow A: Synchronous Agent Runs](#workflow-a-synchronous-agent-runs)
    - [Workflow B: Async Job-Based Execution](#workflow-b-async-job-based-execution)
    - [Workflow Comparison](#workflow-comparison)
-7. [High-Level Architecture](#high-level-architecture)
-8. [Project Structure](#project-structure)
-9. [Core Backend](#core-backend)
-   - [API Layer](#api-layer)
-   - [Domain Schemas](#domain-schemas)
-   - [Error Handling](#error-handling)
-   - [Configuration & Compute Settings](#configuration--compute-settings)
-10. [Data & Persistence Layer](#data--persistence-layer)
+8. [High-Level Architecture](#high-level-architecture)
+9. [Project Structure](#project-structure)
+10. [Core Backend](#core-backend)
+    - [API Layer](#api-layer)
+    - [Domain Schemas](#domain-schemas)
+    - [Error Handling](#error-handling)
+    - [Configuration & Compute Settings](#configuration--compute-settings)
+11. [Data & Persistence Layer](#data--persistence-layer)
     - [PostgreSQL Control Plane](#postgresql-control-plane)
     - [Redis Cache & Queues](#redis-cache--queues)
     - [Memgraph Graph Domain](#memgraph-graph-domain)
-11. [Services & Orchestrator](#services--orchestrator)
+12. [Services & Orchestrator](#services--orchestrator)
     - [Service Layer](#service-layer)
     - [Intent Classification](#intent-classification)
     - [Agent Orchestration Engine](#agent-orchestration-engine)
     - [LLM Resilience & Cost Control](#llm-resilience--cost-control)
-12. [MCP Tools & Tooling Ecosystem](#mcp-tools--tooling-ecosystem)
+13. [MCP Tools & Tooling Ecosystem](#mcp-tools--tooling-ecosystem)
     - [MCP Runtime Internals](#mcp-runtime-internals)
     - [Tool Inventory](#tool-inventory)
-13. [Jobs, Workers & Background Tasks](#jobs-workers--background-tasks)
+14. [Jobs, Workers & Background Tasks](#jobs-workers--background-tasks)
     - [Asynchronous Jobs](#asynchronous-jobs)
     - [Worker Processes](#worker-processes)
     - [Background Framework](#background-framework)
-14. [Security & Governance](#security--governance)
+15. [Security & Governance](#security--governance)
     - [Authentication & Identity](#authentication--identity)
     - [Authorization & Roles](#authorization--roles)
     - [Rate Limiting, PII & Output Guards](#rate-limiting-pii--output-guards)
     - [Audit & Compliance](#audit--compliance)
-15. [Observability & Health](#observability--health)
+16. [Observability & Health](#observability--health)
     - [Metrics](#metrics)
     - [Tracing](#tracing)
     - [Health Probes](#health-probes)
-16. [Utilities & Cross-Cutting Helpers](#utilities--cross-cutting-helpers)
-17. [User Interfaces](#user-interfaces)
+17. [Utilities & Cross-Cutting Helpers](#utilities--cross-cutting-helpers)
+18. [User Interfaces](#user-interfaces)
     - [Agent Chat UI](#agent-chat-ui)
     - [Control Panel UI](#control-panel-ui)
-18. [Configuration & Environment](#configuration--environment)
-19. [Running the Platform](#running-the-platform)
+19. [Configuration & Environment](#configuration--environment)
+20. [Running the Platform](#running-the-platform)
     - [Docker Compose](#docker-compose)
     - [Ports & URLs](#ports--urls-how-to-discover-them)
     - [Local Development](#local-development)
     - [Deployment Variants](#deployment-variants)
-20. [Troubleshooting](#troubleshooting)
-21. [Operational Scripts & Tooling](#operational-scripts--tooling)
-22. [Testing Strategy](#testing-strategy)
+21. [Troubleshooting](#troubleshooting)
+22. [Operational Scripts & Tooling](#operational-scripts--tooling)
+23. [Testing Strategy](#testing-strategy)
     - [Test Metrics](#test-metrics)
     - [Memgraph NL Test Mode](#memgraph-nl-test-mode)
-23. [Typical End-to-End Flows](#typical-end-to-end-flows)
-24. [Production Notes & Best Practices](#production-notes--best-practices)
-25. [API Endpoints](#api-endpoints)
-26. [Contributing](#contributing)
-27. [License](#license)
-28. [Acknowledgments](#acknowledgments)
-29. [Detailed Workflow Documentation](#detailed-workflow-documentation)
+24. [Typical End-to-End Flows](#typical-end-to-end-flows)
+25. [Production Notes & Best Practices](#production-notes--best-practices)
+26. [API Endpoints](#api-endpoints)
+27. [Contributing](#contributing)
+28. [License](#license)
+29. [Acknowledgments](#acknowledgments)
+30. [Detailed Workflow Documentation](#detailed-workflow-documentation)
 
 ---
 
@@ -222,7 +223,7 @@ For a complete list of all platform components, see the [Component Summary](#com
 
 > A quick visual summary of the platform layers and the two execution workflows.
 
-![Simple Diagram](architecture/drawio-Exports/DIAGRAM_SIMPLE.drawio.svg)
+![Simple Diagram](docs/general/sapthesis/Presentation/architecture/drawio-Exports/DIAGRAM_SIMPLE.drawio.svg)
 
 ---
 
@@ -269,6 +270,33 @@ These are the canonical status values used throughout the platform:
 - **UIs**: Next.js chat UI for users; Streamlit control panel for operators. See [User Interfaces](#user-interfaces).
 
 For detailed component breakdown, see the [Component Summary](#component-summary) table.
+
+---
+
+## Comparison with SOTA
+
+**Capability-by-capability comparison of CINECA Agentic Platform against Top-10 similar platforms.**
+
+| Platform | Full Stack (UI + API + Jobs) | Orchestration Durability | Agent Planning Loop | Tool Ecosystem & Schema | Security & Governance | Graph NL→Cypher Support | Observability | LLM-Agnostic | License / Pricing | Typical Limitation vs CAP | Fit Score |
+|----------|------------------------------|--------------------------|---------------------|------------------------|----------------------|------------------------|---------------|--------------|-------------------|---------------------------|-----------|
+| **CINECA Agentic Platform** | ✓ Full-stack: UI + API + Jobs | ✓ Durable: retries + checkpoints | ✓ Built-in MCP loop engine | ✓ Native registry + schema audit | ✓ JWT, RBAC, tenancy, I/O guards | ✓ Built-in NL→Cypher with validation & tenancy | ✓ Full telemetry + LLM evals | ✓ Yes (OpenAI, Ollama, etc.) | Custom-built (Internal only) | — | ★ 5.0 |
+| **Temporal** | ✗ Engine only (no UI/tools) | ★ Best-in-class workflow durability | ✗ No agentic planning loop | ~ Pluggable tools (not MCP-native) | ✓ Fine-grained RBAC + auth options | ✗ No graph layer | ✓ Metrics + traces | ✓ Yes | Free OSS (MIT) + Paid Cloud | No agentic loop or UI; not a full platform | ★★ 4.0 |
+| **Argo Workflows** | ~ K8s-native stack | ✓ DAGs + Retry Semantics | ✗ No agent loop | ~ Container steps only | ~ Basic RBAC via K8s | ✗ No Cypher / graph features | ~ Limited metrics | ✓ Yes | Free OSS (Apache-2.0) | K8s-focused; lacks planning & tool UX | ★★ 3.5 |
+| **LangGraph** | ✗ Library only | ✓ Durable w/ state checkpointing | ✓ Agent loop with state machine model | ✓ Built-in agent tool patterns | ✗ No RBAC / audit; DIY needed | ~ Custom NL→Cypher possible | ~ Partial (via adapters) | ✓ Yes | Free OSS (MIT) | No orchestration stack; governance must be added manually | ★★ 4.0 |
+| **OpenAI Agents SDK** | ✗ SDK only | ~ Runtime-level retry only | ✓ SDK-defined agent planning | ✓ Typed tools as functions | ✗ No RBAC or tenancy | ~ Custom Cypher interface possible | ~ Logs via app code | ~ Partial (OpenAI-focused) | Free OSS (MIT) + Paid OpenAI API | No job system, no multi-tenant security | ★★ 3.5 |
+| **Semantic Kernel** | ✗ Middleware only | ~ Retry via plugins | ✓ Plugin-based agent orchestration | ✓ Tools + DI + planner interfaces | ~ Basic auth via host app | ~ Requires custom NL→Cypher logic | ~ Custom logs via adapters | ✓ Yes | Free OSS (MIT) | Middleware only; lacks orchestration/runtime infra | ★★ 3.5 |
+| **LlamaIndex** | ✗ RAG/agent SDK | ~ Partial retries | ✓ Tool-using planner + query agents | ✓ Strong RAG support | ✗ No RBAC, audit, tenancy | ~ External Cypher logic possible | ~ Logs via app code | ✓ Yes | Free OSS (MIT) + Paid Cloud | No durability, security, or orchestration stack | ★★ 3.0 |
+| **Haystack** | ✗ Library only | ~ Retryable components | ✓ Agent + tools (non-durable) | ✓ Tool abstraction + DSL | ✗ No auth/governance | ~ Cypher possible w/ custom nodes | ~ Basic logs | ✓ Yes | Free OSS (Apache-2.0) | Not production-grade orchestration | ★★ 3.0 |
+| **n8n** | ✓ GUI product + workflow UI | ✓ Retry + error steps | ~ Linear tool invocation (not agentic) | ✓ Large integration catalog | ~ Role-based app-level security | ✗ Not graph-native | ~ Workflow logs; no LLM eval | ✓ Yes | Free OSS (SUL) + Paid Cloud SaaS | Good for automation; lacks agentic structure | ★★ 2.5 |
+| **Windmill** | ✓ UI + job scripting platform | ✓ Durable jobs + cron | ✗ No agent loop | ✓ Script-based tool definitions | ✓ RBAC, SSO, auditing | ✗ Not graph-native | ~ Run logs and dashboards | ~ Partial (not LLM-centric) | Free OSS (AGPL mix) + Paid tiers | Good for internal workflows; lacks agent stack | ★★ 3.5 |
+| **Langfuse** | ✗ Observability layer only | ✗ No execution | ✗ No planning or tool use | ~ Eval schema for prompts/tools | ~ Some logging support | ✗ Not applicable | ★ Best-in-class for LLM tracing | ✓ Yes | Free OSS (MIT Core) + Paid SaaS | Tracing/monitoring only; no workflow or orchestration | ★★ 3.0 |
+
+### Legend
+
+- ✓ = Full support
+- ~ = Partial / requires customization
+- ✗ = Not supported
+- ★ = Exceptional in this category
 
 ---
 
@@ -383,13 +411,13 @@ The platform is organized in three layers plus cross-cutting concerns. For a com
 
 #### Simple (recommended first read)
 
-![Simple Diagram](architecture/drawio-Exports/DIAGRAM_SIMPLE.drawio.svg)
+![Simple Diagram](docs/general/sapthesis/Presentation/architecture/drawio-Exports/DIAGRAM_SIMPLE.drawio.svg)
 
 ---
 
 #### Full Diagram
 
-![Full Diagram](architecture/drawio-Exports/DIAGRAM_FULL_WORKFLOWS.drawio.svg)
+![Full Diagram](docs/general/sapthesis/Presentation/architecture/drawio-Exports/DIAGRAM_FULL_WORKFLOWS.drawio.svg)
 
 ---
 

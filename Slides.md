@@ -1455,7 +1455,34 @@ A secure, extensible NL-to-action platform, ready for tools/models/tenants expan
 
 ---
 
-# SLIDE 39: FUTURE WORKS
+# SLIDE 39: COMPARISON WITH SOTA
+
+**Capability-by-capability comparison of CINECA Agentic Platform against Top-10 similar platforms.**
+
+| Platform | Full Stack (UI + API + Jobs) | Orchestration Durability | Agent Planning Loop | Tool Ecosystem & Schema | Security & Governance | Graph NL→Cypher Support | Observability | LLM-Agnostic | License / Pricing | Typical Limitation vs CAP | Fit Score |
+|----------|------------------------------|--------------------------|---------------------|------------------------|----------------------|------------------------|---------------|--------------|-------------------|---------------------------|-----------|
+| **CINECA Agentic Platform** | ✓ Full-stack: UI + API + Jobs | ✓ Durable: retries + checkpoints | ✓ Built-in MCP loop engine | ✓ Native registry + schema audit | ✓ JWT, RBAC, tenancy, I/O guards | ✓ Built-in NL→Cypher with validation & tenancy | ✓ Full telemetry + LLM evals | ✓ Yes (OpenAI, Ollama, etc.) | Custom-built (Internal only) | — | ★ 5.0 |
+| **Temporal** | ✗ Engine only (no UI/tools) | ★ Best-in-class workflow durability | ✗ No agentic planning loop | ~ Pluggable tools (not MCP-native) | ✓ Fine-grained RBAC + auth options | ✗ No graph layer | ✓ Metrics + traces | ✓ Yes | Free OSS (MIT) + Paid Cloud | No agentic loop or UI; not a full platform | ★★ 4.0 |
+| **Argo Workflows** | ~ K8s-native stack | ✓ DAGs + Retry Semantics | ✗ No agent loop | ~ Container steps only | ~ Basic RBAC via K8s | ✗ No Cypher / graph features | ~ Limited metrics | ✓ Yes | Free OSS (Apache-2.0) | K8s-focused; lacks planning & tool UX | ★★ 3.5 |
+| **LangGraph** | ✗ Library only | ✓ Durable w/ state checkpointing | ✓ Agent loop with state machine model | ✓ Built-in agent tool patterns | ✗ No RBAC / audit; DIY needed | ~ Custom NL→Cypher possible | ~ Partial (via adapters) | ✓ Yes | Free OSS (MIT) | No orchestration stack; governance must be added manually | ★★ 4.0 |
+| **OpenAI Agents SDK** | ✗ SDK only | ~ Runtime-level retry only | ✓ SDK-defined agent planning | ✓ Typed tools as functions | ✗ No RBAC or tenancy | ~ Custom Cypher interface possible | ~ Logs via app code | ~ Partial (OpenAI-focused) | Free OSS (MIT) + Paid OpenAI API | No job system, no multi-tenant security | ★★ 3.5 |
+| **Semantic Kernel** | ✗ Middleware only | ~ Retry via plugins | ✓ Plugin-based agent orchestration | ✓ Tools + DI + planner interfaces | ~ Basic auth via host app | ~ Requires custom NL→Cypher logic | ~ Custom logs via adapters | ✓ Yes | Free OSS (MIT) | Middleware only; lacks orchestration/runtime infra | ★★ 3.5 |
+| **LlamaIndex** | ✗ RAG/agent SDK | ~ Partial retries | ✓ Tool-using planner + query agents | ✓ Strong RAG support | ✗ No RBAC, audit, tenancy | ~ External Cypher logic possible | ~ Logs via app code | ✓ Yes | Free OSS (MIT) + Paid Cloud | No durability, security, or orchestration stack | ★★ 3.0 |
+| **Haystack** | ✗ Library only | ~ Retryable components | ✓ Agent + tools (non-durable) | ✓ Tool abstraction + DSL | ✗ No auth/governance | ~ Cypher possible w/ custom nodes | ~ Basic logs | ✓ Yes | Free OSS (Apache-2.0) | Not production-grade orchestration | ★★ 3.0 |
+| **n8n** | ✓ GUI product + workflow UI | ✓ Retry + error steps | ~ Linear tool invocation (not agentic) | ✓ Large integration catalog | ~ Role-based app-level security | ✗ Not graph-native | ~ Workflow logs; no LLM eval | ✓ Yes | Free OSS (SUL) + Paid Cloud SaaS | Good for automation; lacks agentic structure | ★★ 2.5 |
+| **Windmill** | ✓ UI + job scripting platform | ✓ Durable jobs + cron | ✗ No agent loop | ✓ Script-based tool definitions | ✓ RBAC, SSO, auditing | ✗ Not graph-native | ~ Run logs and dashboards | ~ Partial (not LLM-centric) | Free OSS (AGPL mix) + Paid tiers | Good for internal workflows; lacks agent stack | ★★ 3.5 |
+| **Langfuse** | ✗ Observability layer only | ✗ No execution | ✗ No planning or tool use | ~ Eval schema for prompts/tools | ~ Some logging support | ✗ Not applicable | ★ Best-in-class for LLM tracing | ✓ Yes | Free OSS (MIT Core) + Paid SaaS | Tracing/monitoring only; no workflow or orchestration | ★★ 3.0 |
+
+## Legend
+
+- ✓ = Full support
+- ~ = Partial / requires customization
+- ✗ = Not supported
+- ★ = Exceptional in this category
+
+---
+
+# SLIDE 40: FUTURE WORKS
 
 **Make Orchestration More Autonomous and More Reliable.**
 
@@ -1490,7 +1517,7 @@ Handle more prompt types reliably (easy → hard, clean → messy):
 
 ---
 
-# SLIDE 40: Thanks For Your Attention
+# SLIDE 41: Thanks For Your Attention
 
 ---
 
