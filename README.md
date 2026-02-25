@@ -35,65 +35,65 @@ A production-ready, enterprise-grade **Agentic AI Platform** built with FastAPI 
 
 ---
 
-## Quickstart
+## Configuration & Environment
+
+> **Template:** See [.env.example](.env.example) for the full annotated template with all available options.
+
+---
+
+## Quickstart & Running
 
 ### Prerequisites
 - Docker + Docker Compose v2
 - Bash (for helper scripts)
 - Node.js 20 (only if running the Next.js UI locally outside Docker)
 
-### Start the full stack (Docker Compose)
-```bash
-docker compose up -d --build --remove-orphans
-```
+### Start with Docker Compose
+The simplest way to run the full stack is via **Docker Compose**:
 
-### Fetch Auth0/OIDC tokens into `.env` (local convenience)
-
-```bash
-# Fetch and save tokens to .env
-./fetch_auth0_tokens.sh --save-to-env
-```
-
-### Run the Agent Chat UI locally (Next.js)
-
-Portable version (recommended):
-
-```bash
-source ~/.nvm/nvm.sh
-nvm use 20
-cd ui_agent
-npx next dev -p 3002
-```
-
-### Verify the platform is healthy
-
-1. Discover exposed ports:
-
+1. Ensure Docker and Docker Compose are installed.
+2. Configure environment variables (e.g., `.env` file).
+3. Launch the stack:
    ```bash
-   docker compose ps
+   docker compose up -d --build --remove-orphans
    ```
-2. Call health endpoints using your backend base URL:
+4. Access services via the ports listed below.
 
-   * `<BACKEND_BASE_URL>/v1/health/live`
-   * `<BACKEND_BASE_URL>/v1/health/ready`
-   * `<BACKEND_BASE_URL>/v1/health/components`
+### Access Points (Ports & URLs)
+Use the following ports to interact with the platform:
 
-### Smoke Tests (copy/paste)
+| Service | Container Port | Default Host Port | URL Pattern |
+|---------|----------------|-------------------|-------------|
+| **FastAPI Backend** | 8000 | 8000 | `http://localhost:8000/v1/docs/` |
+| **Agent Chat UI** | 3000 | 3002 | `http://localhost:3002` |
+| **Control Panel UI** | 8501 | 8501 | `http://localhost:8501` |
+| **PostgreSQL** | 5432 | 5432 | `postgresql://localhost:5432` |
+| **Redis** | 6379 | 6379 | `redis://localhost:6379` |
+| **Memgraph** | 7687 | 7687 | `bolt://localhost:7687` |
+| **Memgraph Lab** | 3000 | 3000 | `http://localhost:3000/login` |
+| **Prometheus** | 9090 | 9090 | `http://localhost:9090` |
+| **Grafana** | 3000 | 3001 | `http://localhost:3001/login` |
+| **Ollama** | 11434 | 11434 | `http://localhost:11434` |
 
-Replace `<BACKEND_BASE_URL>` with your actual backend URL (e.g., `http://localhost:8000`).
+> **Note:** Actual ports may differ based on `docker-compose.override.yml` or variant files.
 
-**1. Health readiness:**
+### Verification
+**1. Health Check**
+Check if the backend is ready:
 ```bash
 curl -s <BACKEND_BASE_URL>/v1/health/ready | jq
 ```
 
-**2. Auth introspection (requires token):**
+**2. Auth Introspection**
+Verify authentication (requires token):
 ```bash
+# Fetch token first: ./fetch_auth0_tokens.sh --save-to-env
 curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
   <BACKEND_BASE_URL>/v1/auth/me | jq
 ```
 
-**3. Create an agent run + poll:**
+**3. Create an Agent Run**
+Test the agent functionality:
 ```bash
 # Create run
 RUN_ID=$(curl -s -X POST <BACKEND_BASE_URL>/v1/agent-runs \
@@ -101,26 +101,46 @@ RUN_ID=$(curl -s -X POST <BACKEND_BASE_URL>/v1/agent-runs \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Hello, world!"}' | jq -r '.id')
 
-# Poll until completed
+# Poll status
 curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
   <BACKEND_BASE_URL>/v1/agent-runs/$RUN_ID | jq '.status'
 ```
 
-**4. Create a job + stream events:**
-```bash
-# Create job
-JOB_ID=$(curl -s -X POST <BACKEND_BASE_URL>/v1/jobs \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"type": "demo", "payload": {}}' | jq -r '.id')
+### Development Workflows
 
-# Stream SSE events
-curl -N -H "Authorization: Bearer $ACCESS_TOKEN" \
-  <BACKEND_BASE_URL>/v1/jobs/$JOB_ID/events
-```
+#### Option A: Hybrid (Docker Backend + Local UI)
+Recommended for frontend development where you need to iterate on the UI quickly while keeping backend stability.
+
+1.  Run backend services in Docker:
+    ```bash
+    docker compose up -d postgres redis memgraph backend worker
+    ```
+2.  Run UI locally:
+    ```bash
+    cd ui_agent
+    npx next dev -p 3002
+    ```
+
+#### Option B: Local Python Dev
+Recommended for backend development.
+
+1.  Start infrastructure (Docker):
+    ```bash
+    docker compose up -d postgres redis memgraph
+    ```
+2.  Setup environment and run:
+    ```bash
+    python -m venv .venv && source .venv/bin/activate
+    pip install -r requirements.txt
+    uvicorn src.app:app --reload
+    ```
+
+### Advanced Configurations
+- **GPU Support:** `docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d`
+- **Nginx Proxy:** `docker compose -f docker-compose.yml -f docker-compose.nginx.yml up -d`
+- **Full Settings:** See [.env.example](.env.example)
 
 ### Read this first
-
 - [High-Level Architecture](#high-level-architecture)
 - [Security & Governance](#security--governance)
 - [API Endpoints](#api-endpoints)
@@ -130,71 +150,65 @@ curl -N -H "Authorization: Bearer $ACCESS_TOKEN" \
 ## Table of Contents
 
 1. [Start Here (Project Map)](#start-here-project-map)
-2. [Quickstart](#quickstart)
-3. [Overview](#overview)
-4. [Glossary](#glossary)
-5. [Key Features](#key-features)
-6. [Comparison with SOTA](#comparison-with-sota)
-7. [Execution Workflows](#execution-workflows)
+2. [Configuration & Environment](#configuration--environment)
+3. [Quickstart & Running](#quickstart--running)
+4. [Overview](#overview)
+5. [Glossary](#glossary)
+6. [Key Features](#key-features)
+7. [Comparison with SOTA](#comparison-with-sota)
+8. [Execution Workflows](#execution-workflows)
    - [Workflow A: Synchronous Agent Runs](#workflow-a-synchronous-agent-runs)
    - [Workflow B: Async Job-Based Execution](#workflow-b-async-job-based-execution)
    - [Workflow Comparison](#workflow-comparison)
-8. [High-Level Architecture](#high-level-architecture)
-9. [Project Structure](#project-structure)
-10. [Core Backend](#core-backend)
+9. [High-Level Architecture](#high-level-architecture)
+10. [Project Structure](#project-structure)
+11. [Core Backend](#core-backend)
     - [API Layer](#api-layer)
     - [Domain Schemas](#domain-schemas)
     - [Error Handling](#error-handling)
     - [Configuration & Compute Settings](#configuration--compute-settings)
-11. [Data & Persistence Layer](#data--persistence-layer)
+12. [Data & Persistence Layer](#data--persistence-layer)
     - [PostgreSQL Control Plane](#postgresql-control-plane)
     - [Redis Cache & Queues](#redis-cache--queues)
     - [Memgraph Graph Domain](#memgraph-graph-domain)
-12. [Services & Orchestrator](#services--orchestrator)
+13. [Services & Orchestrator](#services--orchestrator)
     - [Service Layer](#service-layer)
     - [Intent Classification](#intent-classification)
     - [Agent Orchestration Engine](#agent-orchestration-engine)
     - [LLM Resilience & Cost Control](#llm-resilience--cost-control)
-13. [MCP Tools & Tooling Ecosystem](#mcp-tools--tooling-ecosystem)
+14. [MCP Tools & Tooling Ecosystem](#mcp-tools--tooling-ecosystem)
     - [MCP Runtime Internals](#mcp-runtime-internals)
     - [Tool Inventory](#tool-inventory)
-14. [Jobs, Workers & Background Tasks](#jobs-workers--background-tasks)
+15. [Jobs, Workers & Background Tasks](#jobs-workers--background-tasks)
     - [Asynchronous Jobs](#asynchronous-jobs)
     - [Worker Processes](#worker-processes)
     - [Background Framework](#background-framework)
-15. [Security & Governance](#security--governance)
+16. [Security & Governance](#security--governance)
     - [Authentication & Identity](#authentication--identity)
     - [Authorization & Roles](#authorization--roles)
     - [Rate Limiting, PII & Output Guards](#rate-limiting-pii--output-guards)
     - [Audit & Compliance](#audit--compliance)
-16. [Observability & Health](#observability--health)
+17. [Observability & Health](#observability--health)
     - [Metrics](#metrics)
     - [Tracing](#tracing)
     - [Health Probes](#health-probes)
-17. [Utilities & Cross-Cutting Helpers](#utilities--cross-cutting-helpers)
-18. [User Interfaces](#user-interfaces)
+18. [Utilities & Cross-Cutting Helpers](#utilities--cross-cutting-helpers)
+19. [User Interfaces](#user-interfaces)
     - [Agent Chat UI](#agent-chat-ui)
     - [Control Panel UI](#control-panel-ui)
-19. [Configuration & Environment](#configuration--environment)
-20. [Running the Platform](#running-the-platform)
-    - [Docker Compose](#docker-compose)
-    - [Ports & URLs](#ports--urls-how-to-discover-them)
-    - [Local Development](#local-development)
-    - [Deployment Variants](#deployment-variants)
-21. [Troubleshooting](#troubleshooting)
-22. [Operational Scripts & Tooling](#operational-scripts--tooling)
-23. [Testing Strategy](#testing-strategy)
+20. [Troubleshooting](#troubleshooting)
+21. [Operational Scripts & Tooling](#operational-scripts--tooling)
+22. [Testing Strategy](#testing-strategy)
     - [Test Metrics](#test-metrics)
     - [Memgraph NL Test Mode](#memgraph-nl-test-mode)
-24. [Typical End-to-End Flows](#typical-end-to-end-flows)
-25. [Production Notes & Best Practices](#production-notes--best-practices)
-26. [API Endpoints](#api-endpoints)
-27. [Contributing](#contributing)
-28. [License](#license)
-29. [Acknowledgments](#acknowledgments)
-30. [Detailed Workflow Documentation](#detailed-workflow-documentation)
+23. [Typical End-to-End Flows](#typical-end-to-end-flows)
+24. [Production Notes & Best Practices](#production-notes--best-practices)
+25. [API Endpoints](#api-endpoints)
+26. [Contributing](#contributing)
+27. [License](#license)
+28. [Acknowledgments](#acknowledgments)
+29. [Detailed Workflow Documentation](#detailed-workflow-documentation)
 
----
 
 ## Overview
 
@@ -1412,149 +1426,7 @@ This UI is the main operational console for the platform.
 
 ---
 
-## Configuration & Environment
 
-> **Template:** See [.env.example](.env.example) for the full annotated template with all available options.
-
----
-
-## Running the Platform
-
-### Docker Compose
-
-The simplest way to run the full stack is via **Docker Compose**:
-
-- Services typically include:
-  - Backend app (FastAPI).
-  - Worker process.
-  - PostgreSQL.
-  - Memgraph.
-  - Redis.
-  - Local LLM (e.g. Ollama) for demo mode.
-  - Prometheus and Grafana.
-  - Control panel UI (Streamlit).
-  - Reverse proxy (e.g., Nginx).
-
-Steps (conceptual):
-
-1. Ensure Docker and Docker Compose are installed.
-2. Configure environment variables (e.g., `.env` file).
-3. Launch the stack:
-   ```bash
-   docker compose up -d --build --remove-orphans
-   ```
-4. Access:
-   - Backend API via the configured host/port.
-   - Chat UI and control panel via their respective ports.
-
-The base configuration is suitable for development; additional hardening is recommended for production (TLS, secured credentials, restricted networks).
-
-### Ports & URLs (how to discover them)
-
-This repository supports multiple deployment variants and port mappings. To avoid guessing, discover the active mappings from Docker:
-
-```bash
-docker compose ps
-```
-
-#### Default Port Mappings (docker-compose.yml)
-
-| Service | Container Port | Default Host Port | URL Pattern |
-|---------|----------------|-------------------|-------------|
-| **FastAPI Backend** | 8000 | 8000 | `http://localhost:8000` |
-| **Agent Chat UI** | 3000 | 3002 | `http://localhost:3002` |
-| **Control Panel UI** | 8501 | 8501 | `http://localhost:8501` |
-| **PostgreSQL** | 5432 | 5432 | `postgresql://localhost:5432` |
-| **Redis** | 6379 | 6379 | `redis://localhost:6379` |
-| **Memgraph** | 7687 | 7687 | `bolt://localhost:7687` |
-| **Memgraph Lab** | 3000 | 3001 | `http://localhost:3001` |
-| **Prometheus** | 9090 | 9090 | `http://localhost:9090` |
-| **Grafana** | 3000 | 3003 | `http://localhost:3003` |
-| **Ollama** | 11434 | 11434 | `http://localhost:11434` |
-
-> **Note:** Actual ports may differ based on `docker-compose.override.yml` or variant files.
-
-Use the printed host ports to form:
-
-* `<BACKEND_BASE_URL>` (FastAPI)
-* `<CHAT_UI_URL>` (Next.js Agent UI, if exposed via Docker or run locally)
-* `<CONTROL_PANEL_URL>` (Streamlit, if exposed via Docker)
-
-Common backend endpoints (append to `<BACKEND_BASE_URL>`):
-
-* `/v1/health/live`
-* `/v1/health/ready`
-* `/v1/health/components`
-* `/v1/tools`
-* `/v1/jobs`
-* `/v1/agent-runs`
-
-### Local Development
-
-For local backend development without containers:
-
-#### 1. Environment setup
-```bash
-# Create and activate virtual environment
-python -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-pip install -e ".[dev,test]"
-```
-
-#### 2. Start infrastructure (Docker)
-```bash
-# Run only Postgres, Redis, Memgraph (not the app)
-docker compose up -d postgres redis memgraph
-```
-
-#### 3. Apply database migrations
-```bash
-# Run Alembic migrations
-alembic upgrade head
-
-# Or via make if available
-make migrate
-```
-
-#### 4. Start the FastAPI backend
-```bash
-uvicorn src.app:app --reload --host 0.0.0.0 --port 8000
-```
-
-#### 5. Start the worker (for background jobs)
-```bash
-# In a separate terminal
-python -m src.workers.job_worker
-
-# Or via make if available
-make worker
-```
-
-#### 6. Run tests
-```bash
-pytest -q
-
-# Or via make
-make test
-```
-
-Environment variables for local development can be managed via `.env` and the settings system.
-
-### Deployment Variants
-
-```bash
-# Full stack with all services
-docker compose up -d --build
-
-# With GPU support (for local LLM inference)
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
-
-# With NGINX reverse proxy
-docker compose -f docker-compose.yml -f docker-compose.nginx.yml up -d
-```
 
 ---
 
