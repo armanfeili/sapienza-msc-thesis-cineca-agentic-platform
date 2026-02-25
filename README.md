@@ -237,7 +237,7 @@ For a complete list of all platform components, see the [Component Summary](#com
 
 > A quick visual summary of the platform layers and the two execution workflows.
 
-![Simple Diagram](docs/general/sapthesis/Presentation/architecture/drawio-Exports/DIAGRAM_SIMPLE.drawio.svg)
+![Simple Diagram](Architecture/DIAGRAM_SIMPLE.drawio.png)
 
 ---
 
@@ -425,13 +425,13 @@ The platform is organized in three layers plus cross-cutting concerns. For a com
 
 #### Simple (recommended first read)
 
-![Simple Diagram](docs/general/sapthesis/Presentation/architecture/drawio-Exports/DIAGRAM_SIMPLE.drawio.svg)
+![Simple Diagram](Architecture/DIAGRAM_SIMPLE.drawio.png)
 
 ---
 
 #### Full Diagram
 
-![Full Diagram](docs/general/sapthesis/Presentation/architecture/drawio-Exports/DIAGRAM_FULL_WORKFLOWS.drawio.svg)
+![Full Diagram](Architecture/DIAGRAM_FULL_WORKFLOWS.drawio.png)
 
 ---
 
