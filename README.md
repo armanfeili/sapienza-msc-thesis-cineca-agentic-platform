@@ -5,7 +5,7 @@ A production-ready, enterprise-grade **Agentic AI Platform** built with FastAPI 
 **[Live Demo](https://armanfeili.github.io/sapienza-msc-thesis-cineca-agentic-platform/)** — See the Agent Chat UI in action
 
 📄 **[Thesis (PDF)](sapthesis-doc.pdf)** — Full master's thesis document
-📊 **[Presentation (PDF)](Presentation.pdf)** — Defence presentation slides
+📊 **[Presentation (PDF)](Presentation.pdf)** | **[(PPTX)](Presentation.pptx)** — Defence presentation slides
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg)](https://fastapi.tiangolo.com)
@@ -158,12 +158,12 @@ Recommended for backend development.
 4. [Overview](#overview)
 5. [Glossary](#glossary)
 6. [Key Features](#key-features)
-7. [Comparison with SOTA](#comparison-with-sota)
-8. [Execution Workflows](#execution-workflows)
+7. [High-Level Architecture](#high-level-architecture)
+8. [Comparison with SOTA](#comparison-with-sota)
+9. [Execution Workflows](#execution-workflows)
    - [Workflow A: Synchronous Agent Runs](#workflow-a-synchronous-agent-runs)
    - [Workflow B: Async Job-Based Execution](#workflow-b-async-job-based-execution)
    - [Workflow Comparison](#workflow-comparison)
-9. [High-Level Architecture](#high-level-architecture)
 10. [Project Structure](#project-structure)
 11. [Core Backend](#core-backend)
     - [API Layer](#api-layer)
@@ -236,28 +236,6 @@ For a complete list of all platform components, see the [Component Summary](#com
 
 ---
 
-## Architecture Diagrams
-
-### At-a-Glance Architecture
-
-> A quick-glance overview of the platform's main layers and how they connect.
-
-![At-a-Glance Architecture](Architecture/quick_glance.png)
-
-### Simplified Architecture
-
-> A simplified view showing the core execution workflows and key components.
-
-![Simplified Architecture](Architecture/DIAGRAM_SIMPLE.png)
-
-### Full Architecture
-
-> The complete architecture with all workflows, services, databases, and integration points.
-
-![Full Architecture](Architecture/DIAGRAM_FULL_WORKFLOWS.png)
-
----
-
 ## Glossary
 
 - **Tenant**: The isolation boundary for data access, configuration, defaults, and authorization decisions.
@@ -301,6 +279,44 @@ These are the canonical status values used throughout the platform:
 - **UIs**: Next.js chat UI for users; Streamlit control panel for operators. See [User Interfaces](#user-interfaces).
 
 For detailed component breakdown, see the [Component Summary](#component-summary) table.
+
+---
+
+## High-Level Architecture
+
+The platform is organized in three layers plus cross-cutting concerns. For a comprehensive breakdown of all components, see the [Component Summary](#component-summary) table.
+
+1. **Core Backend** – FastAPI application, service layer, MCP tools, adapters, resilience and background frameworks.
+2. **Data & Infrastructure** – PostgreSQL (control plane), Redis (cache/queues), Memgraph (graph), worker processes.
+3. **Presentation** – Agent Chat UI (Next.js), Control Panel UI (Streamlit).
+
+**Cross-cutting modules**: Configuration, security, observability, and utilities.
+
+### Diagram conventions (read before the diagrams)
+
+- The ASCII diagrams are conceptual and may abbreviate route families (e.g., `/v1/health`) to represent the broader set of health endpoints documented later.
+- Some diagram arrows describe behavior at a high level; the authoritative contracts remain the endpoint tables and schema definitions in `src/schemas/`.
+- **Do not edit the diagram blocks**: they are intentionally kept stable as a reference artifact.
+
+### Architecture Diagrams
+
+#### At-a-Glance Architecture
+
+> A quick-glance overview of the platform's main layers and how they connect.
+
+![At-a-Glance Architecture](Architecture/quick_glance.png)
+
+#### Simplified Architecture (recommended first read)
+
+> A simplified view showing the core execution workflows and key components.
+
+![Simplified Architecture](Architecture/DIAGRAM_SIMPLE.png)
+
+#### Full Architecture
+
+> The complete architecture with all workflows, services, databases, and integration points.
+
+![Full Architecture](Architecture/DIAGRAM_FULL_WORKFLOWS.png)
 
 ---
 
@@ -419,36 +435,6 @@ The platform supports **two execution workflows** for agent runs, each optimized
 > 📖 **Detailed Documentation:**
 > - [WORKFLOW_A.md](docs/workflows/WORKFLOW_A.md) - Complete synchronous workflow documentation
 > - [WORKFLOW_B.md](docs/workflows/WORKFLOW_B.md) - Complete async job workflow documentation
-
----
-
-## High-Level Architecture
-
-The platform is organized in three layers plus cross-cutting concerns. For a comprehensive breakdown of all components, see the [Component Summary](#component-summary) table.
-
-1. **Core Backend** – FastAPI application, service layer, MCP tools, adapters, resilience and background frameworks.
-2. **Data & Infrastructure** – PostgreSQL (control plane), Redis (cache/queues), Memgraph (graph), worker processes.
-3. **Presentation** – Agent Chat UI (Next.js), Control Panel UI (Streamlit).
-
-**Cross-cutting modules**: Configuration, security, observability, and utilities.
-
-### Diagram conventions (read before the diagrams)
-
-- The ASCII diagrams are conceptual and may abbreviate route families (e.g., `/v1/health`) to represent the broader set of health endpoints documented later.
-- Some diagram arrows describe behavior at a high level; the authoritative contracts remain the endpoint tables and schema definitions in `src/schemas/`.
-- **Do not edit the diagram blocks**: they are intentionally kept stable as a reference artifact.
-
-### Architecture Diagrams
-
-#### Simple (recommended first read)
-
-![Simple Diagram](Architecture/DIAGRAM_SIMPLE.png)
-
----
-
-#### Full Diagram
-
-![Full Diagram](Architecture/DIAGRAM_FULL_WORKFLOWS.png)
 
 ---
 
@@ -663,7 +649,7 @@ Cineca-Agentic-Platform/
 │   ├── architecture/                 # Architecture docs
 │   ├── compliance/                   # Compliance docs
 │   ├── database/                     # Database docs
-│   ├── diagrams/                     # Architecture diagrams
+│   ├── Architecture/                 # Architecture diagrams
 │   ├── features/                     # Feature documentation
 │   ├── guides/                       # User guides
 │   ├── mcp/                          # MCP documentation
