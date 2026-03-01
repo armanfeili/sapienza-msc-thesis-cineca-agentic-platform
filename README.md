@@ -4,6 +4,9 @@ A production-ready, enterprise-grade **Agentic AI Platform** built with FastAPI 
 
 **[Live Demo](https://armanfeili.github.io/sapienza-msc-thesis-cineca-agentic-platform/)** — See the Agent Chat UI in action
 
+📄 **[Thesis (PDF)](sapthesis-doc.pdf)** — Full master's thesis document
+📊 **[Presentation (PDF)](Presentation.pdf)** — Defence presentation slides
+
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg)](https://fastapi.tiangolo.com)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -233,11 +236,25 @@ For a complete list of all platform components, see the [Component Summary](#com
 
 ---
 
-## At-a-glance Diagram (Simple)
+## Architecture Diagrams
 
-> A quick visual summary of the platform layers and the two execution workflows.
+### At-a-Glance Architecture
 
-![Simple Diagram](Architecture/DIAGRAM_SIMPLE.drawio.png)
+> A quick-glance overview of the platform's main layers and how they connect.
+
+![At-a-Glance Architecture](Architecture/quick_glance.png)
+
+### Simplified Architecture
+
+> A simplified view showing the core execution workflows and key components.
+
+![Simplified Architecture](Architecture/DIAGRAM_SIMPLE.png)
+
+### Full Architecture
+
+> The complete architecture with all workflows, services, databases, and integration points.
+
+![Full Architecture](Architecture/DIAGRAM_FULL_WORKFLOWS.png)
 
 ---
 
@@ -425,13 +442,13 @@ The platform is organized in three layers plus cross-cutting concerns. For a com
 
 #### Simple (recommended first read)
 
-![Simple Diagram](Architecture/DIAGRAM_SIMPLE.drawio.png)
+![Simple Diagram](Architecture/DIAGRAM_SIMPLE.png)
 
 ---
 
 #### Full Diagram
 
-![Full Diagram](Architecture/DIAGRAM_FULL_WORKFLOWS.drawio.png)
+![Full Diagram](Architecture/DIAGRAM_FULL_WORKFLOWS.png)
 
 ---
 

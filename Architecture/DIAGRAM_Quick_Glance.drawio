@@ -1,0 +1,97 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36" version="29.6.0">
+  <diagram name="Page-1" id="o7U-nxtfvU7QnVVJ9hKv">
+    <mxGraphModel grid="0" page="1" gridSize="10" guides="0" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="850" pageHeight="1100" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-98" edge="1" parent="1" source="Ha8Cx_S0uYsDMlm3Fq4u-77" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontStyle=0" target="Ha8Cx_S0uYsDMlm3Fq4u-78">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-77" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#D7DEEB;fontStyle=0" value="&lt;div style=&quot;&quot;&gt;&lt;span&gt;Job Creation&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="100" x="-3910" y="1545" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-106" edge="1" parent="1" source="Ha8Cx_S0uYsDMlm3Fq4u-78" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontStyle=0" target="Ha8Cx_S0uYsDMlm3Fq4u-105">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-78" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#EAFFFB;fontStyle=0" value="Workers" vertex="1">
+          <mxGeometry height="30" width="80" x="-3790" y="1545" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-79" parent="1" style="swimlane;whiteSpace=wrap;html=1;fillColor=#EBDFBC;strokeColor=default;startSize=20;fontStyle=1" value="Service Layer: Orchestrator - 4 Phases" vertex="1">
+          <mxGeometry height="121" width="670" x="-4180" y="1625" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-107" edge="1" parent="Ha8Cx_S0uYsDMlm3Fq4u-79" source="Ha8Cx_S0uYsDMlm3Fq4u-80" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="Ha8Cx_S0uYsDMlm3Fq4u-81">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-80" parent="Ha8Cx_S0uYsDMlm3Fq4u-79" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#FFF2CC;strokeColor=#9673a6;fontStyle=0;spacing=6;" value="&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Detect Intent&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="90" width="50" x="10" y="25" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-108" edge="1" parent="Ha8Cx_S0uYsDMlm3Fq4u-79" source="Ha8Cx_S0uYsDMlm3Fq4u-81" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="Ha8Cx_S0uYsDMlm3Fq4u-82">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-81" parent="Ha8Cx_S0uYsDMlm3Fq4u-79" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#FFF2CC;strokeColor=#9673a6;fontStyle=0;spacing=2;" value="&lt;div style=&quot;&quot;&gt;&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;TODO Planning&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;multi-step run&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="90" width="60" x="80" y="25" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-109" edge="1" parent="Ha8Cx_S0uYsDMlm3Fq4u-79" source="Ha8Cx_S0uYsDMlm3Fq4u-82" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="Ha8Cx_S0uYsDMlm3Fq4u-100">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-82" parent="Ha8Cx_S0uYsDMlm3Fq4u-79" style="swimlane;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=default;startSize=22;align=center;spacing=6;fontStyle=0" value="&lt;div style=&quot;&quot;&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Step Execution,&amp;nbsp;&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;FOR EACH TODO&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="90" width="410" x="160" y="25" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-83" edge="1" parent="Ha8Cx_S0uYsDMlm3Fq4u-82" source="Ha8Cx_S0uYsDMlm3Fq4u-84" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontStyle=0" target="Ha8Cx_S0uYsDMlm3Fq4u-86">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-84" parent="Ha8Cx_S0uYsDMlm3Fq4u-82" style="rounded=1;whiteSpace=wrap;html=1;align=left;fillColor=#F2FFE0;strokeColor=#9673a6;fontStyle=0;spacing=6;" value="&lt;div style=&quot;&quot;&gt;&lt;div style=&quot;&quot;&gt;&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;background-color: transparent;&quot;&gt;Step 1)&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;background-color: transparent;&quot;&gt;Call LLM Providers&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="50" width="70" x="10" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-85" edge="1" parent="Ha8Cx_S0uYsDMlm3Fq4u-82" source="Ha8Cx_S0uYsDMlm3Fq4u-86" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontStyle=0" target="Ha8Cx_S0uYsDMlm3Fq4u-88">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-86" parent="Ha8Cx_S0uYsDMlm3Fq4u-82" style="rounded=1;whiteSpace=wrap;html=1;align=left;fillColor=#E6F2FF;strokeColor=#9673a6;fontStyle=0;spacing=6;" value="&lt;div style=&quot;&quot;&gt;&lt;div style=&quot;&quot;&gt;&lt;div style=&quot;&quot;&gt;&lt;div style=&quot;&quot;&gt;Step 2)&amp;nbsp;&lt;/div&gt;&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Invoke MCP Tools&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="50" width="80" x="100" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-87" edge="1" parent="Ha8Cx_S0uYsDMlm3Fq4u-82" source="Ha8Cx_S0uYsDMlm3Fq4u-88" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontStyle=0" target="Ha8Cx_S0uYsDMlm3Fq4u-89">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-88" parent="Ha8Cx_S0uYsDMlm3Fq4u-82" style="rounded=1;whiteSpace=wrap;html=1;align=left;fillColor=#FFF1E6;strokeColor=#9673a6;fontStyle=0;spacing=6;" value="&lt;div style=&quot;&quot;&gt;&lt;div style=&quot;&quot;&gt;&lt;div style=&quot;&quot;&gt;&lt;div style=&quot;&quot;&gt;&lt;div style=&quot;&quot;&gt;Step 3)&lt;/div&gt;&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;NL&amp;nbsp;&lt;span style=&quot;&quot;&gt;→&lt;/span&gt;&amp;nbsp;CYPHER PIPELINE&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="50" width="100" x="200" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-89" parent="Ha8Cx_S0uYsDMlm3Fq4u-82" style="rounded=1;whiteSpace=wrap;html=1;align=left;fillColor=#EADFE9;strokeColor=#9673a6;fontStyle=0;spacing=6;" value="&lt;div style=&quot;&quot;&gt;&lt;div style=&quot;&quot;&gt;&lt;div style=&quot;&quot;&gt;&lt;div style=&quot;&quot;&gt;&lt;div style=&quot;&quot;&gt;&lt;span&gt;Step 4)&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255)); text-align: center; background-color: transparent;&quot;&gt;Record on Data LAYER&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="50" width="80" x="320" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-100" parent="Ha8Cx_S0uYsDMlm3Fq4u-79" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#FFF2CC;strokeColor=#9673a6;fontStyle=0;spacing=6;" value="&lt;div style=&quot;&quot;&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Final&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Response Generation&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="90" width="70" x="590" y="25" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-97" edge="1" parent="1" source="Ha8Cx_S0uYsDMlm3Fq4u-91" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontStyle=0" target="Ha8Cx_S0uYsDMlm3Fq4u-77">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-91" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#EAF7EA;fontStyle=0" value="&lt;div style=&quot;&quot;&gt;&lt;span&gt;API Layer&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="70" x="-4000" y="1545" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-96" edge="1" parent="1" source="Ha8Cx_S0uYsDMlm3Fq4u-92" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontStyle=0" target="Ha8Cx_S0uYsDMlm3Fq4u-91">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-92" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#FFE9E9;fontStyle=0" value="&lt;div style=&quot;&quot;&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&lt;span&gt;Security&amp;nbsp;&lt;/span&gt;&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Layer&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="90" x="-4110" y="1545" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-95" edge="1" parent="1" source="Ha8Cx_S0uYsDMlm3Fq4u-93" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontStyle=0" target="Ha8Cx_S0uYsDMlm3Fq4u-92">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-93" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#F3F0FF;fontStyle=0" value="&lt;div style=&quot;&quot;&gt;&lt;div&gt;&lt;span&gt;UI&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="50" x="-4180" y="1545" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-94" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#F3F3F3;fontStyle=0" value="&lt;span style=&quot;color: rgb(51, 51, 51); text-align: left;&quot;&gt;Parallel Background Monitoring, Backup, Cleanup sessions&lt;/span&gt;" vertex="1">
+          <mxGeometry height="30" width="670" x="-4180" y="1585" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-112" edge="1" parent="1" source="Ha8Cx_S0uYsDMlm3Fq4u-105" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="Ha8Cx_S0uYsDMlm3Fq4u-111">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-105" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#EBDFBC;fontStyle=0" value="Service Layer" vertex="1">
+          <mxGeometry height="30" width="90" x="-3690" y="1545" as="geometry" />
+        </mxCell>
+        <mxCell id="Ha8Cx_S0uYsDMlm3Fq4u-111" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#FFF2CC;fontStyle=0" value="Final Response" vertex="1">
+          <mxGeometry height="30" width="70" x="-3580" y="1545" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
