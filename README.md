@@ -4,9 +4,10 @@ A production-ready, enterprise-grade **Agentic AI Platform** built with FastAPI 
 
 **[Live Demo](https://armanfeili.github.io/sapienza-msc-thesis-cineca-agentic-platform/)** — See the Agent Chat UI in action
 
-📄 **[Thesis (PDF)](sapthesis-doc.pdf)** — Full master's thesis document
-📊 **[Presentation (PDF)](Presentation.pdf)** | **[(PPTX)](Presentation.pptx)** — Defence presentation slides
+📄 **[Thesis (PDF)](thesis/main/sapthesis-doc.pdf)** — Full master's thesis document
+📊 **[Presentation (PDF)](thesis/sapthesis/Presentation/Presentation.pdf)** — Defence presentation slides
 
+[![CI](https://github.com/ILP-Thesis-2025/Cineca-Agentic-Platform/actions/workflows/ci.yml/badge.svg)](https://github.com/ILP-Thesis-2025/Cineca-Agentic-Platform/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg)](https://fastapi.tiangolo.com)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -304,19 +305,19 @@ The platform is organized in three layers plus cross-cutting concerns. For a com
 
 > A quick-glance overview of the platform's main layers and how they connect.
 
-![At-a-Glance Architecture](Architecture/quick_glance.png)
+![At-a-Glance Architecture](docs/diagrams/quick_glance.png)
 
 #### Simplified Architecture (recommended first read)
 
 > A simplified view showing the core execution workflows and key components.
 
-![Simplified Architecture](Architecture/DIAGRAM_SIMPLE.png)
+![Simplified Architecture](docs/diagrams/DIAGRAM_SIMPLE.png)
 
 #### Full Architecture
 
 > The complete architecture with all workflows, services, databases, and integration points.
 
-![Full Architecture](Architecture/DIAGRAM_FULL_WORKFLOWS.png)
+![Full Architecture](docs/diagrams/DIAGRAM_FULL_WORKFLOWS.png)
 
 ---
 
@@ -649,7 +650,7 @@ Cineca-Agentic-Platform/
 │   ├── architecture/                 # Architecture docs
 │   ├── compliance/                   # Compliance docs
 │   ├── database/                     # Database docs
-│   ├── Architecture/                 # Architecture diagrams
+│   ├── diagrams/                     # Architecture diagrams
 │   ├── features/                     # Feature documentation
 │   ├── guides/                       # User guides
 │   ├── mcp/                          # MCP documentation
