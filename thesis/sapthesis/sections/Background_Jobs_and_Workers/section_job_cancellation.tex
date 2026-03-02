@@ -1,0 +1,348 @@
+% TODO checklist:
+% - [x] Inspected src/workers/jobs_worker.py (_mark_cancelled, cancellation checks)
+% - [x] Inspected db/redis_cache/job_store.py (cancel_job_atomic, check_cancel_flag)
+% - [x] Inspected db/redis_cache/jobs_cache.py (cancel flag operations)
+% - [x] Inspected src/routers/jobs.py (cancel_job endpoint)
+% - [x] Analyzed Q&A.md Q39 for cancellation handling details
+
+\section{Job Cancellation}
+\label{sec:job-cancellation}
+
+Job cancellation presents a coordination challenge in distributed systems: the cancel request originates from an API endpoint, but the job execution occurs in a separate worker process. The Cineca Agentic Platform implements a cooperative cancellation model using Redis flags for cross-process communication and Lua scripts for atomic state transitions.
+
+\subsection{Cancellation Model}
+
+The platform employs a \textit{cooperative cancellation} pattern where:
+
+\begin{enumerate}
+    \item A cancel flag is set in Redis by the API endpoint.
+    \item The worker periodically checks this flag during job execution.
+    \item If the flag is set, the worker gracefully terminates execution and transitions the job to CANCELLED status.
+\end{enumerate}
+
+This model ensures that jobs can complete their current unit of work before stopping, preventing resource leaks and data corruption from abrupt termination.
+
+\subsection{Cancel Flag Mechanism}
+
+The cancel flag is stored as a simple Redis key with the pattern \texttt{job:\{id\}:cancel}:
+
+\begin{lstlisting}[language=Python, caption={Redis cancel flag operations in jobs\_cache.py.}]
+def set_cancel_flag(job_id: str) -> bool:
+    """Set cancellation flag for a job."""
+    redis = get_redis_client()
+    key = f"job:{job_id}:cancel"
+    # Set flag with TTL matching job expiry
+    return redis.setex(key, JOB_TTL_SECONDS, "1") == True
+
+def check_cancel_flag(job_id: str) -> bool:
+    """Check if job has been cancelled."""
+    redis = get_redis_client()
+    key = f"job:{job_id}:cancel"
+    return redis.exists(key) == 1
+
+def clear_cancel_flag(job_id: str) -> bool:
+    """Clear cancellation flag (on job completion)."""
+    redis = get_redis_client()
+    key = f"job:{job_id}:cancel"
+    return redis.delete(key) == 1
+\end{lstlisting}
+
+\subsection{Cancellation Flow}
+
+Figure~\ref{fig:cancel-flow} illustrates the complete cancellation sequence across API and worker processes.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+    box/.style={rectangle, draw, minimum width=2cm, minimum height=0.6cm, font=\small},
+    arrow/.style={->, >=stealth, thick},
+    note/.style={font=\scriptsize, align=left}
+]
+    % Actors
+    \node[box] (client) at (0,0) {Client};
+    \node[box] (api) at (3,0) {API Server};
+    \node[box] (redis) at (6,0) {Redis};
+    \node[box] (worker) at (9,0) {Worker};
+    
+    % Timeline
+    \draw[gray, dashed] (0,-0.5) -- (0,-5.5);
+    \draw[gray, dashed] (3,-0.5) -- (3,-5.5);
+    \draw[gray, dashed] (6,-0.5) -- (6,-5.5);
+    \draw[gray, dashed] (9,-0.5) -- (9,-5.5);
+    
+    % Messages
+    \draw[arrow] (0,-1) -- node[above, font=\scriptsize] {POST /jobs/\{id\}/cancel} (3,-1);
+    \draw[arrow] (3,-1.5) -- node[above, font=\scriptsize] {SET cancel flag} (6,-1.5);
+    \draw[arrow] (6,-2) -- node[above, font=\scriptsize] {OK} (3,-2);
+    \draw[arrow] (3,-2.3) -- node[above, font=\scriptsize] {202 Accepted} (0,-2.3);
+    
+    % Worker polling
+    \draw[arrow] (9,-3) -- node[above, font=\scriptsize] {GET cancel flag} (6,-3);
+    \draw[arrow] (6,-3.3) -- node[above, font=\scriptsize] {flag = 1} (9,-3.3);
+    
+    % Status update
+    \draw[arrow] (9,-4) -- node[above, font=\scriptsize] {status = cancelled} (6,-4);
+    \draw[arrow] (9,-4.5) -- node[above, font=\scriptsize] {CLEAR cancel flag} (6,-4.5);
+    
+    % Notes
+    \node[note, right=0.2cm of worker] at (9,-3.5) {Worker detects\\cancel request};
+\end{tikzpicture}
+\caption{Cancellation sequence diagram showing cross-process coordination.}
+\label{fig:cancel-flow}
+\end{figure}
+
+\subsection{API Endpoint Implementation}
+
+The cancel endpoint in \texttt{src/routers/jobs.py} handles cancel requests:
+
+\begin{lstlisting}[language=Python, caption={Job cancellation API endpoint.}]
+@router.post("/{job_id}/cancel")
+async def cancel_job(
+    job_id: str,
+    user = Depends(get_current_principal),
+):
+    """Request cancellation of a running job."""
+    _validate_job_id_uuid(job_id)
+    
+    # Get job and verify ownership
+    job = await job_store.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    _require_owner_or_admin(user, job)
+    
+    # Check if already terminal
+    if job.status.is_terminal:
+        return {"job_id": job_id, "status": job.status.value, "cancelled": False}
+    
+    # Set cancel flag
+    if settings.JOB_STORE_BACKEND == "redis":
+        # Use atomic Lua script for Redis backend
+        cancelled = await job_store.cancel_job_atomic(job_id)
+    else:
+        jobs_cache.set_cancel_flag(job_id)
+        cancelled = True
+    
+    if cancelled:
+        # Record cancellation event
+        event_id = await event_store.get_next_event_id(job_id)
+        event = SSEEvent(
+            event_id=event_id,
+            event_type="status",
+            data={"to": "cancelled", "timestamp": datetime.utcnow().isoformat()}
+        )
+        await event_store.append(job_id, event, settings.SSE_RING_SIZE)
+    
+    return {
+        "job_id": job_id,
+        "cancel_requested": True,
+        "status": "cancellation_pending"
+    }
+\end{lstlisting}
+
+\subsection{Worker Cancellation Checking}
+
+Workers check the cancel flag at multiple points during execution:
+
+\begin{enumerate}
+    \item \textbf{Before Execution}: Check immediately after dequeuing the job.
+    \item \textbf{During Execution}: Check periodically within long-running operations.
+    \item \textbf{After Execution}: Final check before marking as FINISHED.
+\end{enumerate}
+
+\begin{lstlisting}[language=Python, caption={Cancellation checking in worker execution flow.}]
+async def _execute_job(self, job_id: str, db: Session):
+    """Execute job with cancellation checking."""
+    job_uuid = UUID(job_id)
+    jobs_service = JobsService(db)
+    
+    # Check 1: Before starting
+    if await asyncio.to_thread(jobs_cache.check_cancel_flag, job_id):
+        logger.info(f"Job {job_id} was cancelled before execution")
+        await self._mark_cancelled(job_uuid, jobs_service)
+        return
+    
+    # ... transition to RUNNING ...
+    
+    # Execute with periodic cancellation checks
+    result = await self._run_job_with_heartbeat(...)
+    
+    # Check 2: After execution
+    if await asyncio.to_thread(jobs_cache.check_cancel_flag, job_id):
+        logger.info(f"Job {job_id} was cancelled during execution")
+        await self._mark_cancelled(job_uuid, jobs_service)
+        return
+    
+    # ... transition to FINISHED ...
+\end{lstlisting}
+
+Within job execution, cancellation is checked at natural breakpoints:
+
+\begin{lstlisting}[language=Python, caption={Periodic cancellation check within job execution.}]
+async def _execute_long_running_job(self, job_id: str, payload: dict) -> dict:
+    """Long-running job with cancellation checks per step."""
+    steps = payload.get("steps", 10)
+    
+    for step in range(1, steps + 1):
+        # Check before each step
+        if await asyncio.to_thread(jobs_cache.check_cancel_flag, job_id):
+            raise asyncio.CancelledError("Job cancelled")
+        
+        logger.info(f"Job {job_id}: step {step}/{steps}")
+        await asyncio.sleep(3.0)  # Step duration
+    
+    return {"status": "completed", "steps_completed": steps}
+\end{lstlisting}
+
+\subsection{Atomic Cancellation with Lua Scripts}
+
+For the Redis backend, atomic cancellation uses a Lua script to prevent race conditions between status checks and updates:
+
+\begin{lstlisting}[language=Python, caption={Atomic cancellation using Lua script.}]
+CANCEL_JOB_SCRIPT = """
+-- KEYS[1] = job:{id}
+-- ARGV[1] = timestamp
+-- ARGV[2] = result JSON
+
+local status = redis.call('HGET', KEYS[1], 'status')
+if not status then
+    return 'not_found'
+end
+
+-- Only cancel non-terminal jobs
+if status == 'finished' or status == 'failed' or status == 'cancelled' then
+    return 'already_terminal'
+end
+
+-- Atomic status update
+redis.call('HSET', KEYS[1], 'status', 'cancelled')
+redis.call('HSET', KEYS[1], 'updated_at', ARGV[1])
+redis.call('HSET', KEYS[1], 'result', ARGV[2])
+
+return 'cancelled'
+"""
+
+async def cancel_job_atomic(self, job_id: str) -> bool:
+    """Atomically cancel using Lua CAS."""
+    await self._ensure_scripts_loaded()
+    redis = await get_async_redis()
+    
+    result = await redis.evalsha(
+        self._cancel_job_sha,
+        1,  # numkeys
+        f"job:{job_id}",
+        datetime.utcnow().isoformat(),
+        json.dumps({"cancelled": True}),
+    )
+    
+    result_str = result.decode("utf-8") if isinstance(result, bytes) else result
+    
+    if result_str == "cancelled":
+        logger.info(f"Job {job_id} cancelled atomically")
+        return True
+    elif result_str == "already_terminal":
+        logger.info(f"Job {job_id} already in terminal state")
+        return False
+    else:
+        logger.warning(f"Job {job_id} not found for cancellation")
+        return False
+\end{lstlisting}
+
+\subsection{Marking Jobs as Cancelled}
+
+When cancellation is detected, the worker transitions the job to CANCELLED status:
+
+\begin{lstlisting}[language=Python, caption={Worker method to mark job as cancelled.}]
+async def _mark_cancelled(self, job_uuid: UUID, jobs_service: JobsService):
+    """Mark job as cancelled in PostgreSQL."""
+    try:
+        # Try from queued state first
+        job = jobs_service.transition_status(
+            job_uuid, from_status="queued", to_status="cancelled"
+        )
+
+        if not job:
+            # Try from running state
+            job = jobs_service.transition_status(
+                job_uuid, from_status="running", to_status="cancelled"
+            )
+
+        if job:
+            # Log cancellation event for SSE
+            jobs_service.append_event(
+                job_uuid,
+                event_type="status",
+                event_data={
+                    "to": "cancelled",
+                    "timestamp": datetime.utcnow().isoformat()
+                },
+            )
+            logger.info(f"Job {job_uuid} marked as cancelled")
+            
+    except Exception as e:
+        logger.error(f"Failed to mark job {job_uuid} as cancelled: {e}")
+\end{lstlisting}
+
+\subsection{Cleanup Procedures}
+
+After cancellation, cleanup ensures resources are properly released:
+
+\begin{enumerate}
+    \item \textbf{Cancel Flag Removal}: The cancel flag is cleared to prevent false positives on job restart scenarios.
+    
+    \item \textbf{Event Logging}: A terminal event is appended to the SSE stream.
+    
+    \item \textbf{Resource Release}: Any held resources (database connections, file handles) are released via context managers.
+    
+    \item \textbf{Metrics Recording}: Cancellation is recorded in Prometheus metrics.
+\end{enumerate}
+
+\begin{lstlisting}[language=Python, caption={Cancellation metrics tracking.}]
+job_cancel_total = Counter(
+    "job_cancel_total", "Total job cancellations",
+    ["backend", "first_time"]  # first_time: true (202) or false (200)
+)
+
+job_cancel_duration_seconds = Histogram(
+    "job_cancel_duration_seconds", "Job cancellation latency",
+    ["backend"],
+    buckets=(0.001, 0.005, 0.010, 0.025, 0.050, 0.100, 0.250, 0.500, 1.0)
+)
+\end{lstlisting}
+
+\subsection{Cancellation Response Codes}
+
+The API returns different HTTP status codes based on cancellation outcome:
+
+\begin{table}[ht]
+\centering
+\caption{Cancellation API response codes.}
+\label{tab:cancel-responses}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Status Code} & \textbf{Condition} & \textbf{Response} \\
+\hline
+202 Accepted & First cancel request & \texttt{\{cancel\_requested: true\}} \\
+200 OK & Already cancelled & \texttt{\{cancelled: true, status: "cancelled"\}} \\
+200 OK & Already terminal & \texttt{\{cancelled: false, status: "finished"\}} \\
+404 Not Found & Job doesn't exist & Error response \\
+403 Forbidden & Not owner or admin & Error response \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Cancellation Timeout Considerations}
+
+The cooperative cancellation model has inherent latency:
+
+\begin{itemize}
+    \item \textbf{Best Case}: Job checks cancel flag immediately, cancellation completes within milliseconds.
+    
+    \item \textbf{Typical Case}: Job is between check points, cancellation completes within one check interval (e.g., 0.5 seconds for demo jobs).
+    
+    \item \textbf{Worst Case}: Job is in an unchecked long operation, cancellation waits for operation completion.
+\end{itemize}
+
+For scenarios requiring immediate termination, operators can combine cooperative cancellation with process-level intervention (e.g., worker restart), though this may leave jobs in an inconsistent state.
+

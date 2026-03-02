@@ -1,0 +1,176 @@
+% TODO checklist:
+% - [x] README.md: Key features, architectural highlights
+% - [x] Q&A.md: Q50 (SOTA comparison - what's ahead), Q41 (Strengths)
+% - [x] sapthesis-doc.tex: Abstract contributions list
+
+\section{Contributions}
+\label{sec:contributions}
+
+This thesis makes several contributions to the emerging field of enterprise AI agent systems. The contributions span architectural design, implementation, and practical deployment, collectively advancing the state of practice for production-ready agent platforms.
+
+\subsection{Primary Contributions}
+
+\subsubsection{C1: Enterprise-Grade Agent Orchestration Architecture}
+
+This thesis presents a comprehensive architectural design for AI agent orchestration that addresses the full spectrum of enterprise requirements. The architecture comprises three distinct layers:
+
+\begin{enumerate}
+    \item \textbf{Core Backend Layer:} FastAPI-based application providing RESTful APIs, service orchestration, and cross-cutting concerns (security, logging, metrics)
+    
+    \item \textbf{Data and Persistence Layer:} Dual-database design with PostgreSQL as the authoritative control plane and Redis as the high-performance data plane, complemented by Memgraph for graph-based knowledge
+    
+    \item \textbf{Presentation Layer:} Dual user interfaces optimized for different stakeholder personas (end-user chat and administrative control panel)
+\end{enumerate}
+
+\paragraph{Novelty:} While individual components exist in isolation across various frameworks, this architecture integrates them into a cohesive, production-ready whole with explicit attention to enterprise concerns (multi-tenancy, security, observability) that are typically afterthoughts in research-oriented frameworks.
+
+\subsubsection{C2: Native MCP Tool Ecosystem}
+
+The platform implements a comprehensive Model Context Protocol (MCP) tool ecosystem comprising:
+
+\begin{itemize}
+    \item \textbf{34 tools} organized across \textbf{17 categories} (graph, security, system, data, model, output, agent, cache, catalog, db, errors, privacy, ratelimit, session, tenancy, user, viz)
+    \item Schema-driven tool definition with JSON Schema validation
+    \item Tool discovery API enabling runtime capability enumeration
+    \item Per-tool authorization integrated with RBAC
+    \item Comprehensive audit logging for all tool invocations
+\end{itemize}
+
+\paragraph{Novelty:} The MCP tool ecosystem provides a standardized, extensible foundation for tool integration that aligns with emerging industry standards. Unlike ad-hoc tool implementations in existing frameworks, this approach enables tool interoperability and consistent governance.
+
+\subsubsection{C3: Natural Language to Cypher Pipeline with Safety Validation}
+
+The NL-to-Cypher pipeline enables users to query graph databases using natural language while ensuring query safety through multi-layer validation:
+
+\begin{enumerate}
+    \item \textbf{Natural Language Normalization:} Input sanitization and entity extraction
+    \item \textbf{Cypher Generation:} LLM-based translation with schema context
+    \item \textbf{Safety Validation:} Six-layer validation ensuring:
+    \begin{itemize}
+        \item Syntactic correctness
+        \item Read-only operations (no mutations)
+        \item Tenant boundary enforcement
+        \item Query depth limits
+        \item Execution timeout bounds
+        \item Result size caps
+    \end{itemize}
+    \item \textbf{Query Execution:} Validated query execution against Memgraph
+    \item \textbf{Result Summarization:} LLM-based natural language response generation
+\end{enumerate}
+
+\paragraph{Novelty:} While NL-to-SQL has received significant attention, NL-to-Cypher for property graphs is less explored. The multi-layer safety validation addresses the unique challenges of graph query injection and multi-tenant data protection. The deterministic test mode enables reliable pipeline testing independent of LLM variability.
+
+\subsubsection{C4: Comprehensive Security and Governance Framework}
+
+The security framework provides defense-in-depth protection through:
+
+\begin{itemize}
+    \item \textbf{Authentication:} OIDC/JWT-based authentication with JWKS key caching and rotation support
+    \item \textbf{Authorization:} Role-Based Access Control with scope-based permissions and wildcard support
+    \item \textbf{Multi-Tenancy:} Database-level tenant isolation with header-based tenant identification
+    \item \textbf{Rate Limiting:} Sliding window algorithm with per-user and per-tenant quotas
+    \item \textbf{PII Protection:} Detection and redaction of personally identifiable information in logs and outputs
+    \item \textbf{Audit Logging:} Append-only audit trail for all significant operations
+    \item \textbf{Intent Filtering:} Classification and blocking of potentially dangerous operations
+\end{itemize}
+
+\paragraph{Novelty:} The integration of these security mechanisms into a unified framework specifically designed for AI agents is a significant contribution. The PII scrubbing and intent filtering address AI-specific risks not adequately covered by traditional enterprise security frameworks.
+
+\subsubsection{C5: Production-Ready Observability Stack}
+
+The observability implementation provides the three pillars necessary for production operations:
+
+\begin{itemize}
+    \item \textbf{Metrics:} Prometheus-compatible metrics covering HTTP requests, agent runs, jobs, tool invocations, LLM calls, rate limiting, and provider health
+    \item \textbf{Logging:} Structured logging with structlog, JSON format for production, request ID correlation, and PII-safe output
+    \item \textbf{Tracing:} OpenTelemetry integration with span propagation, OTLP export, and sampling configuration
+    \item \textbf{Health Probes:} Kubernetes-compatible liveness, readiness, and startup probes with component-level health reporting
+\end{itemize}
+
+\paragraph{Novelty:} The observability stack is designed specifically for AI agent workloads, with metrics capturing LLM-specific dimensions (token counts, costs, provider health) alongside traditional operational metrics. The integration is comprehensive rather than add-on, enabling true production readiness.
+
+\subsubsection{C6: Asynchronous Job System with Progress Streaming}
+
+The job system supports long-running operations through:
+
+\begin{itemize}
+    \item PostgreSQL-backed job persistence for durability
+    \item Redis-backed job queues for performance
+    \item Worker processes with heartbeat monitoring
+    \item Server-Sent Events (SSE) for real-time progress updates
+    \item Cooperative cancellation with cleanup procedures
+    \item Graceful shutdown with in-flight job completion
+    \item Idempotency support for safe retries
+\end{itemize}
+
+\paragraph{Novelty:} Long-running AI agent tasks (complex reasoning, large graph queries) require robust asynchronous processing that existing frameworks typically lack. The dual-store architecture (PostgreSQL + Redis) provides both durability and performance.
+
+\subsection{Secondary Contributions}
+
+Beyond the primary contributions, this thesis provides:
+
+\subsubsection{Reference Implementation}
+
+A complete, working implementation of all described components:
+\begin{itemize}
+    \item Approximately 77,000 lines of Python source code
+    \item Over 2,700 test functions across 272 test files
+    \item Comprehensive API documentation (76 endpoints, OpenAPI specification)
+    \item Docker-based deployment configuration
+    \item Operational runbooks and troubleshooting guides
+\end{itemize}
+
+\subsubsection{Comparative Analysis}
+
+A detailed comparison of the Cineca Agentic Platform against state-of-the-art frameworks (LangChain, LlamaIndex, Semantic Kernel, OpenAI Assistants, AutoGen, crewAI), identifying:
+\begin{itemize}
+    \item Areas where the platform leads (multi-tenancy, observability, graph integration)
+    \item Areas of parity (tool extensibility, basic orchestration)
+    \item Areas requiring future work (multi-agent collaboration, advanced memory)
+\end{itemize}
+
+\subsubsection{Deployment Experience}
+
+Practical insights from deploying the platform in the CINECA environment:
+\begin{itemize}
+    \item Configuration patterns for different deployment scenarios
+    \item Performance characteristics under realistic workloads
+    \item Operational lessons learned
+    \item Identified technical debt and recommended improvements
+\end{itemize}
+
+\subsection{Contribution Summary}
+
+Table~\ref{tab:contribution-summary} summarizes the contributions and their significance.
+
+\begin{table}[ht]
+\centering
+\caption{Summary of thesis contributions.}
+\label{tab:contribution-summary}
+\small
+\begin{tabular}{llp{6cm}}
+\hline
+\textbf{ID} & \textbf{Contribution} & \textbf{Significance} \\
+\hline
+C1 & Architecture & Integrated enterprise-grade design addressing production requirements \\
+C2 & MCP Tools & Standardized, extensible tool ecosystem with 34 tools \\
+C3 & NL-to-Cypher & Safe graph querying with multi-layer validation \\
+C4 & Security & Comprehensive framework for AI agent governance \\
+C5 & Observability & Production-ready monitoring for AI workloads \\
+C6 & Job System & Durable async processing with progress streaming \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Artifact Availability}
+
+The contributions of this thesis are realized in the Cineca Agentic Platform, which is:
+\begin{itemize}
+    \item Implemented as a complete, working system
+    \item Documented through comprehensive API specifications and guides
+    \item Tested through extensive automated test suites
+    \item Deployed in the CINECA production environment
+\end{itemize}
+
+The platform represents a significant engineering effort totaling approximately 18 months of development, resulting in a system that serves as both a practical tool for CINECA and a reference architecture for the broader community of enterprise AI practitioners.
+

@@ -1,0 +1,474 @@
+% TODO checklist:
+% - [x] Inspected src/background.py (327 lines - complete background framework)
+% - [x] Inspected src/services/health.py (HealthService)
+% - [x] Inspected src/services/archive.py (ArchiveService)
+% - [x] Inspected src/services/service_metrics.py (ServiceMetrics)
+% - [x] Analyzed Q&A.md Q40 for scheduled task categories
+
+\section{Background Framework}
+\label{sec:background-framework}
+
+Beyond the job queue for user-initiated tasks, the Cineca Agentic Platform requires periodic maintenance operations: health monitoring, data backups, cache cleanup, and index maintenance. The background framework provides a unified scheduler for these operations, built on APScheduler with comprehensive metrics integration.
+
+This section describes the background framework architecture, scheduled task categories, and integration with the FastAPI application lifecycle.
+
+\subsection{Framework Overview}
+
+The background framework in \texttt{src/background.py} coordinates periodic tasks using the APScheduler library with the AsyncIO scheduler backend. Key design goals include:
+
+\begin{itemize}
+    \item \textbf{Configurable Scheduling}: Tasks can be scheduled via interval triggers (e.g., every 30 seconds) or cron expressions (e.g., daily at 02:30 UTC).
+    
+    \item \textbf{Graceful Lifecycle}: Tasks are started with the FastAPI application and stopped cleanly on shutdown.
+    
+    \item \textbf{Metrics Integration}: All task executions are instrumented with duration and status metrics.
+    
+    \item \textbf{Failure Isolation}: Task failures are logged but do not affect other scheduled tasks.
+    
+    \item \textbf{Service Composition}: Tasks delegate to specialized services (HealthService, ArchiveService) for actual operations.
+\end{itemize}
+
+\subsection{Configuration Model}
+
+The \texttt{BackgroundConfig} dataclass captures all scheduling parameters:
+
+\begin{lstlisting}[language=Python, caption={Background framework configuration.}]
+@dataclass
+class BackgroundConfig:
+    enabled: bool = getattr(settings, "BACKGROUND_ENABLED", True)
+
+    # Health probe interval (seconds)
+    health_enabled: bool = getattr(settings, "BACKGROUND_HEALTH_ENABLED", True)
+    health_interval_seconds: int = getattr(
+        settings, "BACKGROUND_HEALTH_INTERVAL_SECONDS", 30
+    )
+
+    # Backups via cron (crontab format, UTC)
+    backup_enabled: bool = getattr(settings, "BACKGROUND_BACKUPS_ENABLED", False)
+    backup_cron: str = getattr(
+        settings, "BACKGROUND_BACKUPS_CRON", "30 2 * * *"
+    )  # 02:30 UTC daily
+
+    # Cleanup via cron (crontab format, UTC)
+    cleanup_enabled: bool = getattr(settings, "BACKGROUND_CLEANUP_ENABLED", False)
+    cleanup_cron: str = getattr(
+        settings, "BACKGROUND_CLEANUP_CRON", "15 3 * * 0"
+    )  # 03:15 UTC Sundays
+
+    # Redis job store index cleanup
+    redis_cleanup_enabled: bool = getattr(
+        settings, "BACKGROUND_REDIS_CLEANUP_ENABLED", True
+    )
+    redis_cleanup_interval_seconds: int = getattr(
+        settings, "BACKGROUND_REDIS_CLEANUP_INTERVAL", 3600
+    )  # 1 hour
+    redis_cleanup_batch_size: int = getattr(
+        settings, "BACKGROUND_REDIS_CLEANUP_BATCH_SIZE", 500
+    )
+\end{lstlisting}
+
+\subsection{BackgroundManager Class}
+
+The \texttt{BackgroundManager} class orchestrates task scheduling and execution:
+
+\begin{lstlisting}[language=Python, caption={BackgroundManager initialization.}]
+class BackgroundManager:
+    """Coordinates background jobs with metrics and logging."""
+
+    def __init__(
+        self,
+        *,
+        health: HealthService | None = None,
+        archive: ArchiveService | None = None,
+        metrics: ServiceMetrics | None = None,
+        config: BackgroundConfig | None = None,
+    ) -> None:
+        self.config = config or BackgroundConfig()
+        self.scheduler: AsyncIOScheduler | None = None
+        self.health = health or HealthService()
+        self.archive = archive or ArchiveService()
+        self.metrics = metrics or ServiceMetrics()
+        self._started = False
+\end{lstlisting}
+
+\subsubsection{Lifecycle Management}
+
+The manager provides async start/stop methods for integration with application lifecycle:
+
+\begin{lstlisting}[language=Python, caption={Background manager lifecycle methods.}]
+async def start(self) -> None:
+    """Start the underlying scheduler and register jobs."""
+    if not self.config.enabled:
+        log.info("background.disabled")
+        return
+
+    if self._started:
+        log.debug("background.already_started")
+        return
+
+    self.scheduler = AsyncIOScheduler(timezone="UTC")
+    self._register_jobs()
+    self.scheduler.start()
+    self._started = True
+    log.info(
+        "background.started",
+        health_enabled=self.config.health_enabled,
+        backups_enabled=self.config.backup_enabled,
+        cleanup_enabled=self.config.cleanup_enabled,
+    )
+
+async def stop(self) -> None:
+    """Stop scheduler and wait for running jobs to finish."""
+    if not self._started or not self.scheduler:
+        return
+    try:
+        self.scheduler.shutdown(wait=True)
+        log.info("background.stopped")
+    finally:
+        self._started = False
+        self.scheduler = None
+\end{lstlisting}
+
+\subsubsection{Job Registration}
+
+Tasks are registered with APScheduler using interval or cron triggers:
+
+\begin{lstlisting}[language=Python, caption={Task registration with APScheduler.}]
+def _register_jobs(self) -> None:
+    assert self.scheduler is not None
+
+    if self.config.health_enabled:
+        self.scheduler.add_job(
+            self._wrap_job(self._job_health, "health"),
+            IntervalTrigger(seconds=max(1, int(self.config.health_interval_seconds))),
+            id="background.health",
+            replace_existing=True,
+            coalesce=True,  # Combine missed executions
+            max_instances=1,  # Prevent concurrent runs
+        )
+
+    if self.config.backup_enabled:
+        with contextlib.suppress(ValueError):
+            self.scheduler.add_job(
+                self._wrap_job(self._job_backup, "backup"),
+                CronTrigger.from_crontab(self.config.backup_cron),
+                id="background.backup",
+                replace_existing=True,
+                coalesce=True,
+                max_instances=1,
+            )
+
+    if self.config.cleanup_enabled:
+        with contextlib.suppress(ValueError):
+            self.scheduler.add_job(
+                self._wrap_job(self._job_cleanup, "cleanup"),
+                CronTrigger.from_crontab(self.config.cleanup_cron),
+                id="background.cleanup",
+                replace_existing=True,
+                coalesce=True,
+                max_instances=1,
+            )
+
+    # Redis cleanup (only if using Redis backend)
+    if (self.config.redis_cleanup_enabled and 
+        settings.JOB_STORE_BACKEND == "redis"):
+        self.scheduler.add_job(
+            self._wrap_job(self._job_redis_cleanup, "redis_cleanup"),
+            IntervalTrigger(
+                seconds=max(60, int(self.config.redis_cleanup_interval_seconds))
+            ),
+            id="background.redis_cleanup",
+            replace_existing=True,
+            coalesce=True,
+            max_instances=1,
+        )
+\end{lstlisting}
+
+\subsection{Job Wrapper with Metrics}
+
+All scheduled tasks are wrapped in a metrics-recording decorator:
+
+\begin{lstlisting}[language=Python, caption={Job wrapper for metrics and error handling.}]
+def _wrap_job(
+    self, func: Callable[[], Awaitable[Any]], job_name: str
+) -> Callable[[], Awaitable[None]]:
+    async def runner() -> None:
+        start = time.perf_counter()
+        status = "ok"
+        try:
+            await func()
+        except Exception as e:
+            status = "error"
+            log.warning("background.job.error", job=job_name, err=str(e))
+        finally:
+            dur = time.perf_counter() - start
+            # Record metrics if available
+            with contextlib.suppress(Exception):
+                if hasattr(self.metrics, "record_bg_job"):
+                    self.metrics.record_bg_job(
+                        job_name, status=status, duration_seconds=dur
+                    )
+            log.debug(
+                "background.job.done",
+                job=job_name, status=status, duration=f"{dur:.3f}s"
+            )
+    return runner
+\end{lstlisting}
+
+\subsection{Scheduled Task Categories}
+\label{subsec:scheduled-task-categories}
+
+The background framework includes four categories of scheduled tasks:
+
+\subsubsection{Health Monitoring Tasks}
+
+The health job performs periodic checks of all system components:
+
+\begin{lstlisting}[language=Python, caption={Health monitoring background task.}]
+async def _job_health(self) -> None:
+    """Periodic health check sweep."""
+    res = await self.health.check()
+    if not res.ok:
+        log.warning("background.health.unhealthy", error=res.error)
+    else:
+        log.info("background.health.ok")
+\end{lstlisting}
+
+Components checked include:
+\begin{itemize}
+    \item PostgreSQL connectivity and query capability
+    \item Redis ping latency and memory usage
+    \item Memgraph connection status (if configured)
+    \item LLM provider health probes
+\end{itemize}
+
+\subsubsection{Backup Tasks}
+
+The backup job delegates to ArchiveService for creating snapshots:
+
+\begin{lstlisting}[language=Python, caption={Backup background task.}]
+async def _job_backup(self) -> None:
+    """Create a snapshot/backup via ArchiveService."""
+    fn = None
+    # Support multiple method names for flexibility
+    for candidate in ("backup", "run_backup", "create_backup"):
+        if hasattr(self.archive, candidate):
+            fn = getattr(self.archive, candidate)
+            break
+    
+    if fn is None:
+        log.warning("background.backup.skipped", reason="no_method")
+        return
+
+    maybe_awaitable = fn()
+    if asyncio.iscoroutine(maybe_awaitable):
+        await maybe_awaitable
+    log.info("background.backup.completed")
+\end{lstlisting}
+
+Backup operations include:
+\begin{itemize}
+    \item Memgraph graph snapshots (JSON + GZIP compression)
+    \item Redis RDB/AOF backup triggers
+    \item Manifest generation with SHA-256 checksums
+\end{itemize}
+
+\subsubsection{Cleanup Tasks}
+
+The cleanup job handles age-based data pruning:
+
+\begin{lstlisting}[language=Python, caption={Cleanup background task.}]
+async def _job_cleanup(self) -> None:
+    """Run retention/cleanup via ArchiveService."""
+    fn = None
+    for candidate in ("cleanup", "run_cleanup", "prune"):
+        if hasattr(self.archive, candidate):
+            fn = getattr(self.archive, candidate)
+            break
+    
+    if fn is None:
+        log.info("background.cleanup.skipped", reason="no_method")
+        return
+
+    maybe_awaitable = fn()
+    if asyncio.iscoroutine(maybe_awaitable):
+        await maybe_awaitable
+    log.info("background.cleanup.completed")
+\end{lstlisting}
+
+Cleanup operations include:
+\begin{itemize}
+    \item Expired session removal
+    \item Old backup file pruning (retention policy)
+    \item Stale cache entry eviction
+    \item Completed job record cleanup (beyond TTL)
+\end{itemize}
+
+\subsubsection{Redis Index Cleanup}
+
+The Redis cleanup job removes orphaned entries from ZSET indexes:
+
+\begin{lstlisting}[language=Python, caption={Redis index cleanup task.}]
+async def _job_redis_cleanup(self) -> None:
+    """Clean orphaned ZSET members from Redis job store indexes."""
+    if settings.JOB_STORE_BACKEND != "redis":
+        return
+
+    from db.redis_cache.async_client import get_async_redis
+    from db.redis_cache.job_store import RedisJobStore
+
+    store = RedisJobStore()
+    redis = await get_async_redis()
+    batch_size = self.config.redis_cleanup_batch_size
+    total_removed = 0
+
+    try:
+        # 1. Clean global index
+        removed = await store.cleanup_orphaned_index_members(
+            "jobs:all", batch_size=batch_size
+        )
+        total_removed += removed
+
+        # 2. Clean status indexes
+        for status in ["queued", "running", "finished", "failed", "cancelled"]:
+            index_key = f"jobs:status:{status}"
+            removed = await store.cleanup_orphaned_index_members(
+                index_key, batch_size=batch_size
+            )
+            total_removed += removed
+
+        # 3. Clean owner indexes (scan with cursor)
+        cursor = 0
+        owner_indexes_cleaned = 0
+
+        while True:
+            cursor, keys = await redis.scan(
+                cursor=cursor, match="jobs:owner:*", count=100
+            )
+            for key_bytes in keys:
+                key = (key_bytes.decode("utf-8") 
+                       if isinstance(key_bytes, bytes) else key_bytes)
+                removed = await store.cleanup_orphaned_index_members(
+                    key, batch_size=batch_size
+                )
+                total_removed += removed
+                owner_indexes_cleaned += 1
+            if cursor == 0:
+                break
+
+        log.info(
+            "background.redis_cleanup.completed",
+            total_orphans_removed=total_removed,
+            owner_indexes_cleaned=owner_indexes_cleaned,
+        )
+
+    except Exception as e:
+        log.error("background.redis_cleanup.error", err=str(e))
+        raise
+\end{lstlisting}
+
+Orphaned index members occur when job HASH keys expire via TTL but their ZSET entries remain. The cleanup uses a Lua script to atomically check existence and remove orphans:
+
+\begin{lstlisting}[language=Python, caption={Orphan cleanup Lua script (conceptual).}]
+CLEANUP_ORPHANS_SCRIPT = """
+-- KEYS[1] = index key (e.g., "jobs:all")
+-- ARGV[1] = batch_size
+
+local members = redis.call('ZRANGE', KEYS[1], 0, ARGV[1] - 1)
+local removed = 0
+
+for _, job_id in ipairs(members) do
+    local exists = redis.call('EXISTS', 'job:' .. job_id)
+    if exists == 0 then
+        redis.call('ZREM', KEYS[1], job_id)
+        removed = removed + 1
+    end
+end
+
+return removed
+"""
+\end{lstlisting}
+
+\subsection{FastAPI Lifespan Integration}
+
+The background framework provides a context manager for FastAPI lifespan integration:
+
+\begin{lstlisting}[language=Python, caption={FastAPI lifespan integration.}]
+def build_default_manager() -> BackgroundManager:
+    """Create a BackgroundManager with default services and config."""
+    return BackgroundManager(
+        health=HealthService(),
+        archive=ArchiveService(),
+        metrics=ServiceMetrics(),
+        config=BackgroundConfig(),
+    )
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Attach a default BackgroundManager to app.state.bg."""
+    manager = build_default_manager()
+    app.state.bg = manager
+    await manager.start()
+    try:
+        yield
+    finally:
+        await manager.stop()
+\end{lstlisting}
+
+Usage in the FastAPI application:
+
+\begin{lstlisting}[language=Python, caption={Lifespan usage in app.py.}]
+from src.background import lifespan
+
+app = FastAPI(
+    title="Cineca Agentic Platform",
+    lifespan=lifespan,
+    # ... other configuration
+)
+\end{lstlisting}
+
+\subsection{Metrics Emission}
+
+Background tasks emit Prometheus metrics for operational visibility:
+
+\begin{lstlisting}[language=Python, caption={Background job metrics (conceptual).}]
+background_jobs_total = Counter(
+    "background_jobs_total", "Total background job executions",
+    ["job", "status"]  # job: health, backup, cleanup; status: ok, error
+)
+
+background_job_duration_seconds = Histogram(
+    "background_job_duration_seconds", "Background job duration",
+    ["job", "status"],
+    buckets=(0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 60.0, 300.0)
+)
+\end{lstlisting}
+
+\subsection{Configuration Reference}
+
+Table~\ref{tab:background-config} summarizes the background framework configuration parameters.
+
+\begin{table}[ht]
+\centering
+\caption{Background framework configuration parameters.}
+\label{tab:background-config}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Parameter} & \textbf{Default} & \textbf{Description} \\
+\hline
+\texttt{BACKGROUND\_ENABLED} & true & Master enable/disable switch \\
+\texttt{BACKGROUND\_HEALTH\_ENABLED} & true & Enable health monitoring \\
+\texttt{BACKGROUND\_HEALTH\_INTERVAL\_SECONDS} & 30 & Health check interval \\
+\texttt{BACKGROUND\_BACKUPS\_ENABLED} & false & Enable scheduled backups \\
+\texttt{BACKGROUND\_BACKUPS\_CRON} & \texttt{30 2 * * *} & Backup cron schedule (UTC) \\
+\texttt{BACKGROUND\_CLEANUP\_ENABLED} & false & Enable cleanup tasks \\
+\texttt{BACKGROUND\_CLEANUP\_CRON} & \texttt{15 3 * * 0} & Cleanup cron (UTC) \\
+\texttt{BACKGROUND\_REDIS\_CLEANUP\_ENABLED} & true & Enable Redis index cleanup \\
+\texttt{BACKGROUND\_REDIS\_CLEANUP\_INTERVAL} & 3600 & Cleanup interval (seconds) \\
+\texttt{BACKGROUND\_REDIS\_CLEANUP\_BATCH\_SIZE} & 500 & Members per cleanup batch \\
+\hline
+\end{tabular}
+\end{table}
+

@@ -1,0 +1,11 @@
+orig_id,name,email,title,team,location,joined,skills,seniority,active
+p001,Ada Lovelace,ada@example.org,Staff Engineer,Platform,London,2019-03-14,"python|c++|graphs",6,true
+p002,Linus Torvalds,linus@example.org,Principal Engineer,Kernel,Helsinki,2018-06-01,"c|git|systems",8,true
+p003,Grace Hopper,grace@example.org,Distinguished Engineer,Compilers,New York,2016-11-09,"cobol|fortran|leadership",10,true
+p004,Margaret Hamilton,margaret@example.org,Engineering Manager,Flight Software,Cambridge,2020-08-20,"project-mgmt|reliability|testing",7,true
+p005,Alan Turing,alan@example.org,Research Scientist,AI Lab,Manchester,2021-01-05,"ml|crypto|math",4,true
+p006,Katherine Johnson,katherine@example.org,Data Scientist,Analytics,Hampton,2019-09-30,"statistics|trajectory|python",5,true
+p007,Donald Knuth,donald@example.org,Professor Emeritus,Algorithms,Stanford,2015-02-17,"algorithms|tex|analysis",12,false
+p008,Radia Perlman,radia@example.org,Principal Architect,Networking,Boston,2017-05-11,"routing|security|distributed",9,true
+p009,Barbara Liskov,barbara@example.org,Chief Scientist,Distributed Systems,Cambridge,2014-12-03,"abstraction|types|consistency",11,true
+p010,Tim Berners-Lee,tim@example.org,Director,Web Standards,Oxford,2013-04-30,"web|http|standards",13,true

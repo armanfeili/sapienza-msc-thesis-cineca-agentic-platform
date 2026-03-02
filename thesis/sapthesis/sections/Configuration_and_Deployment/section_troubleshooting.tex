@@ -1,0 +1,377 @@
+% TODO checklist:
+% - Inspected: README.md troubleshooting section
+% - Inspected: Q&A.md various troubleshooting hints
+% - Inspected: src/health/ endpoints
+% - Inspected: docker-compose.yml healthcheck definitions
+% - Inspected: scripts/deployment/ scripts for error handling
+% - Inspected: ops/prometheus/alerts.yml for common issues
+
+\section{Troubleshooting}
+\label{sec:troubleshooting}
+
+This section provides guidance for diagnosing and resolving common issues encountered during deployment and operation of the Cineca Agentic Platform.
+
+\subsection{Authentication and Authorization Errors}
+
+\subsubsection{401 Unauthorized Errors}
+
+\paragraph{Symptom:} API requests return \texttt{401 Unauthorized} status.
+
+\paragraph{Possible Causes and Solutions:}
+
+\begin{enumerate}
+    \item \textbf{Expired Token}
+    \begin{lstlisting}[language=bash, caption=Refresh authentication tokens]
+# Refresh Auth0 tokens
+bash fetch_auth0_tokens.sh --save-to-env
+
+# Verify token is set
+echo $AUTH0_MACHINE_TOKEN | cut -c1-50
+    \end{lstlisting}
+    
+    \item \textbf{Invalid Token Format}
+    \begin{lstlisting}[language=bash, caption=Verify token format]
+# Check token is included correctly
+curl -v -H "Authorization: Bearer $TOKEN" \
+    http://localhost:8000/v1/auth/me
+    \end{lstlisting}
+    
+    \item \textbf{OIDC Configuration Mismatch}
+    \begin{lstlisting}[language=bash, caption=Verify OIDC configuration]
+# Check OIDC settings
+docker compose exec app env | grep OIDC
+
+# Verify issuer matches token
+python -c "import jwt; print(jwt.decode(
+    '$TOKEN', options={'verify_signature':False})['iss'])"
+    \end{lstlisting}
+    
+    \item \textbf{JWKS Key Rotation}
+    \begin{lstlisting}[language=bash, caption=Clear JWKS cache]
+# Clear JWKS cache in Redis
+docker compose exec redis redis-cli DEL jwks:*
+    \end{lstlisting}
+\end{enumerate}
+
+\subsubsection{403 Forbidden Errors}
+
+\paragraph{Symptom:} Authenticated requests return \texttt{403 Forbidden}.
+
+\paragraph{Possible Causes and Solutions:}
+
+\begin{enumerate}
+    \item \textbf{Insufficient Scopes}
+    \begin{lstlisting}[language=bash, caption=Check token scopes]
+# Decode and inspect token scopes
+python -c "import jwt; print(jwt.decode(
+    '$TOKEN', options={'verify_signature':False}).get('scope'))"
+
+# Required scopes for different operations:
+# - /v1/admin/*: admin:all
+# - /v1/tools/*/invocations: tools:invoke:all or tools:invoke:basic
+# - /v1/agent-runs: agents:execute
+    \end{lstlisting}
+    
+    \item \textbf{Wrong Tenant Context}
+    \begin{lstlisting}[language=bash, caption=Set tenant context header]
+# Include tenant header for multi-tenant operations
+curl -H "Authorization: Bearer $TOKEN" \
+     -H "X-Tenant-Id: tenant-1" \
+     http://localhost:8000/v1/agent-runs
+    \end{lstlisting}
+\end{enumerate}
+
+\subsection{Backend Dependencies Not Ready}
+
+\subsubsection{Container Startup Issues}
+
+\paragraph{Symptom:} Application fails to start or returns \texttt{503 Service Unavailable}.
+
+\paragraph{Diagnostic Steps:}
+
+\begin{lstlisting}[language=bash, caption=Diagnosing container startup issues]
+# Check container status
+docker compose ps
+
+# View application logs
+docker compose logs -f app
+
+# Check health endpoint directly
+curl -v http://localhost:8000/v1/health/ready
+
+# Check component health details
+curl -s http://localhost:8000/v1/health/components | jq
+
+# Expected output shows status of each component:
+# {
+#   "status": "healthy",
+#   "components": {
+#     "postgres": {"status": "healthy", "latency_ms": 5},
+#     "redis": {"status": "healthy", "latency_ms": 1},
+#     "memgraph": {"status": "healthy", "latency_ms": 12},
+#     "ollama": {"status": "healthy", "model": "phi3:mini"}
+#   }
+# }
+\end{lstlisting}
+
+\subsubsection{Database Connection Issues}
+
+\paragraph{Symptom:} PostgreSQL or Memgraph connections fail.
+
+\begin{lstlisting}[language=bash, caption=Diagnosing database connection issues]
+# Check PostgreSQL is healthy
+docker compose exec postgres pg_isready -U cineca_user
+
+# Check Memgraph is accessible
+docker compose exec memgraph mgconsole \
+    --host 127.0.0.1 --port 7687 --use-ssl=False \
+    -e "RETURN 1;"
+
+# Verify database environment variables
+docker compose exec app env | grep -E "^DB_|^MG_"
+
+# Check migration status
+docker compose exec app \
+    bash -c "cd /app/db/postgres_control && alembic current"
+\end{lstlisting}
+
+\subsubsection{Redis Connection Issues}
+
+\paragraph{Symptom:} Rate limiting fails or session state is lost.
+
+\begin{lstlisting}[language=bash, caption=Diagnosing Redis connection issues]
+# Check Redis is running
+docker compose exec redis redis-cli PING
+
+# Check Redis connection from app
+docker compose exec app python -c "
+import redis
+r = redis.from_url('redis://redis:6379/0')
+print('Connected:', r.ping())
+"
+
+# Verify Redis URL configuration
+docker compose exec app env | grep REDIS_URL
+\end{lstlisting}
+
+\subsection{UI Connectivity Issues}
+
+\subsubsection{Next.js Agent Chat UI Issues}
+
+\paragraph{Symptom:} Chat UI cannot connect to backend API.
+
+\begin{lstlisting}[language=bash, caption=Diagnosing Agent Chat UI issues]
+# Verify API is accessible from UI network
+docker compose exec ui_agent curl -s http://app:8000/v1/health/live
+
+# Check CORS configuration
+curl -v -X OPTIONS \
+    -H "Origin: http://localhost:3000" \
+    -H "Access-Control-Request-Method: POST" \
+    http://localhost:8000/v1/agent-runs
+
+# Verify environment variables
+docker compose exec ui_agent env | grep API_BASE_URL
+\end{lstlisting}
+
+\subsubsection{Streamlit Control Panel Issues}
+
+\paragraph{Symptom:} Control Panel cannot connect to backend or authenticate.
+
+\begin{lstlisting}[language=bash, caption=Diagnosing Control Panel issues]
+# Check Control Panel logs
+docker compose logs -f ui_control_panel
+
+# Verify API connectivity from Control Panel
+docker compose exec ui_control_panel \
+    curl -s http://app:8000/v1/health/ready
+
+# Check Auth0 configuration
+docker compose exec ui_control_panel env | grep AUTH0_
+\end{lstlisting}
+
+\subsection{LLM and Model Issues}
+
+\subsubsection{Model Loading Failures}
+
+\paragraph{Symptom:} Agent runs timeout or fail with model errors.
+
+\begin{lstlisting}[language=bash, caption=Diagnosing model loading issues]
+# Check Ollama service status
+docker compose exec ollama ollama list
+
+# Check model is loaded
+docker compose logs ollama | grep -i "loading\|model"
+
+# Test model directly
+curl -X POST http://localhost:11434/api/generate \
+    -d '{"model":"phi3:mini","prompt":"Hello","stream":false}'
+
+# Check LLM smoke test
+make llm-smoke-test
+\end{lstlisting}
+
+\subsubsection{Timeout Issues}
+
+\paragraph{Symptom:} Agent runs timeout before completion.
+
+\begin{lstlisting}[language=bash, caption=Diagnosing timeout issues]
+# Check current timeout configuration
+docker compose exec app env | grep -E "TIMEOUT|LLM_"
+
+# For CPU environments, ensure extended timeouts:
+# LLM_STEP_TIMEOUT_SECONDS=1200
+# LLM_RUN_TIMEOUT_SECONDS=1800
+# MEMGRAPH_BUILDER_LLM_TIMEOUT_MS=180000
+
+# View timeout-related logs
+docker compose logs app | grep -i timeout
+\end{lstlisting}
+
+\subsection{Health Endpoint Diagnostics}
+
+The platform provides detailed health endpoints for diagnostics:
+
+\begin{table}[ht]
+\centering
+\caption{Health endpoints for troubleshooting.}
+\label{tab:health-endpoints}
+\begin{tabular}{lp{8cm}}
+\hline
+\textbf{Endpoint} & \textbf{Purpose} \\
+\hline
+\texttt{/v1/health/live} & Basic liveness check (process alive) \\
+\texttt{/v1/health/ready} & Readiness check (dependencies available) \\
+\texttt{/v1/health/startup} & Startup completion check \\
+\texttt{/v1/health/components} & Detailed per-component status \\
+\texttt{/health} & Legacy simple health check \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{lstlisting}[language=bash, caption=Comprehensive health check]
+# Get detailed component status
+curl -s http://localhost:8000/v1/health/components | jq
+
+# Example output for healthy system:
+{
+  "status": "healthy",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "version": "1.0.0",
+  "components": {
+    "postgres": {
+      "status": "healthy",
+      "latency_ms": 5,
+      "pool_size": 10,
+      "pool_available": 8
+    },
+    "redis": {
+      "status": "healthy",
+      "latency_ms": 1,
+      "memory_used_mb": 45
+    },
+    "memgraph": {
+      "status": "healthy",
+      "latency_ms": 12,
+      "nodes_count": 1500
+    },
+    "ollama": {
+      "status": "healthy",
+      "model": "phi3:mini",
+      "device": "cpu"
+    }
+  }
+}
+
+# Example output for degraded system:
+{
+  "status": "degraded",
+  "components": {
+    "ollama": {
+      "status": "unhealthy",
+      "error": "Model not loaded"
+    }
+  }
+}
+\end{lstlisting}
+
+\subsection{Common Error Patterns}
+
+Table~\ref{tab:common-errors} summarizes common errors and their solutions.
+
+\begin{table}[ht]
+\centering
+\caption{Common errors and solutions.}
+\label{tab:common-errors}
+\small
+\begin{tabularx}{\textwidth}{lXX}
+\hline
+\textbf{Error} & \textbf{Cause} & \textbf{Solution} \\
+\hline
+401 Unauthorized & Token expired or invalid & Refresh tokens, check OIDC config \\
+403 Forbidden & Insufficient scopes & Request proper scopes from IdP \\
+404 Not Found & Wrong endpoint or tenant isolation & Check URL, verify tenant header \\
+429 Too Many Requests & Rate limit exceeded & Wait or increase rate limits \\
+500 Internal Server Error & Application error & Check logs, verify dependencies \\
+503 Service Unavailable & Dependency unavailable & Check health/components endpoint \\
+504 Gateway Timeout & Upstream timeout & Increase proxy timeouts \\
+Connection Refused & Service not running & Check container status \\
+Model not loaded & Ollama model missing & Pull model: \texttt{ollama pull phi3:mini} \\
+Migration failed & Database schema mismatch & Run \texttt{alembic upgrade head} \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Log Analysis}
+
+\begin{lstlisting}[language=bash, caption=Log analysis commands]
+# View recent errors
+docker compose logs app 2>&1 | grep -i error | tail -20
+
+# View structured logs (JSON format in production)
+docker compose logs app 2>&1 | tail -10 | jq
+
+# Filter by log level
+docker compose logs app 2>&1 | grep '"level":"error"'
+
+# View specific component logs
+docker compose logs app 2>&1 | grep "orchestrator"
+docker compose logs app 2>&1 | grep "memgraph"
+docker compose logs app 2>&1 | grep "circuit_breaker"
+
+# Real-time log monitoring
+docker compose logs -f --tail=50 app
+\end{lstlisting}
+
+\subsection{Performance Troubleshooting}
+
+\begin{lstlisting}[language=bash, caption=Performance diagnostics]
+# Check Prometheus metrics for latency
+curl -s http://localhost:8000/metrics | \
+    grep http_request_duration_seconds
+
+# Check agent run metrics
+curl -s http://localhost:8000/metrics | \
+    grep agent_run_duration_seconds
+
+# Check LLM call latency
+curl -s http://localhost:8000/metrics | \
+    grep llm_call_duration_seconds
+
+# Check rate limit status
+curl -s http://localhost:8000/metrics | \
+    grep rate_limit
+\end{lstlisting}
+
+\subsection{Getting Help}
+
+If issues persist after following this troubleshooting guide:
+
+\begin{enumerate}
+    \item \textbf{Check Logs}: Collect relevant logs from all services
+    \item \textbf{Verify Configuration}: Review environment variables against documentation
+    \item \textbf{Run Diagnostics}: Execute health checks and smoke tests
+    \item \textbf{Consult Documentation}: Review API documentation and Q\&A files
+    \item \textbf{Check Alerts}: Review Prometheus alerts for known issues
+\end{enumerate}
+

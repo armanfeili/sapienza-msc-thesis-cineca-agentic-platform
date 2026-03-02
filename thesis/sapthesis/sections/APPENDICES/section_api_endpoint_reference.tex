@@ -1,0 +1,510 @@
+% TODO checklist: Inspected files:
+% - src/routers/README_routers.md
+% - docs/api/ENDPOINT_QUICK_REFERENCE.md
+% - docs/api/openapi.json
+% - README.md (API Endpoints section)
+% - Q&A.md (Q9: Router Modules)
+
+\chapter{API Endpoint Reference}
+\label{app:api-reference}
+
+This appendix provides a reference summary of the REST API endpoints exposed by the Cineca Agentic Platform. For the complete, authoritative API specification including detailed request/response schemas, error codes, scopes, and idempotency behavior, consult the OpenAPI specification at \texttt{/openapi.json} (or \texttt{/docs} for interactive Swagger UI documentation).
+
+\textbf{Provenance}: This reference summary is derived from the OpenAPI specification at \texttt{api/openapi.json} (commit snapshot: see Chapter~\ref{ch:introduction} for recorded commit hash and date). The API follows RESTful conventions with consistent authentication, error handling, and response formats across all 76 endpoints organized into 16 functional categories.
+
+%------------------------------------------------------------------------------
+\section{API Overview}
+\label{app:api:overview}
+
+\subsection{Base URL and Versioning}
+
+The API uses URL-based versioning with the prefix \texttt{/v1/}. All endpoints are accessible via HTTPS in production:
+
+\begin{lstlisting}[language=bash]
+# Development
+http://localhost:8000/v1/
+
+# Production
+https://api.cineca-platform.eu/v1/
+\end{lstlisting}
+
+\subsection{Authentication}
+
+All endpoints (except health probes) require JWT Bearer authentication:
+
+\begin{lstlisting}[language=bash]
+Authorization: Bearer <jwt-access-token>
+\end{lstlisting}
+
+Tokens are issued by the configured OIDC provider and validated against the JWKS endpoint. Required claims include:
+\begin{itemize}
+    \item \texttt{sub}: User subject identifier
+    \item \texttt{iss}: Token issuer (must match \texttt{OIDC\_ISSUER})
+    \item \texttt{aud}: Audience (must match \texttt{OIDC\_AUDIENCE})
+    \item \texttt{tenant\_id}: Tenant identifier (custom claim)
+    \item \texttt{scopes}: Permission scopes (custom claim)
+\end{itemize}
+
+\subsection{Common Response Headers}
+
+All responses include standard headers for tracing and caching:
+
+\begin{table}[ht]
+\centering
+\caption{Standard Response Headers}
+\label{tab:response-headers}
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Header} & \textbf{Description} \\
+    \hline
+    \texttt{X-Request-Id} & Unique request identifier for debugging \\
+    \texttt{X-Correlation-Id} & Correlation ID for distributed tracing \\
+    \texttt{X-RateLimit-Limit} & Maximum requests per window \\
+    \texttt{X-RateLimit-Remaining} & Remaining requests in current window \\
+    \texttt{X-RateLimit-Reset} & Unix timestamp when window resets \\
+    \texttt{ETag} & Entity tag for cache validation (GET requests) \\
+    \texttt{Location} & URL of created resource (201 responses) \\
+    \texttt{Idempotency-Replayed} & Present if response served from cache \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Endpoint Categories}
+\label{app:api:categories}
+
+Table~\ref{tab:endpoint-categories} summarizes the 76 endpoints organized by functional category.
+
+\begin{table}[ht]
+\centering
+\caption{API Endpoint Categories}
+\label{tab:endpoint-categories}
+\small
+\begin{tabularx}{\textwidth}{lrX}
+    \hline
+    \textbf{Category} & \textbf{Count} & \textbf{Description} \\
+    \hline
+    agents & 9 & Agent sessions and execution \\
+    jobs & 8 & Background job management \\
+    models-instances & 7 & LLM model instances \\
+    models-providers & 7 & LLM provider management \\
+    health & 6 & Health and readiness probes \\
+    internal & 6 & Internal operations \\
+    models-manifests-builtins & 5 & Built-in model manifests \\
+    admin-tenants & 5 & Multi-tenant management \\
+    admin-db & 4 & Database administration \\
+    admin-processes & 4 & Process management \\
+    batch & 4 & Bulk operations \\
+    tools & 4 & Tool discovery and invocation \\
+    export/import & 3 & Configuration import/export \\
+    admin-ops & 2 & Admin operations \\
+    auth & 1 & Authentication \\
+    meta & 1 & API metadata \\
+    \hline
+    \textbf{Total} & \textbf{76} & \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Agent Endpoints}
+\label{app:api:agents}
+
+Agent endpoints manage conversational sessions and one-off execution runs.
+
+\subsection{Session Management}
+
+\begin{table}[ht]
+\centering
+\caption{Agent Session Endpoints}
+\label{tab:agent-session-endpoints}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Method} & \textbf{Path} & \textbf{Description} \\
+    \hline
+    POST & \texttt{/v1/agents/sessions} & Create new agent session \\
+    GET & \texttt{/v1/agents/sessions} & List sessions (paginated) \\
+    GET & \texttt{/v1/agents/sessions/\{id\}} & Get session details \\
+    DELETE & \texttt{/v1/agents/sessions/\{id\}} & Cancel session \\
+    GET & \texttt{/v1/agents/sessions/\{id\}/steps} & List session steps \\
+    POST & \texttt{/v1/agents/sessions/\{id\}/steps} & Add step to session \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Agent Runs}
+
+\begin{table}[ht]
+\centering
+\caption{Agent Run Endpoints}
+\label{tab:agent-run-endpoints}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Method} & \textbf{Path} & \textbf{Description} \\
+    \hline
+    POST & \texttt{/v1/agent-runs} & Create and execute agent run \\
+    GET & \texttt{/v1/agent-runs/\{id\}} & Get run results \\
+    GET & \texttt{/v1/agent-runs} & List runs (paginated) \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Jobs Endpoints}
+\label{app:api:jobs}
+
+Job endpoints manage asynchronous background tasks with progress streaming.
+
+\begin{table}[ht]
+\centering
+\caption{Jobs Endpoints}
+\label{tab:jobs-endpoints}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Method} & \textbf{Path} & \textbf{Description} \\
+    \hline
+    POST & \texttt{/v1/jobs} & Create new background job \\
+    GET & \texttt{/v1/jobs} & List jobs (paginated) \\
+    GET & \texttt{/v1/jobs/\{id\}} & Get job status and result \\
+    DELETE & \texttt{/v1/jobs/\{id\}} & Cancel running job \\
+    GET & \texttt{/v1/jobs/\{id\}/events} & SSE stream of job events \\
+    GET & \texttt{/v1/jobs/types} & List allowed job types \\
+    POST & \texttt{/v1/jobs/\{id\}/retry} & Retry failed job \\
+    GET & \texttt{/v1/jobs/stats} & Job statistics summary \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Model Management Endpoints}
+\label{app:api:models}
+
+Model endpoints manage LLM providers, instances, and defaults.
+
+\subsection{Model Instances}
+
+\begin{table}[ht]
+\centering
+\caption{Model Instance Endpoints}
+\label{tab:model-instance-endpoints}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Method} & \textbf{Path} & \textbf{Description} \\
+    \hline
+    GET & \texttt{/v1/models/instances} & List model instances \\
+    POST & \texttt{/v1/models/instances} & Create/load model instance \\
+    GET & \texttt{/v1/models/instances/\{id\}} & Get instance details \\
+    DELETE & \texttt{/v1/models/instances/\{id\}} & Remove instance \\
+    POST & \texttt{/v1/models/instances/\{id\}/tests} & Test instance connectivity \\
+    GET & \texttt{/v1/models/defaults} & Get default model \\
+    PATCH & \texttt{/v1/models/defaults} & Set default model \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{LLM Providers}
+
+\begin{table}[ht]
+\centering
+\caption{Provider Management Endpoints}
+\label{tab:provider-endpoints}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Method} & \textbf{Path} & \textbf{Description} \\
+    \hline
+    GET & \texttt{/v1/admin/models/providers} & List providers \\
+    POST & \texttt{/v1/admin/models/providers/register} & Register provider \\
+    GET & \texttt{/v1/admin/models/providers/\{id\}} & Get provider details \\
+    PATCH & \texttt{/v1/admin/models/providers/\{id\}} & Update provider \\
+    DELETE & \texttt{/v1/admin/models/providers/\{id\}} & Remove provider \\
+    GET & \texttt{/v1/admin/models/providers/main} & Get main provider \\
+    PUT & \texttt{/v1/admin/models/providers/default} & Set default provider \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Health Endpoints}
+\label{app:api:health}
+
+Health endpoints provide Kubernetes-compatible probes for container orchestration.
+
+\begin{table}[ht]
+\centering
+\caption{Health Probe Endpoints}
+\label{tab:health-endpoints}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Method} & \textbf{Path} & \textbf{Description} \\
+    \hline
+    GET & \texttt{/health} & Quick liveness check \\
+    GET & \texttt{/v1/health/live} & Liveness probe (Kubernetes) \\
+    GET & \texttt{/v1/health/ready} & Readiness probe (Kubernetes) \\
+    GET & \texttt{/v1/health/startup} & Startup probe (Kubernetes) \\
+    GET & \texttt{/v1/health/components} & Detailed component status \\
+    GET & \texttt{/metrics} & Prometheus metrics \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Tools Endpoints}
+\label{app:api:tools}
+
+Tool endpoints provide MCP-style tool discovery and invocation.
+
+\begin{table}[ht]
+\centering
+\caption{Tool Endpoints}
+\label{tab:tool-endpoints}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Method} & \textbf{Path} & \textbf{Description} \\
+    \hline
+    GET & \texttt{/v1/tools} & List available tools \\
+    GET & \texttt{/v1/tools/\{name\}} & Get tool metadata \\
+    POST & \texttt{/v1/tools/\{name\}/invocations} & Invoke tool \\
+    GET & \texttt{/v1/tools/\{name\}/invocations/\{id\}} & Get invocation result \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Admin Endpoints}
+\label{app:api:admin}
+
+Administrative endpoints require \texttt{admin:all} scope and provide tenant, database, and process management.
+
+\subsection{Tenant Management}
+
+\begin{table}[ht]
+\centering
+\caption{Tenant Admin Endpoints}
+\label{tab:tenant-admin-endpoints}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Method} & \textbf{Path} & \textbf{Description} \\
+    \hline
+    GET & \texttt{/v1/admin/tenants} & List tenants (paginated) \\
+    POST & \texttt{/v1/admin/tenants} & Create tenant \\
+    GET & \texttt{/v1/admin/tenants/\{id\}} & Get tenant details \\
+    PATCH & \texttt{/v1/admin/tenants/\{id\}} & Update tenant \\
+    DELETE & \texttt{/v1/admin/tenants/\{id\}} & Delete tenant \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Process Management}
+
+\begin{table}[ht]
+\centering
+\caption{Process Admin Endpoints}
+\label{tab:process-admin-endpoints}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Method} & \textbf{Path} & \textbf{Description} \\
+    \hline
+    GET & \texttt{/v1/admin/processes} & List active processes \\
+    DELETE & \texttt{/v1/admin/processes/\{pid\}} & Stop process \\
+    GET & \texttt{/v1/admin/processes/history/manifests} & Manifest history \\
+    GET & \texttt{/v1/admin/processes/history/processes} & Process events \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Error Response Format}
+\label{app:api:errors}
+
+All error responses follow RFC 7807 Problem Details format:
+
+\begin{lstlisting}[language=json]
+{
+  "type": "about:blank",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Invalid request parameters",
+  "instance": "/v1/models/instances",
+  "extensions": {
+    "correlation_id": "req-123",
+    "trace_id": "trace-456"
+  }
+}
+\end{lstlisting}
+
+\subsection{HTTP Status Codes}
+
+\begin{table}[ht]
+\centering
+\caption{HTTP Status Code Reference}
+\label{tab:http-status-codes}
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Code} & \textbf{Description} \\
+    \hline
+    200 OK & Request succeeded \\
+    201 Created & Resource created successfully \\
+    204 No Content & Request succeeded (no body) \\
+    304 Not Modified & ETag matched (use cached) \\
+    400 Bad Request & Invalid request parameters \\
+    401 Unauthorized & Missing or invalid token \\
+    403 Forbidden & Insufficient permissions \\
+    404 Not Found & Resource not found \\
+    409 Conflict & Resource already exists \\
+    422 Unprocessable Entity & Validation error \\
+    429 Too Many Requests & Rate limit exceeded \\
+    500 Internal Server Error & Server error \\
+    503 Service Unavailable & Service temporarily unavailable \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Pagination}
+\label{app:api:pagination}
+
+List endpoints use cursor-based pagination for consistent results:
+
+\begin{lstlisting}[language=json]
+{
+  "items": [...],
+  "total": 150,
+  "next_page_token": "eyJpZCI6MTAwfQ==",
+  "has_more": true
+}
+\end{lstlisting}
+
+\subsection{Pagination Contract}
+
+\subsubsection{Query Parameters}
+\begin{itemize}
+    \item \texttt{page\_size}: Items per page (default: 20, max: 1000)
+    \item \texttt{page\_token}: Cursor from \texttt{next\_page\_token} of previous response
+\end{itemize}
+
+\subsubsection{Cursor Encoding}
+
+The \texttt{page\_token} is a base64-encoded JSON object containing the last item's identifier and sorting criteria. Clients must treat tokens as opaque strings and pass them unchanged. Token structure may change between API versions.
+
+\subsubsection{Ordering Guarantees}
+
+Paginated results maintain stable ordering within a query. However, concurrent modifications may cause items to appear on multiple pages or be skipped. For consistent snapshots, use timestamp-based filtering with \texttt{created\_at} or \texttt{updated\_at} parameters where available.
+
+%------------------------------------------------------------------------------
+\section{Idempotency and Retries}
+\label{app:api:idempotency}
+
+\subsection{Idempotency Key Support}
+
+Certain endpoints accept an \texttt{Idempotency-Key} header to prevent duplicate operations:
+
+\begin{table}[ht]
+\centering
+\caption{Endpoints Supporting Idempotency Keys}
+\label{tab:idempotency-endpoints}
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Endpoint} & \textbf{Idempotency Behavior} \\
+    \hline
+    \texttt{POST /v1/jobs} & Duplicate requests return cached response with \texttt{Idempotency-Replayed} header \\
+    \texttt{POST /v1/agents/sessions} & Same session created if key matches within 24h window \\
+    \texttt{POST /v1/admin/tenants} & Tenant creation idempotent within tenant name scope \\
+    \texttt{POST /v1/models/instances} & Instance creation idempotent per instance name \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Idempotency-Replayed Header}
+
+When an idempotency key matches a previously processed request (within the 24-hour window), the response includes:
+
+\begin{lstlisting}[language=bash]
+Idempotency-Replayed: true
+\end{lstlisting}
+
+The response body and status code match the original request. Clients should detect this header and avoid treating the response as a new resource creation.
+
+\subsection{Retry Recommendations}
+
+\begin{itemize}
+    \item \textbf{Transient Errors (429, 503, 502, 504)}: Use exponential backoff with jitter. Initial delay: 1s, max delay: 60s.
+    \item \textbf{5xx Errors}: Retry with same idempotency key if request is idempotent. Maximum 3 retries.
+    \item \textbf{4xx Errors}: Do not retry unless error indicates a race condition (409 Conflict on create operations).
+\end{itemize}
+
+%------------------------------------------------------------------------------
+\section{Security Posture by Environment}
+\label{app:api:security-posture}
+
+\subsection{Development Environment}
+
+In development (\texttt{APP\_ENV=development}), additional endpoints are accessible:
+
+\begin{table}[ht]
+\centering
+\caption{Development-Only Endpoints}
+\label{tab:dev-endpoints}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Method} & \textbf{Path} & \textbf{Description} \\
+    \hline
+    GET & \texttt{/docs} & Swagger UI (interactive) \\
+    GET & \texttt{/redoc} & ReDoc documentation \\
+    GET & \texttt{/openapi.json} & OpenAPI specification \\
+    GET & \texttt{/metrics} & Prometheus metrics (unauthenticated) \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Production Environment}
+
+In production (\texttt{APP\_ENV=production}), security is hardened:
+
+\begin{itemize}
+    \item \texttt{/docs} and \texttt{/redoc} are disabled or require authentication
+    \item \texttt{/metrics} requires authentication (Bearer token with \texttt{metrics:read} scope)
+    \item \texttt{/openapi.json} is publicly accessible but may be rate-limited
+    \item CORS policies are enforced; only whitelisted origins allowed
+    \item Request size limits are stricter (e.g., 10MB max body size)
+    \item Rate limiting is more aggressive (lower thresholds)
+\end{itemize}
+
+\subsection{Authentication Requirements}
+
+All endpoints except the following require JWT Bearer authentication:
+
+\begin{itemize}
+    \item \texttt{GET /health} (liveness probe)
+    \item \texttt{GET /v1/health/live} (liveness probe)
+    \item \texttt{GET /openapi.json} (may require auth in production)
+\end{itemize}
+
+Health endpoints (\texttt{/v1/health/ready}, \texttt{/v1/health/components}) may require authentication depending on configuration.
+
+%------------------------------------------------------------------------------
+\section{Documentation Access}
+\label{app:api:docs}
+
+Interactive API documentation is available at:
+
+\begin{itemize}
+    \item \textbf{Swagger UI}: \texttt{/docs} (interactive testing; development only or requires authentication in production)
+    \item \textbf{ReDoc}: \texttt{/redoc} (read-only documentation; development only or requires authentication in production)
+    \item \textbf{OpenAPI JSON}: \texttt{/openapi.json} (machine-readable spec; publicly accessible but may be rate-limited in production)
+\end{itemize}
+
+For the complete, authoritative API specification with detailed schemas, consult the OpenAPI JSON endpoint.
+

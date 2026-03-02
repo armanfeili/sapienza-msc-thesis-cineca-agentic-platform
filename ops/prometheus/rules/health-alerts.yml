@@ -1,0 +1,209 @@
+groups:
+  - name: platform_health_critical
+    interval: 30s
+    rules:
+      # Critical: Core database unavailable
+      - alert: PostgreSQLDown
+        expr: health_component_status{component="postgres"} == 2
+        for: 2m
+        labels:
+          severity: critical
+          component: postgres
+          tier: database
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "PostgreSQL health check has been failing for 2 minutes. Component: {{ $labels.component }}, Status: ERROR"
+          runbook_url: "https://docs.platform.local/runbooks/postgres-down"
+
+      # Critical: Cache unavailable
+      - alert: RedisDown
+        expr: health_component_status{component="redis"} == 2
+        for: 2m
+        labels:
+          severity: critical
+          component: redis
+          tier: cache
+        annotations:
+          summary: "Redis cache is down"
+          description: "Redis health check has been failing for 2 minutes. Component: {{ $labels.component }}, Status: ERROR"
+          runbook_url: "https://docs.platform.local/runbooks/redis-down"
+
+      # Critical: Application unavailable
+      - alert: AppDown
+        expr: health_component_status{component="app"} == 2
+        for: 1m
+        labels:
+          severity: critical
+          component: app
+          tier: application
+        annotations:
+          summary: "Application is down"
+          description: "Application health check has been failing for 1 minute. Component: {{ $labels.component }}, Status: ERROR"
+          runbook_url: "https://docs.platform.local/runbooks/app-down"
+
+  - name: platform_health_warning
+    interval: 30s
+    rules:
+      # Warning: Database degraded
+      - alert: PostgreSQLDegraded
+        expr: health_component_status{component="postgres"} == 1
+        for: 5m
+        labels:
+          severity: warning
+          component: postgres
+          tier: database
+        annotations:
+          summary: "PostgreSQL database is degraded"
+          description: "PostgreSQL health check showing degraded status for 5 minutes. Component: {{ $labels.component }}"
+          runbook_url: "https://docs.platform.local/runbooks/postgres-degraded"
+
+      # Warning: Cache degraded
+      - alert: RedisDegraded
+        expr: health_component_status{component="redis"} == 1
+        for: 5m
+        labels:
+          severity: warning
+          component: redis
+          tier: cache
+        annotations:
+          summary: "Redis cache is degraded"
+          description: "Redis health check showing degraded status for 5 minutes. Component: {{ $labels.component }}"
+          runbook_url: "https://docs.platform.local/runbooks/redis-degraded"
+
+      # Warning: All providers unhealthy
+      - alert: AllProvidersUnhealthy
+        expr: health_component_status{component="providers"} == 2
+        for: 5m
+        labels:
+          severity: warning
+          component: providers
+          tier: llm
+        annotations:
+          summary: "All LLM providers are unhealthy"
+          description: "All providers have been unhealthy for 5 minutes. Check provider connectivity."
+          runbook_url: "https://docs.platform.local/runbooks/providers-down"
+
+      # Warning: Some providers unhealthy
+      - alert: ProvidersDegraded
+        expr: health_component_status{component="providers"} == 1
+        for: 10m
+        labels:
+          severity: warning
+          component: providers
+          tier: llm
+        annotations:
+          summary: "Some LLM providers are unhealthy"
+          description: "One or more providers have been unhealthy for 10 minutes. Check provider health details."
+          runbook_url: "https://docs.platform.local/runbooks/providers-degraded"
+
+  - name: platform_health_info
+    interval: 60s
+    rules:
+      # Info: Memgraph issues (non-critical)
+      - alert: MemgraphDegraded
+        expr: health_component_status{component="memgraph"} >= 1
+        for: 15m
+        labels:
+          severity: info
+          component: memgraph
+          tier: database
+        annotations:
+          summary: "Memgraph database is degraded or unavailable"
+          description: "Memgraph health check has been non-OK for 15 minutes. This is informational - Memgraph is not required for core operations."
+          runbook_url: "https://docs.platform.local/runbooks/memgraph-degraded"
+
+      # Info: Monitoring services down
+      - alert: MonitoringServicesDegraded
+        expr: health_component_status{component=~"prometheus|grafana"} >= 1
+        for: 10m
+        labels:
+          severity: info
+          component: "{{ $labels.component }}"
+          tier: monitoring
+        annotations:
+          summary: "Monitoring service {{ $labels.component }} is degraded"
+          description: "{{ $labels.component }} health check has been non-OK for 10 minutes. This is informational - monitoring services are not required for core operations."
+          runbook_url: "https://docs.platform.local/runbooks/monitoring-degraded"
+
+  - name: platform_health_latency
+    interval: 30s
+    rules:
+      # Warning: High database latency
+      - alert: PostgreSQLHighLatency
+        expr: health_component_latency_ms{component="postgres"} > 500
+        for: 5m
+        labels:
+          severity: warning
+          component: postgres
+          tier: database
+        annotations:
+          summary: "PostgreSQL latency is high"
+          description: "PostgreSQL health check latency has been above 500ms for 5 minutes. Current: {{ $value }}ms"
+          runbook_url: "https://docs.platform.local/runbooks/postgres-latency"
+
+      # Warning: High cache latency
+      - alert: RedisHighLatency
+        expr: health_component_latency_ms{component="redis"} > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: redis
+          tier: cache
+        annotations:
+          summary: "Redis latency is high"
+          description: "Redis health check latency has been above 100ms for 5 minutes. Current: {{ $value }}ms"
+          runbook_url: "https://docs.platform.local/runbooks/redis-latency"
+
+      # Warning: High provider latency
+      - alert: ProviderHighLatency
+        expr: health_component_latency_ms{component="providers"} > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: providers
+          tier: llm
+        annotations:
+          summary: "Provider health check latency is high"
+          description: "Provider health check latency has been above 1000ms for 5 minutes. Current: {{ $value }}ms"
+          runbook_url: "https://docs.platform.local/runbooks/provider-latency"
+
+  - name: platform_background_jobs
+    interval: 60s
+    rules:
+      # Warning: Health check job failing
+      - alert: HealthCheckJobFailing
+        expr: rate(background_job_duration_seconds_count{job="health-checks",status="error"}[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          job: health-checks
+          tier: background
+        annotations:
+          summary: "Health check background job is failing"
+          description: "Health check job has been failing for 5 minutes. Check worker logs."
+          runbook_url: "https://docs.platform.local/runbooks/background-job-failing"
+
+      # Warning: Provider health check job failing
+      - alert: ProviderHealthCheckJobFailing
+        expr: rate(background_job_duration_seconds_count{job="provider-health-checks",status="error"}[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          job: provider-health-checks
+          tier: background
+        annotations:
+          summary: "Provider health check background job is failing"
+          description: "Provider health check job has been failing for 5 minutes. Check worker logs."
+          runbook_url: "https://docs.platform.local/runbooks/provider-health-job-failing"
+
+      # Info: Background job slow
+      - alert: BackgroundJobSlow
+        expr: histogram_quantile(0.95, rate(background_job_duration_seconds_bucket[5m])) > 30
+        for: 10m
+        labels:
+          severity: info
+          tier: background
+        annotations:
+          summary: "Background job {{ $labels.job }} is running slowly"
+          description: "95th percentile execution time for {{ $labels.job }} has been above 30s for 10 minutes. Current: {{ $value }}s"
+          runbook_url: "https://docs.platform.local/runbooks/background-job-slow"

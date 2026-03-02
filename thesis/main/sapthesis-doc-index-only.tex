@@ -1,0 +1,2482 @@
+% !TeX encoding = UTF-8
+% !TeX program = pdflatex
+% !TeX spellcheck = en_US
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  SAPTHESIS TEMPLATE FOR: CINECA AGENTIC PLATFORM THESIS
+%%  
+%%  Master's Thesis in Data Science
+%%  Sapienza Università di Roma
+%%  Facoltà di Ingegneria dell'Informazione, Informatica e Statistica
+%%  
+%%  Author: Arman Feili (Matricola: 2101835)
+%%  Email: feili.2101835@studenti.uniroma1.it
+%%  
+%%  University Supervisors:
+%%    - Prof. Marco Raoul Marini (marini@di.uniroma1.it)
+%%    - Dr. Valerio Venanzi (venanzi@di.uniroma1.it)
+%%  
+%%  CINECA Supervisors:
+%%    - Dr. Giuseppe Melfi (G.MELFI@cineca.it)
+%%    - Dr. Marco Puccini (m.puccini@cineca.it)
+%%  
+%%  Date: December 2025
+%%  
+%%  Links:
+%%    - GitHub: https://github.com/armanfeili
+%%    - Scholar: https://scholar.google.com/citations?user=qfG60rMAAAAJ
+%%    - LinkedIn: https://www.linkedin.com/in/arman-feili/
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Note: binding option should be passed without the '=' syntax for sapthesis
+\documentclass[a4paper,twoside]{sapthesis}
+
+% Set binding offset using geometry (sapthesis uses geometry internally)
+\geometry{bindingoffset=0.6cm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% PACKAGES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% NOTE: The sapthesis class already loads the following packages:
+%   xkeyval, etoolbox, geometry, ifxetex, xltxtra, fontenc, textcomp,
+%   lmodern, caption, graphicx, color, booktabs, amsmath, fancyhdr
+% Do NOT include these packages again in the preamble!
+%
+% Package order follows sapthesis documentation examples:
+
+\usepackage{microtype}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{subcaption}
+% \usepackage{glossaries}  % Uncomment when ready to add glossary
+\usepackage{url}
+\usepackage{csquotes}
+
+% hypersetup: Following sapthesis documentation examples format
+\hypersetup{
+    pdftitle={Design and Implementation of an Enterprise-Grade AI Agent Orchestration Platform: The Cineca Agentic Platform},
+    pdfauthor={Arman Feili},
+    pdfsubject={Master's Thesis in Data Science},
+    pdfkeywords={AI Agents, LLM, Orchestration, MCP, Graph Database, Multi-tenancy, Enterprise},
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue,
+    filecolor=blue
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% CODE LISTING SETTINGS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{pythonstyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    language=Python
+}
+
+\lstset{style=pythonstyle}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% TITLE PAGE INFORMATION (Mandatory commands marked with *)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% * MANDATORY: Title of the thesis
+% Use \\ for manual line breaks to compose a beautiful title
+\title{Design and Implementation of an Enterprise-Grade\\
+       AI Agent Orchestration Platform:\\
+       The Cineca Agentic Platform}
+
+% OPTIONAL: Alternative title (e.g., in another language)
+% If both \subtitle and \alttitle are used, alttitle is discarded
+% \alttitle{Progettazione e Implementazione di una Piattaforma\\
+%           di Orchestrazione di Agenti AI di Livello Enterprise:\\
+%           La Piattaforma Agentic di Cineca}
+
+% * MANDATORY: Author (student's name)
+\author{Arman Feili}
+
+% * MANDATORY: ID number (matricola in Italian)
+\IDnumber{2101835}
+
+% * MANDATORY: Use the official name of the course
+% Even if thesis is in English, use the official Italian name if that's official
+\course{Master of Science in Data Science}
+
+% * MANDATORY: Course organizer (Faculty/School)
+% Use \\ to properly break the lines
+\courseorganizer{Facolt\`a di Ingegneria dell'Informazione,\\Informatica e Statistica}
+
+% Academic Year
+\AcademicYear{2025/2026}
+
+% * MANDATORY: At least one advisor
+% University Supervisor
+\advisor{Prof. Marco Raoul Marini}
+\coadvisor{Dr. Valerio Venanzi}
+
+% CINECA Supervisors (External)
+\coadvisor{Dr. Giuseppe Melfi}
+\coadvisor{Dr. Marco Puccini}
+
+% * MANDATORY: Copyright year (usually graduation year)
+\copyyear{2026}
+
+% * MANDATORY: Author email (auto-hyperlinked)
+\authoremail{feili.2101835@studenti.uniroma1.it}
+
+% OPTIONAL: Thesis type
+\thesistype{Master's Thesis}
+
+% OPTIONAL: Version date
+% \versiondate{December 2025}
+
+% OPTIONAL: Thesis website (auto-hyperlinked)
+\website{https://github.com/armanfeili}
+
+% OPTIONAL: Exam information (shown on back of title page)
+% \examdate{[Date of Final Exam]}
+% \examiner{[Examiner Name]}  % Can use multiple times
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% GLOSSARY DEFINITIONS (to be expanded)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Glossary setup - uncomment when adding glossary entries
+% \makeglossaries
+% 
+% Example glossary entries:
+% \newglossaryentry{agent}{name=Agent, description={An autonomous software entity that can perceive its environment and take actions to achieve goals}}
+% \newglossaryentry{mcp}{name=MCP, description={Model Context Protocol - a specification for tool integration with LLMs}}
+% \newglossaryentry{llm}{name=LLM, description={Large Language Model - a neural network trained on vast text corpora}}
+%
+% To use glossaries:
+% 1. Uncomment \makeglossaries above
+% 2. Add glossary entries
+% 3. Add \printglossaries before \end{document}
+% 4. Run: pdflatex -> makeglossaries -> pdflatex
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DOCUMENT START
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\frontmatter
+
+\maketitle
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DEDICATION (Optional)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Dedication (optional) - uncomment and customize when ready
+% \dedication{
+%     To my family,
+%     who supported me throughout this journey.
+% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ABSTRACT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{abstract}
+    % TODO: Expand and refine this abstract (target: 300-500 words)
+    
+    The rapid advancement of Large Language Models (LLMs) has opened new possibilities for building intelligent software agents capable of reasoning, planning, and executing complex tasks. However, deploying AI agents in enterprise environments presents significant challenges, including multi-tenancy requirements, security and governance needs, reliability concerns, and integration with existing infrastructure.
+    
+    This thesis presents the design and implementation of the Cineca Agentic Platform, an enterprise-grade AI agent orchestration system developed in collaboration with CINECA, Italy's national supercomputing center. The platform addresses the gap between research-oriented agent frameworks and production-ready enterprise systems by providing a comprehensive solution for agent orchestration, tool integration, and knowledge graph querying.
+    
+    The key contributions of this work include: (1) a novel three-layer architecture separating core backend services, data persistence, and presentation concerns; (2) a native implementation of the Model Context Protocol (MCP) with 34 tools across 17 categories; (3) a Natural Language to Cypher pipeline enabling intuitive graph database querying with multi-layer safety validation; (4) a comprehensive security framework featuring OIDC/JWT authentication, role-based access control, multi-tenancy isolation, and PII protection; (5) a production-ready observability stack with Prometheus metrics, OpenTelemetry tracing, and structured logging; and (6) an asynchronous job system supporting long-running agent tasks with real-time progress streaming.
+    
+    The platform is implemented using Python and FastAPI for the backend, PostgreSQL and Redis for data management, Memgraph for graph storage, and dual frontends built with Next.js and Streamlit. Evaluation demonstrates the system's capability to handle enterprise workloads while maintaining security, reliability, and extensibility.
+    
+    This work contributes to the emerging field of enterprise AI agent systems by providing a reference architecture and open-source implementation that bridges the gap between academic agent research and industrial deployment requirements.
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ACKNOWLEDGMENTS (Optional)
+%% Note: According to sapthesis documentation, acknowledgments should be
+%% limited or avoided - the dedication should be enough.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \begin{acknowledgments}
+%     % TODO: Add acknowledgments (optional)
+%     % I would like to thank...
+% \end{acknowledgments}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% TABLE OF CONTENTS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\tableofcontents
+
+% Optional: List of Figures and Tables (uncomment if needed)
+% \listoffigures
+% \listoftables
+% \lstlistoflistings
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% MAIN MATTER
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\mainmatter
+
+%==============================================================================
+% PART I: INTRODUCTION AND BACKGROUND
+%==============================================================================
+
+\chapter{Introduction}
+\label{ch:introduction}
+
+% TODO: Fill this chapter
+
+\section{Motivation and Context}
+\label{sec:motivation}
+% Topics to cover:
+% - Rise of Large Language Models (LLMs) in enterprise applications
+% - Need for AI agent orchestration in research/HPC environments
+% - CINECA as Italy's national supercomputing center
+% - Bioinformatics and computational workflows context
+
+\section{Primary Use Cases and Stakeholders}
+\label{sec:use-cases-stakeholders}
+% Content later:
+% - Stakeholder roles: end users, admins/operators, security/compliance, developers
+% - Core use cases: chat/agent runs, graph Q\&A, background jobs, monitoring, admin operations
+% - Derived from README + Q\&A
+
+\section{Industrial and Institutional Context}
+\label{sec:industrial-context}
+% Content later:
+% - Collaboration with CINECA and institutional constraints
+% - HPC / research environment constraints
+% - Enterprise context: multi-tenant institutions, privacy, compliance, long-running workloads
+
+\section{Problem Statement}
+\label{sec:problem-statement}
+% Topics to cover:
+% - Challenges of building production-ready AI agent systems
+% - Multi-tenancy requirements
+% - Security and governance needs
+% - Integration with existing infrastructure (graph databases, HPC)
+% - Reliability and observability requirements
+
+\section{Research Objectives}
+\label{sec:objectives}
+% Topics to cover:
+% - Primary objective: Design and implement an enterprise-grade agent platform
+% - Sub-objectives: Security, multi-tenancy, observability, extensibility
+% - Scope: What is included and what is not
+
+\section{Scope and Non-Goals}
+\label{sec:scope-nongoals}
+% Content later:
+% - Explicit non-goals (e.g., not a generic RAG library, not a UI framework per se, not full MLOps)
+% - Clarify boundaries based on README/Q\&A scope notes
+
+\section{Contributions}
+\label{sec:contributions}
+% Topics to cover:
+% - Novel architectural design for agent orchestration
+% - MCP tool ecosystem implementation
+% - NL-to-Cypher pipeline for graph Q&A
+% - Comprehensive security and governance framework
+% - Production deployment at CINECA
+
+\section{Thesis Structure}
+\label{sec:thesis-structure}
+% Topics to cover:
+% - Brief overview of each chapter
+
+
+%==============================================================================
+\chapter{Background and Related Work}
+\label{ch:background}
+
+% TODO: Fill this chapter
+
+\section{Large Language Models and AI Agents}
+\label{sec:llm-agents}
+% Topics to cover:
+% - Evolution of LLMs (GPT, LLaMA, Phi, etc.)
+% - Definition of AI agents
+% - Agent architectures (ReAct, Chain-of-Thought, etc.)
+% - Tool use in LLM agents
+
+\section{Agent Orchestration Frameworks}
+\label{sec:orchestration-frameworks}
+% Topics to cover:
+% - LangChain
+% - AutoGPT
+% - CrewAI
+% - Microsoft Semantic Kernel
+% - Comparison and limitations
+
+\subsection{State-of-the-Art Comparison Matrix}
+
+This thesis focuses on the design and implementation of an enterprise-grade agent platform.
+To position the Cineca Agentic Platform within the current ecosystem, it is important to
+distinguish between (i) \,\textbf{protocol specifications}, (ii) \,\textbf{tool servers},
+and (iii) \,\textbf{agent/orchestration libraries}.
+
+\paragraph{Framing: platform vs. protocol vs. library}
+\begin{itemize}
+    \item \textbf{Model Context Protocol (MCP)} is a \emph{standard} describing how an AI client discovers and calls tools (e.g., \texttt{tools/list}, \texttt{tools/call}). MCP is not an agent runtime by itself.
+    \item \textbf{GitHub MCP Server} and \textbf{neo4j-contrib/mcp-neo4j} are \emph{MCP servers}: they expose domain-specific capabilities as MCP tools.
+    \item \textbf{LangChain} and \textbf{LlamaIndex} primarily provide \emph{in-process components} (chains, retrievers, indices) that can be composed into applications.
+    \item \textbf{LangGraph} is a low-level \emph{orchestration runtime} for long-running, stateful agent workflows.
+    \item The \textbf{Cineca Agentic Platform} is a \emph{full-stack backend platform} that integrates orchestration, tools, persistence, governance (auth/RBAC/tenancy), background jobs, and observability.
+\end{itemize}
+
+\paragraph{Decision summary}
+The Cineca Agentic Platform is strongest when the requirements include enterprise concerns
+such as multi-tenancy, centralized RBAC, audit logging, rate limiting, operational monitoring,
+and long-running background jobs with streaming progress. In contrast, MCP servers excel when
+the primary requirement is \emph{standardized tool interoperability} with MCP-capable clients,
+and libraries such as LangChain/LlamaIndex excel for rapid prototyping inside a single application.
+
+\begin{table}[ht]
+\centering
+\caption{High-level comparison of Cineca Agentic Platform vs. representative protocol/server/library alternatives.}
+\label{tab:sota-comparison}
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccccc}
+    \hline
+    Capability & Cineca & MCP & GitHub MCP & mcp-neo4j & GraphCypherQA & KG Index & LangGraph (+Neo4j)\\
+    \hline
+Category & Platform & Protocol & Tool server & Tool server & Library chain & Library index & Orchestration \\
+End-to-end backend API & Y & N & N & N & N & N & P \\
+Multi-tenancy & Y & N & N & N & N & N & P \\
+Central RBAC/governance & Y & P & P & P & N & N & P \\
+Audit trail (runs/tools) & Y & P & P & P & N & N & P \\
+Rate limiting built-in & Y & P & P & P & N & N & P \\
+Background jobs/workers & Y & N & N & N & N & N & P \\
+Streaming progress (SSE/streaming) & Y & P & P & Y & N & N & P \\
+Graph DB integration & Y (Memgraph) & N & N & Y (Neo4j) & Y (Neo4j) & P & Y (Neo4j) \\
+NL$\rightarrow$Cypher workflow & Y (pipeline) & N & N & Y (tools) & Y (chain) & N & P \\
+MCP interoperability (JSON-RPC) & P & Y & Y & Y & N & N & N \\
+Observability (metrics/traces/health) & Y & N & P & P & P & P & P \\
+    \hline
+\end{tabular}%
+}
+\vspace{2mm}
+\caption*{Legend: Y = yes (built-in), P = partial/depends on integration, N = not in scope.}
+\end{table}
+
+\paragraph{Strengths of Cineca relative to common frameworks}
+Compared to typical agent/RAG frameworks, Cineca provides a larger fraction of production requirements
+\emph{as first-class features}: tenant isolation, centralized permissions, auditability, rate limiting,
+and operational observability. This is especially relevant for deployments in research or enterprise environments
+where compliance, traceability, and controlled tool execution are required.
+
+\paragraph{Trade-offs}
+The main trade-off is scope: a full platform is heavier than embedding a single chain/index in a Python application.
+Moreover, Cineca's tooling surface is ``MCP-style'' (tool discovery and invocation), but strict MCP interoperability
+requires implementing the MCP JSON-RPC transport and contracts; similarly, Cineca's graph subsystem targets Memgraph,
+whereas Neo4j-centered ecosystems (e.g., Aura, Neo4j-specific tooling) may be better served by Neo4j-native components.
+
+\section{Model Context Protocol (MCP)}
+\label{sec:mcp-background}
+% Topics to cover:
+% - MCP specification
+% - Tool definitions and schemas
+% - MCP servers and clients
+% - Advantages for enterprise integration
+
+\section{Graph Databases and Natural Language Interfaces}
+\label{sec:graph-databases}
+% Topics to cover:
+% - Graph database fundamentals
+% - Memgraph and Neo4j
+% - Cypher query language
+% - NL-to-Cypher challenges and approaches
+
+\section{Retrieval-Augmented Generation and Knowledge Graphs}
+\label{sec:rag-kg}
+% Content later:
+% - Brief introduction to RAG approaches (retrieval + generation)
+% - Contrast RAG over documents vs. NL-to-Cypher over a graph database
+% - Why this thesis focuses on a graph-native pipeline (ties to NL-to-Cypher chapter)
+
+\section{Security and Multi-Tenancy Foundations}
+\label{sec:security-foundations}
+% Topics to cover (conceptual foundations only; platform-specific implementation in Chapter 8):
+% - OIDC and JWT authentication fundamentals
+% - Role-Based Access Control (RBAC) concepts and patterns
+% - Multi-tenant architecture patterns (shared vs isolated)
+% - Audit logging principles and compliance foundations
+% - Common security challenges in AI agent systems
+
+\section{Observability in Distributed Systems}
+\label{sec:observability-background}
+% Topics to cover:
+% - Three pillars: Metrics, Logs, Traces
+% - Prometheus and Grafana
+% - OpenTelemetry
+% - Health probes for Kubernetes
+
+
+%==============================================================================
+\chapter{Requirements and Design Goals}
+\label{ch:requirements}
+
+% TODO: Fill this chapter
+
+\section{Functional Requirements}
+\label{sec:functional-requirements}
+% Topics to cover:
+% - Use cases formalized as requirements
+% - Agent execution requirements (chat, graph Q&A, long-running jobs)
+% - Tool invocation and discovery requirements
+% - Multi-model and multi-provider requirements
+% - Administrative and operational requirements
+
+\section{Non-Functional Requirements}
+\label{sec:nonfunctional-requirements}
+% Topics to cover:
+% - Security (authentication, authorization, data protection)
+% - Multi-tenancy (isolation, per-tenant configuration)
+% - Reliability (availability, fault tolerance, graceful degradation)
+% - Latency and performance targets
+% - Auditability and compliance requirements
+% - Observability (metrics, logs, traces)
+% - Scalability requirements
+
+\section{Constraints and Assumptions}
+\label{sec:constraints-assumptions}
+% Topics to cover:
+% - CINECA institutional constraints
+% - HPC environment realities
+% - Infrastructure assumptions (Docker, Kubernetes, cloud vs on-prem)
+% - Technology constraints (Python ecosystem, specific database choices)
+% - Compliance and regulatory context
+
+\section{Design Principles}
+\label{sec:design-principles}
+% Topics to cover:
+% - Why the architecture looks the way it does
+% - Separation of concerns (three-layer design)
+% - Defense in depth (security layers)
+% - Fail-safe defaults
+% - Extensibility and modularity
+% - Observability by design
+% - Enterprise-first vs prototype-first trade-offs
+
+\section{Evaluation Criteria}
+\label{sec:evaluation-criteria}
+% Topics to cover:
+% - What "good" means for the evaluation chapter
+% - Success metrics for functional requirements
+% - Performance benchmarks and targets
+% - Security evaluation criteria
+% - Operational readiness criteria
+% - Comparison criteria vs related work
+
+\section{Requirements Traceability Matrix}
+\label{sec:traceability-matrix}
+% Maps each requirement to its evaluation location and verification method.
+%
+% Topics to cover:
+% - Traceability from functional requirements (3.1) to evaluation tests/metrics
+% - Traceability from non-functional requirements (3.2) to evaluation sections
+% - Requirement ID → Metric/Test → Evaluation Section reference
+%
+% Suggested table format:
+% | Req ID | Requirement Summary | Verification Method | Evaluation Section |
+% |--------|---------------------|---------------------|--------------------|
+% | FR-1   | Agent execution     | E2E workflow test   | 12.2               |
+% | FR-2   | Tool invocation     | Integration test    | 12.3               |
+% | NFR-1  | Multi-tenancy       | Isolation test      | 12.4               |
+% | NFR-2  | Security            | Penetration test    | 12.5               |
+% | NFR-3  | Latency < 500ms     | Performance bench   | 12.4               |
+% | ...    | ...                 | ...                 | ...                |
+%
+% Benefits:
+% - Provides auditable link between requirements and validation
+% - Ensures no requirement is left unverified
+% - Standard practice in engineering theses
+
+
+%==============================================================================
+% PART II: ARCHITECTURE AND DESIGN
+%==============================================================================
+
+\chapter{System Architecture}
+\label{ch:architecture}
+
+% TODO: Fill this chapter
+
+\section{Architectural Overview}
+\label{sec:arch-overview}
+% Topics to cover:
+% - High-level architecture diagram
+% - Three-layer design: Core Backend, Data & Infrastructure, Presentation
+% - Cross-cutting concerns
+
+\section{Domain Model and Core Concepts}
+\label{sec:domain-model}
+% Content later:
+% - High-level description of core entities (tenant, principal, agent run, session, job, tool, provider, model instance, etc.)
+% - Tie to schema chapter details and glossary
+
+\section{Core Backend Layer}
+\label{sec:core-backend}
+% Topics to cover:
+% - FastAPI application structure
+% - API layer and routers (23 modules)
+% - Service layer responsibilities
+% - Adapter pattern for external systems
+
+\subsection{Cross-Cutting Concerns}
+% Topics to cover (based on Q&A.md Q14 - 14 concerns):
+% 1. Logging (structlog, request\_id correlation)
+% 2. Metrics (Prometheus histograms, counters, gauges)
+% 3. Tracing (OpenTelemetry spans, trace context propagation)
+% 4. Security (JWT validation, RBAC, tenant isolation)
+% 5. Rate Limiting (sliding window, per-user/tenant quotas)
+% 6. PII Scrubbing (detection and redaction in logs/outputs)
+% 7. Error Handling (RFC 7807 Problem Details)
+% 8. Pagination (cursor-based, stateless)
+% 9. ETags and Caching (conditional requests)
+% 10. Idempotency (Redis-backed keys, safe retries)
+% 11. Deprecation (headers, version tracking)
+% 12. Request ID Correlation (trace-request-response linking)
+% 13. Circuit Breakers (resilience for external calls)
+% 14. Health Probes (Kubernetes liveness/readiness/startup)
+
+\subsection{API Layer Design}
+% Topics to cover:
+% - RESTful API design principles
+% - Versioning strategy (/v1, /v2)
+% - Schema validation with Pydantic
+% - 76 endpoints across 16 categories
+% - Idempotency for safe retry
+% - Pagination using token-based cursors
+% - ETags for conditional GETs
+
+\subsubsection{Router Modules}
+% Topics to cover (based on Q&A.md Q9):
+%
+% 23 Router Modules in src/routers/:
+%
+% Agent Domain:
+% - agents.py: Agent sessions and run management
+% - agent\_runs.py: Individual run operations
+% - sessions.py: Session lifecycle
+%
+% Job Domain:
+% - jobs.py: Job CRUD and status
+% - job\_events.py: SSE event streaming
+%
+% Model Domain:
+% - models\_providers.py: LLM provider management
+% - models\_instances.py: Model instance configuration
+% - models\_manifests\_builtins.py: Built-in model manifests
+%
+% Admin Domain:
+% - admin\_tenants.py: Multi-tenant management
+% - admin\_db.py: Database administration
+% - admin\_ops.py: Admin operations
+% - admin\_processes.py: Process management
+%
+% Tools Domain:
+% - tools.py: MCP tool discovery and invocation
+%
+% Infrastructure Domain:
+% - health.py: Health probes
+% - internal.py: Internal operations
+% - auth.py: Authentication endpoints
+% - meta.py: API metadata
+%
+% Data Domain:
+% - batch.py: Bulk operations
+% - export\_import.py: Configuration import/export
+%
+% Graph Domain:
+% - graph.py: Graph query endpoints
+% - cypher.py: NL-to-Cypher API
+
+\subsection{Domain Schemas}
+% Topics to cover:
+% - Pydantic request/response models
+% - Agents \& Runs schemas
+% - Jobs schemas
+% - Models \& Providers schemas
+% - Tools schemas
+% - Tenants, Auth, Admin schemas
+% - Single source of truth for API consistency
+
+\subsection{Error Handling}
+% Topics to cover:
+% - RFC 7807 Problem Details pattern
+% - ProblemDetail structure (type, title, status, detail, instance)
+% - Internal error code enumeration
+% - Helper functions for consistent error responses
+% - Standardized HTTP exceptions
+
+\subsection{Service Layer}
+% Topics to cover:
+% - Orchestrator service (8,263 lines)
+% - Intent classifier
+% - Default Model Resolver (DMR)
+% - Job service
+% - Session management
+
+\subsection{Orchestrator Responsibilities and Design Trade-offs}
+% Content later:
+% - Orchestrator responsibilities: planning, step execution, tool routing, safety hooks, cost tracking hooks
+% - Design trade-offs: centralization vs. modularity, complexity vs. control, testing implications
+
+\subsection{Adapter Layer}
+% Topics to cover:
+% - LLM adapters (OpenAI-style, Ollama)
+% - Memgraph adapter
+% - Redis adapter
+% - Circuit breaker pattern
+
+\section{Data and Persistence Layer}
+\label{sec:data-layer}
+% Topics to cover:
+% - PostgreSQL as control plane
+% - Redis as data plane (caching, queues)
+% - Memgraph as graph database
+% - Repository pattern implementation
+
+\subsection{PostgreSQL Control Plane}
+% Topics to cover:
+% - ORM models (SQLAlchemy)
+% - Database schema design
+% - Alembic migrations (26+ migrations)
+% - Repository pattern
+
+\subsubsection{Repository Pattern Implementation}
+% Topics to cover (based on Q&A.md Q10):
+%
+% 10+ Repository Classes in db/postgres\_control/repositories/:
+%
+% 1. TenantRepository:
+%    - CRUD for tenant entities
+%    - Tenant configuration management
+%    - Default settings per tenant
+%
+% 2. ProviderRepository:
+%    - LLM provider registration
+%    - Provider configuration
+%    - Provider health status
+%
+% 3. ModelInstanceRepository:
+%    - Model instance definitions
+%    - Default model resolution
+%    - Usage tracking
+%
+% 4. AgentRunRepository:
+%    - Agent run persistence
+%    - Status tracking
+%    - Step recording
+%
+% 5. SessionRepository:
+%    - Session lifecycle
+%    - Message history
+%    - Session context
+%
+% 6. AuditLogRepository:
+%    - Append-only audit records
+%    - Query by tenant/user/time
+%    - Compliance reporting
+%
+% 7. ToolInvocationRepository:
+%    - Tool call records
+%    - Input/output logging
+%    - Error tracking
+%
+% 8. RateLimitRepository:
+%    - Quota configurations
+%    - Override settings
+%    - Usage statistics
+%
+% 9. ManifestRepository:
+%    - Built-in model manifests
+%    - Version tracking
+%    - Configuration templates
+%
+% 10. MigrationRepository:
+%    - Alembic migration state
+%    - Version history
+%    - Rollback support
+%
+% Repository Interface Pattern:
+% - Abstract base class with common operations
+% - Type-safe generic methods
+% - Transaction support
+% - Tenant-scoped queries by default
+
+\subsection{Redis Data Plane}
+% Topics to cover:
+% - Caching strategies
+% - Job queues
+% - Rate limiting
+% - Session state and idempotency
+
+\subsubsection{Redis Usage Categories}
+% Topics to cover (based on Q&A.md Q11):
+%
+% 10+ Redis Usage Categories:
+%
+% 1. Job Queues:
+%    - BRPOP-based job queue
+%    - Priority queue support
+%    - Dead letter queue for failed jobs
+%
+% 2. Session State:
+%    - Agent session context storage
+%    - Message history caching
+%    - Session expiration (TTL-based)
+%
+% 3. Rate Limiting:
+%    - ZSET-based sliding window
+%    - Per-user and per-tenant quotas
+%    - Configurable window sizes
+%
+% 4. Idempotency Keys:
+%    - Request deduplication
+%    - Configurable expiration window
+%    - SETNX-based implementation
+%
+% 5. Circuit Breaker State:
+%    - Provider health status
+%    - Failure counts per provider
+%    - State transitions (CLOSED/OPEN/HALF\_OPEN)
+%
+% 6. LLM Response Caching:
+%    - Prompt-response pairs
+%    - Content-addressed keys (hash of prompt)
+%    - Configurable cache TTL
+%
+% 7. JWKS Key Caching:
+%    - Public keys from OIDC providers
+%    - Refresh on key rotation
+%    - TTL-based expiration
+%
+% 8. Health Check Results:
+%    - Component status caching
+%    - Aggregated health state
+%    - Short TTL for freshness
+%
+% 9. Worker Registration:
+%    - Active worker tracking
+%    - Heartbeat timestamps
+%    - Worker capability metadata
+%
+% 10. Distributed Locks:
+%    - SETNX-based locking
+%    - Job processing exclusivity
+%    - Lock timeout handling
+
+\subsection{Memgraph Graph Domain}
+% Topics to cover:
+% - Graph schema (User, Task, File, Institution)
+% - Relationships (WORKS\_AT, CREATED, OUTPUT)
+% - NL-to-Cypher pipeline
+
+\section{Presentation Layer}
+\label{sec:presentation-layer}
+% Topics to cover:
+% - Next.js Agent Chat UI
+% - Streamlit Control Panel
+% - API consumption patterns
+
+\subsection{Agent Chat UI}
+% Topics to cover:
+% - Technologies: Next.js App Router, React, TypeScript
+% - Tailwind CSS, shadcn/ui, Radix UI
+% - Zustand for state management
+% - Role-based behavior (user/admin)
+% - Side-by-side visualization:
+%   - User and agent messages
+%   - Agent runs and statuses
+%   - Orchestration steps with JSON
+%   - Execution metrics (latency, tokens, tool calls)
+% - Dynamic model selection
+% - Responsive layout
+
+\subsection{Control Panel UI}
+% Topics to cover:
+% - Streamlit application for operators/admins
+% - Core components: session state, API client with retries
+% - Views/Tabs:
+%   - Dashboard: KPIs, health status, trends
+%   - Agents: search runs, sessions, steps, metrics
+%   - Jobs: list, manage, monitor status, event logs
+%   - Models \& Providers: manage defaults
+%   - Tools: discover, invoke, inspect schemas
+%   - Tenants: create and manage
+%   - Admin: configuration operations
+%   - Cypher/Graph: NL-to-Cypher experiments
+% - UX: paginated tables, JSON drawers, visual timelines
+
+\subsection{Dual-UI Architecture Analysis}
+% Topics to cover (based on Q&A.md Q49):
+% Advantages of Dual-UI Approach:
+% - Persona separation: end-user chat vs admin/operator dashboard
+% - Technology specialization: Next.js for real-time, Streamlit for data exploration
+% - Parallel development: separate teams can work independently
+% - Risk isolation: UI bugs don't affect the other interface
+% - Different deployment patterns: static hosting vs Python process
+%
+% Potential Limitations:
+% - Code duplication: both UIs have their own API clients
+% - State drift: session states can differ between UIs
+% - Cognitive overhead: users switching between UIs need context
+% - Testing complexity: E2E tests needed for both interfaces
+% - Maintenance burden: updates may need to be applied twice
+%
+% Mitigations implemented:
+% - Shared backend REST API as single source of truth
+% - Consistent model selection across both UIs
+% - Common health/status endpoints for both interfaces
+
+\subsection{Developer Experience and API Consumer Patterns}
+% Content later:
+% - How external clients consume the backend API (REST patterns, auth patterns)
+% - Error contracts (e.g., RFC 7807 Problem Details)
+% - Typical developer workflows guided by README project map and Q\&A DX notes
+
+
+%==============================================================================
+\chapter{Agent Orchestration Engine}
+\label{ch:orchestration}
+
+% TODO: Fill this chapter
+
+\section{Orchestration Design}
+\label{sec:orchestration-design}
+% Topics to cover:
+% - Multi-step agent runs
+% - TODO list planning
+% - Step execution flow
+
+\subsection{Execution Modes and Run Types}
+% Content later:
+% - Sync vs async runs
+% - Demo/test modes vs production runs
+% - Handling long-running operations vs quick chat-style requests
+
+\section{Intent Classification}
+\label{sec:intent-classification}
+% Topics to cover:
+% - Intent modes: CHAT, GRAPH, ADMIN, SECURITY, DANGEROUS
+% - Classification pipeline (catalog → patterns → LLM fallback)
+% - Confidence scoring
+
+\subsection{Prompt Catalog and Pattern-Based Routing}
+% Content later:
+% - Intent prompt catalog
+% - Pattern rules and routing heuristics (CHAT/GRAPH/ADMIN/SECURITY/DANGEROUS)
+% - LLM fallback when pattern rules are insufficient
+
+\section{Agent Run Lifecycle}
+\label{sec:agent-run-lifecycle}
+% Topics to cover:
+% - State machine: pending → running → succeeded/failed/cancelled
+% - HTTP request to final response flow
+% - Background task execution
+% - Polling and SSE streaming
+
+\subsection{Agent Run Internal Structure}
+% Topics to cover (based on Q&A.md Q36):
+%
+% Core Entities:
+% 1. Session (AgentSession):
+%    - Conversational context spanning multiple runs
+%    - Fields: session\_id, tenant\_id, user\_id, created\_at
+%    - Message history for context continuity
+%
+% 2. Run (AgentRun):
+%    - Single execution request
+%    - Fields: run\_id, session\_id, tenant\_id, status, input, output
+%    - State machine: pending → running → succeeded | failed | cancelled
+%    - Metrics: total\_tokens, latency\_ms, step\_count
+%
+% 3. Step (AgentStep):
+%    - One unit of work within a run
+%    - Types: llm\_call, tool\_invocation, graph\_query, reflection
+%    - Fields: step\_id, run\_id, step\_type, input, output, latency\_ms
+%    - Ordered sequence for auditability
+%
+% 4. TODO List (RunTODO):
+%    - Planning phase output
+%    - Fields: todo\_id, run\_id, description, status, order
+%    - Status: pending → in\_progress → done | skipped
+%
+% Execution Flow:
+% 1. Request received → Create Run (pending)
+% 2. Intent classification → Determine processing path
+% 3. TODO planning → Break into steps
+% 4. Execute steps sequentially
+% 5. Record each step with metrics
+% 6. Aggregate results → Final output
+% 7. Update run status (succeeded/failed)
+
+\section{NL-to-Cypher Pipeline}
+\label{sec:nl-cypher}
+% Topics to cover:
+% - Natural language normalization
+% - Cypher generation (LLM or test hints)
+% - Safety validation (read-only, tenant boundaries)
+% - Query execution
+% - Result summarization
+
+\subsection{Pipeline Stages}
+% Topics to cover (based on Q&A.md Q29-35):
+%
+% Stage 1: Natural Language Normalization
+% - Input sanitization and cleaning
+% - Entity extraction (user names, dates, institutions)
+% - Context enrichment from session history
+%
+% Stage 2: Cypher Generation
+% - LLM-based generation with schema context
+% - Test mode: JSON file mapping prompts to expected Cypher
+% - Prompt engineering for Cypher syntax compliance
+%
+% Stage 3: Safety Validation (6 Layers)
+% - Layer 1: Syntax validation (Cypher parser)
+% - Layer 2: Read-only enforcement (no WRITE, DELETE, MERGE)
+% - Layer 3: Tenant boundary isolation (filter by tenant\_id)
+% - Layer 4: Depth limits (path traversal bounds)
+% - Layer 5: Timeout guards (query execution limits)
+% - Layer 6: Result size caps (node/relationship limits)
+%
+% Stage 4: Query Execution
+% - Execute validated Cypher against Memgraph
+% - Capture execution metrics (latency, result count)
+% - Error handling with user-friendly messages
+%
+% Stage 5: Result Summarization
+% - LLM summarization of graph results
+% - Natural language response generation
+% - Citation of source nodes/relationships
+
+\subsection{Failure Modes and Safety Guardrails}
+% Content later:
+% - Typical failure modes: hallucinated queries, schema mismatch, tenant leakage, performance/timeouts
+% - Guardrails: syntax checks, read-only enforcement, tenant filters, depth limits, timeouts, result caps
+
+\subsection{NL-to-Cypher Advantages over RAG}
+% Topics to cover (based on Q&A.md Q33-34):
+%
+% Advantages:
+% 1. Structured Reasoning: Graph traversal preserves relationships
+% 2. Multi-hop Queries: Follow paths across connected entities
+% 3. Aggregations: COUNT, SUM, AVG directly in Cypher
+% 4. Schema Awareness: Query uses actual data model
+% 5. Deterministic Results: Same query = same results
+%
+% Risks and Mitigations:
+% 1. Hallucinated Queries: Mitigated by syntax validation
+% 2. Injection Attacks: Parameterized queries, read-only mode
+% 3. Tenant Data Leakage: Mandatory tenant filters
+% 4. Performance Issues: Query timeouts and result limits
+% 5. Schema Mismatch: Schema context in generation prompt
+
+\section{LLM Provider Management}
+\label{sec:llm-providers}
+% Topics to cover:
+% - Provider registry
+% - Model instances
+% - Default Model Resolver (DMR)
+% - Provider fallback strategy
+
+\subsection{Resilience Framework}
+% Topics to cover:
+% - Circuit breaker pattern
+% - Retry strategies
+% - Cost tracking
+% - Provider health monitoring
+
+\subsection{Budgeting and Cost Governance}
+% Content later:
+% - Budgets per tenant (soft/hard limits), alerts
+% - Cost aggregation (per-request, per-session, per-tenant, per-provider)
+% - Exposure via APIs/metrics and operational implications
+
+\subsubsection{Circuit Breaker Implementation}
+% Topics to cover (based on Q&A.md Q24):
+%
+% Circuit Breaker States:
+% - CLOSED: Normal operation, requests pass through
+% - OPEN: Failures exceeded threshold, fast-fail
+% - HALF\_OPEN: Testing recovery, limited requests
+%
+% Configuration Parameters:
+% - failure\_threshold: Failures before opening (default: 5)
+% - recovery\_timeout: Seconds before half-open (default: 30)
+% - success\_threshold: Successes to close (default: 2)
+%
+% Per-Provider Tracking:
+% - Each LLM provider has own circuit breaker
+% - State stored in Redis (distributed)
+% - Failure counts with TTL
+%
+% Failure Detection:
+% - HTTP 5xx responses
+% - Connection timeouts
+% - Rate limit responses (429)
+% - Exception types (configurable)
+%
+% Recovery Process:
+% 1. Circuit opens after failure\_threshold
+% 2. Wait recovery\_timeout seconds
+% 3. Allow limited test requests (half-open)
+% 4. If success\_threshold met, close circuit
+% 5. If failure, return to open state
+
+\subsubsection{Cost Tracking}
+% Topics to cover (based on Q&A.md Q26):
+%
+% Cost Calculation:
+% - Per-model pricing configuration
+% - Input tokens × input price
+% - Output tokens × output price
+% - Stored per request and aggregated
+%
+% Tracking Granularity:
+% - Per-request cost
+% - Per-session cost (aggregated)
+% - Per-tenant cost (aggregated)
+% - Per-provider cost (aggregated)
+%
+% Self-Hosted Models:
+% - Zero or nominal cost (Ollama)
+% - Optional cost tracking disabled
+% - Resource utilization tracking instead
+%
+% Reporting:
+% - Prometheus metrics for cost
+% - Tenant billing aggregation
+% - Cost alerting thresholds
+
+\subsubsection{Provider Fallback Strategy}
+% Topics to cover (based on Q&A.md Q27-28):
+%
+% Fallback Chain:
+% 1. Primary provider unavailable (circuit open)
+% 2. Check fallback provider availability
+% 3. Route to fallback if healthy
+% 4. Continue down fallback chain
+%
+% Fallback Configuration:
+% - Per-intent fallback providers
+% - Priority ordering
+% - Capability requirements (context length, etc.)
+%
+% Fallback Scenarios:
+% - Provider outage: Immediate fallback
+% - Rate limiting: Fallback after exhaustion
+% - High latency: Fallback after timeout
+% - Cost threshold: Fallback to cheaper provider
+
+\subsection{Registry-Based Model Management}
+% Topics to cover:
+% - Providers registered in control plane (PostgreSQL)
+% - Model instances reference providers
+% - Local LLM onboarding (Ollama)
+% - Usage tracking (tokens, latency)
+% - Monetary cost tracking (optional for self-hosted)
+
+
+%==============================================================================
+\chapter{MCP Tools Ecosystem}
+\label{ch:mcp-tools}
+
+% TODO: Fill this chapter
+
+\section{MCP Runtime Architecture}
+\label{sec:mcp-runtime}
+% Topics to cover:
+% - Tool registry
+% - Tool context and invocation
+% - Schema validation
+% - Audit logging
+
+\section{Tooling Use Cases and Interaction Patterns}
+\label{sec:tooling-use-cases}
+% Content later:
+% - Typical workflows: graph Q\&A, system health checks, admin operations, backups
+% - Interaction patterns: tool discovery, authorization, invocation, audit, error handling
+% - Grounded in README + Q\&A
+
+\section{Tool Categories and Inventory}
+\label{sec:tool-inventory}
+% Topics to cover:
+% - 34 tools across 17 categories
+% - Graph tools (query, schema, crud, analytics)
+% - Cache tools
+% - Data tools
+% - Security tools
+% - Admin tools
+% - Session, user, viz, privacy tools
+
+\subsection{Tool Inventory Summary}
+% Summary of tool categories and representative tools.
+% Full enumeration is provided in Appendix B (MCP Tool Reference).
+%
+% Topics to cover (summary form):
+%
+% Graph Tools (8 tools):
+% - graph.query: Execute Cypher queries
+% - graph.secure\_query: Validated Cypher with safety checks
+% - graph.search: Full-text and pattern search
+% - graph.schema: Retrieve graph schema information
+% - graph.analytics: Centrality, paths, clustering
+% - graph.crud: Node/edge CRUD operations
+% - graph.bulk: Bulk graph operations
+% - graph.generate\_cypher: NL-to-Cypher generation
+%
+% Security Tools (5 tools):
+% - security.check: Validate security constraints
+% - security.audit: Audit logging operations
+% - security.permissions: Check user permissions
+% - security.allowed\_operations: List allowed operations
+% - security.describe\_principal: Get principal information
+%
+% System Tools (4 tools):
+% - system.health: Component health status
+% - system.status: System status summary
+% - system.metrics: Prometheus metrics access
+% - system.backup: Trigger backup operations
+%
+% Model Tools (2 tools):
+% - model.manage: Provider/model management
+% - model.test: Test model connectivity
+%
+% Output Tools (2 tools):
+% - output.format: Format response data
+% - output.summarize: Summarize large outputs
+%
+% Data Tools (2 tools):
+% - data.archive: Archive data operations
+% - data.quality: Data quality checks
+%
+% Other Tools (11 tools):
+% - agent.context: Session context management
+% - cache.manage: Cache operations
+% - catalog.discover: Tool/service discovery
+% - db.switch: Database context switching
+% - errors.report: Error reporting
+% - privacy.consent: Privacy consent management
+% - ratelimit.manage: Rate limit operations
+% - session.manage: Session lifecycle
+% - tenancy.manage: Tenant operations
+% - user.profile: User profile access
+% - viz.render: Visualization rendering
+%
+% Tool Discovery Mechanism:
+% - GET /v1/tools: List all available tools
+% - GET /v1/tools/{name}/schema: Get tool JSON schema
+% - POST /v1/tools/{name}/invocations: Invoke tool
+% - Tools auto-register via @mcp\_tool decorator
+% - Filtering by category and required scopes
+
+\section{Tool Authorization}
+\label{sec:tool-authorization}
+% Topics to cover:
+% - Per-tool RBAC
+% - Scope requirements
+% - Policy files
+
+\section{Extending the Tool Ecosystem}
+\label{sec:tool-extension}
+% Topics to cover:
+% - @mcp\_tool decorator
+% - Adding new tools
+% - Testing tools
+
+\subsection{Extensibility Guide with Difficulty Ratings}
+% Topics to cover (based on Q&A.md Q45):
+%
+% Adding a New Tool (Difficulty: LOW)
+% - Create new file in src/mcp/tools/<category>/
+% - Use @mcp\_tool decorator with name, description, required\_scopes
+% - Define Pydantic input/output schemas
+% - Implement async function
+% - Add unit tests
+% - Tool auto-registers via discovery mechanism
+%
+% Adding a New LLM Provider (Difficulty: MEDIUM)
+% - Add provider type to Provider model in db/postgres\_control/models/
+% - Implement adapter in src/adapters/ following OpenAI-style interface
+% - Add circuit breaker configuration in resilience module
+% - Create health check probe for the provider
+% - Add cost tracking configuration if applicable
+% - Write integration tests with mocked responses
+%
+% Adding a New Router/Endpoint (Difficulty: MEDIUM)
+% - Create router file in src/routers/
+% - Define Pydantic request/response schemas in src/schemas/
+% - Implement endpoint with proper error handling (RFC 7807)
+% - Add authentication dependencies
+% - Register router in src/app.py
+% - Add OpenAPI documentation
+% - Write endpoint tests
+%
+% Adding a New Background Job Type (Difficulty: MEDIUM-HIGH)
+% - Define job handler in src/jobs/
+% - Add job type to JobType enum
+% - Implement worker logic with heartbeat and cancellation support
+% - Add SSE event streaming for progress updates
+% - Configure retry policies and idempotency
+%
+% Full Feature Extension (Difficulty: HIGH)
+% - Requires touching multiple layers: router, service, repository, schema
+% - May need database migration (Alembic)
+% - Should include security considerations (RBAC scopes)
+% - Must include comprehensive testing
+
+
+%==============================================================================
+\chapter{Background Jobs and Workers}
+\label{ch:jobs-workers}
+
+% TODO: Fill this chapter
+
+\section{Asynchronous Job System}
+\label{sec:job-system}
+% Topics to cover:
+% - Job model and lifecycle
+% - State machine: queued → running → finished/failed/cancelled
+% - Job types (demo, test, long-running, agent.run)
+
+\subsection{Job Document Structure}
+% Topics to cover (based on Q&A.md Q38):
+%
+% JobDocument Schema:
+% - job\_id: Unique identifier (UUID)
+% - tenant\_id: Tenant isolation boundary
+% - job\_type: Type of job (demo, test, long\_running, agent.run)
+% - status: Current state (queued, running, finished, failed, cancelled)
+% - priority: Execution priority (0-10, higher = more urgent)
+% - payload: Job-specific input data (JSON)
+% - result: Job output (JSON, populated on completion)
+% - error: Error details if failed
+% - created\_at, updated\_at, started\_at, finished\_at: Timestamps
+% - worker\_id: Assigned worker identifier
+% - progress: Completion percentage (0-100)
+% - retry\_count: Number of retry attempts
+%
+% Job State Transitions:
+% - queued → running: Worker picks up job
+% - running → finished: Successful completion
+% - running → failed: Error during execution
+% - running → cancelled: User cancellation
+% - failed → queued: Retry (if retries remaining)
+%
+% Job Stores:
+% - JobStore interface: get, save, list, update\_status
+% - RedisJobStore: Production implementation
+% - InMemoryJobStore: Testing implementation
+%
+% Event System:
+% - JobEvent model: event\_id, job\_id, event\_type, timestamp, data
+% - Event types: created, started, progress, completed, failed, cancelled
+% - SSE streaming: GET /v1/jobs/{id}/events
+%
+% Idempotency:
+% - Idempotency key in job creation
+% - Deduplication within configurable window
+% - Same key returns existing job
+
+\section{Worker Architecture}
+\label{sec:worker-arch}
+% Topics to cover:
+% - JobsWorker process
+% - Queue polling (Redis BRPOP)
+% - Heartbeat mechanism
+% - Graceful shutdown
+
+\subsection{Worker Implementation Details}
+% Topics to cover (based on Q&A.md Q39):
+%
+% JobsWorker Class:
+% - Separate process from web application
+% - Connects to same Redis instance
+% - Configurable concurrency (workers per process)
+%
+% Queue Polling:
+% - Redis BRPOP for blocking queue read
+% - Priority queue support (multiple queues)
+% - Configurable polling timeout
+%
+% Heartbeat Mechanism:
+% - Periodic heartbeat to Redis (every N seconds)
+% - Worker registration with unique worker\_id
+% - Dead worker detection (missed heartbeats)
+% - Orphaned job recovery
+%
+% Cancellation Handling:
+% - Cancel flag checked in Redis
+% - Cooperative cancellation (job checks flag)
+% - Immediate status update on cancellation
+% - Resource cleanup procedures
+%
+% Graceful Shutdown:
+% - SIGTERM/SIGINT signal handling
+% - Complete current job before exit
+% - Release held resources
+% - Deregister from worker pool
+% - Configurable shutdown timeout
+
+\section{Job Events and SSE Streaming}
+\label{sec:job-events}
+% Topics to cover:
+% - JobEvent model
+% - Server-Sent Events (SSE)
+% - Real-time progress updates
+
+\section{Job Cancellation}
+\label{sec:job-cancellation}
+% Topics to cover:
+% - Cancel flag in Redis
+% - Cooperative cancellation
+% - Cleanup procedures
+
+\section{Background Framework}
+\label{sec:background-framework}
+% Topics to cover:
+% - APScheduler integration
+% - Scheduled background tasks
+% - Health monitoring (Postgres, Redis, Memgraph, LLM providers)
+% - Provider health checks
+% - Backups (Memgraph archives, Redis)
+% - Retention policies and checksum validation
+% - Cleanup (age-based pruning, stale caches)
+% - Metrics emission for background tasks
+
+\subsection{Scheduled Task Categories}
+% Topics to cover (based on Q&A.md Q40):
+%
+% Health Monitoring Tasks:
+% - PostgreSQL connectivity check
+% - Redis ping and latency measurement
+% - Memgraph connection validation
+% - LLM provider health probes
+% - Configurable intervals (e.g., every 30 seconds)
+%
+% Backup Tasks:
+% - Memgraph graph snapshots
+% - Redis RDB/AOF backups
+% - Manifest generation with checksums
+% - Retention policy enforcement
+% - Configurable backup schedules (e.g., daily)
+%
+% Cleanup Tasks:
+% - Stale session pruning (age-based)
+% - Expired cache entry removal
+% - Old job record cleanup
+% - Log rotation triggers
+% - Configurable retention periods
+%
+% APScheduler Configuration:
+% - AsyncIOScheduler for non-blocking execution
+% - Cron-style scheduling expressions
+% - Job stores: Redis-backed for persistence
+% - Executor: ThreadPoolExecutor for CPU tasks, AsyncIOExecutor for I/O
+% - Misfire grace time configuration
+%
+% Metrics Emission:
+% - Background task execution counts
+% - Task latency histograms
+% - Success/failure counters
+% - Last execution timestamps
+
+\section{High Availability and Fault-Tolerance Patterns}
+\label{sec:ha-ft}
+% Content later:
+% - Worker heartbeats and dead-worker detection
+% - Orphaned-job recovery, retries, backoff
+% - Interaction with health probes and readiness gating
+
+
+%==============================================================================
+% PART III: SECURITY AND GOVERNANCE
+%==============================================================================
+
+\chapter{Security Framework}
+\label{ch:security}
+
+% TODO: Fill this chapter
+
+\section{Authentication}
+\label{sec:authentication}
+% Topics to cover:
+% - OIDC/JWT-based authentication
+% - JWKS key management and caching
+% - Token validation (issuer, audience, expiration)
+% - Bearer token extraction
+
+\subsection{Authentication Flow Details}
+% Topics to cover (based on Q&A.md Q16):
+%
+% OIDC/JWT Authentication Flow:
+%
+% 1. Client Obtains Token:
+%    - User authenticates with OIDC provider (Auth0, etc.)
+%    - Receives JWT access token
+%    - Token contains claims (sub, tenant\_id, roles, scopes)
+%
+% 2. Request with Bearer Token:
+%    - Client includes token in Authorization header
+%    - Format: "Bearer <JWT>"
+%
+% 3. Token Extraction (src/security/jwt.py):
+%    - Extract token from header
+%    - Decode without verification (get header)
+%    - Identify key ID (kid) for verification
+%
+% 4. JWKS Key Retrieval:
+%    - Fetch public keys from OIDC provider's JWKS endpoint
+%    - Cache keys in Redis with TTL
+%    - Refresh on cache miss or key rotation
+%
+% 5. Token Validation:
+%    - Verify signature using JWKS public key
+%    - Validate issuer (iss claim)
+%    - Validate audience (aud claim)
+%    - Check expiration (exp claim)
+%    - Verify not-before (nbf claim)
+%
+% 6. Principal Construction:
+%    - Extract subject (user ID)
+%    - Extract tenant\_id from custom claim
+%    - Extract roles and scopes
+%    - Build Principal object for request context
+%
+% 7. Request Context:
+%    - Principal available via dependency injection
+%    - Used for authorization decisions
+%    - Logged for audit trail
+
+\section{Authorization}
+\label{sec:authorization}
+% Topics to cover:
+% - RBAC model
+% - Scopes and permissions
+% - Role-to-scope expansion
+% - Wildcard support
+% - Policy files
+
+\subsection{RBAC Implementation Details}
+% Topics to cover (based on Q&A.md Q17):
+%
+% Role Hierarchy:
+% - admin: Full system access
+% - operator: Operational management
+% - user: Standard user access
+% - service: Machine-to-machine access
+%
+% Scope Format:
+% - Pattern: resource:action (e.g., agents:read, jobs:write)
+% - Wildcard: resource:* for all actions on resource
+% - Super wildcard: *:* for admin access
+%
+% Role-to-Scope Expansion:
+% - Roles defined in policy files (JSON/YAML)
+% - Each role maps to list of scopes
+% - Scopes expanded at authorization time
+% - Custom roles supported per tenant
+%
+% Authorization Check Flow:
+% 1. Extract required scopes from endpoint decorator
+% 2. Get principal's effective scopes (role expansion)
+% 3. Check if required scopes ⊆ effective scopes
+% 4. Wildcard matching for broader permissions
+% 5. Return 403 Forbidden if check fails
+%
+% Policy File Structure:
+% - roles: Role definitions with scope lists
+% - resources: Resource definitions
+% - actions: Action types (read, write, delete, admin)
+% - constraints: Additional access constraints
+%
+% Per-Tool Authorization:
+% - MCP tools declare required\_scopes
+% - Checked before tool invocation
+% - Audit logged regardless of outcome
+
+\section{Multi-Tenancy}
+\label{sec:multi-tenancy}
+% Topics to cover:
+% - Tenant isolation at database level
+% - Tenant ID propagation
+% - Per-tenant rate limits
+% - Tenant-scoped defaults
+
+\section{Rate Limiting}
+\label{sec:rate-limiting}
+% Topics to cover:
+% - Sliding window algorithm
+% - Redis ZSET implementation
+% - Per-user and per-tenant quotas
+% - Graceful degradation
+
+\section{Data Protection}
+\label{sec:data-protection}
+% Topics to cover:
+% - PII scrubbing (detection and redaction)
+% - Output guard
+% - Intent filter (blocking dangerous operations)
+
+\section{Threat Model and Attack Scenarios}
+\label{sec:threat-model}
+% Content later:
+% - Attacker profiles: malicious tenants, compromised users, external attackers
+% - Threats: data exfiltration, privilege escalation, NL-to-Cypher injection, tool abuse, budget abuse
+% - Mitigations: auth, RBAC/scopes, tenancy, rate limits, PII scrubbing, secure graph pipeline
+
+\section{Audit Logging}
+\label{sec:audit-logging}
+% Topics to cover:
+% - Audit event model
+% - Append-only storage
+% - Compliance requirements
+
+\section{Security Strengths and Weaknesses}
+\label{sec:security-strengths-weaknesses}
+% Content later:
+% - Strengths: layered auth, explicit scopes, strict tenant filters, read-only graph path, auditability
+% - Weaknesses/limitations: reliance on external IdP, no formal proofs, encryption-at-rest assumptions, etc.
+
+
+%==============================================================================
+% PART IV: OBSERVABILITY AND OPERATIONS
+%==============================================================================
+
+\chapter{Observability}
+\label{ch:observability}
+
+% TODO: Fill this chapter
+
+\section{Metrics}
+\label{sec:metrics}
+% Topics to cover:
+% - Prometheus metrics
+% - HTTP request metrics
+% - Agent run metrics
+% - Job metrics
+% - Tool invocation metrics
+% - LLM call metrics
+
+\subsection{Comprehensive Metrics Catalog}
+% Topics to cover (based on Q&A.md Q42):
+%
+% HTTP Request Metrics:
+% - http\_requests\_total: Counter by method, path, status
+% - http\_request\_duration\_seconds: Histogram by method, path
+% - http\_requests\_in\_progress: Gauge of active requests
+%
+% Agent Run Metrics:
+% - agent\_runs\_total: Counter by status, tenant
+% - agent\_run\_duration\_seconds: Histogram by intent type
+% - agent\_run\_steps\_total: Counter of steps executed
+% - agent\_run\_tokens\_total: Counter of LLM tokens used
+%
+% Job Metrics:
+% - jobs\_total: Counter by type, status
+% - job\_duration\_seconds: Histogram by job type
+% - jobs\_in\_progress: Gauge of running jobs
+% - job\_queue\_length: Gauge per queue
+%
+% Tool Invocation Metrics:
+% - tool\_invocations\_total: Counter by tool name, status
+% - tool\_invocation\_duration\_seconds: Histogram by tool
+% - tool\_errors\_total: Counter by tool, error type
+%
+% LLM Call Metrics:
+% - llm\_calls\_total: Counter by provider, model
+% - llm\_call\_duration\_seconds: Histogram by provider
+% - llm\_tokens\_input\_total: Counter of input tokens
+% - llm\_tokens\_output\_total: Counter of output tokens
+% - llm\_cost\_total: Counter of estimated cost (USD)
+%
+% Provider Health Metrics:
+% - provider\_health\_status: Gauge (0=unhealthy, 1=healthy)
+% - circuit\_breaker\_state: Gauge (0=closed, 1=open, 2=half\_open)
+% - provider\_latency\_seconds: Histogram by provider
+%
+% Rate Limiting Metrics:
+% - rate\_limit\_requests\_total: Counter by outcome (allowed/denied)
+% - rate\_limit\_remaining: Gauge per tenant/user
+
+\section{Dashboards, SLOs, and Alerting}
+\label{sec:dashboards-slos-alerting}
+% Content later:
+% - Recommended Grafana dashboards and core KPIs
+% - Example SLOs (latency, error rates, job lag, provider health)
+% - Alerting recommendations tied to metrics/logs/traces
+
+\section{Logging}
+\label{sec:logging}
+% Topics to cover:
+% - Structured logging with structlog
+% - JSON format for production environments
+% - Request ID correlation across services
+% - Log levels and filtering
+% - PII scrubbing in logs
+% - Integration with log aggregation systems
+% - Audit-specific logging channels
+
+\section{Tracing}
+\label{sec:tracing}
+% Topics to cover:
+% - OpenTelemetry integration
+% - Trace and span IDs
+% - Distributed tracing
+
+\section{Health Probes}
+\label{sec:health-probes}
+% Topics to cover:
+% - Kubernetes-style probes
+% - Liveness, readiness, startup
+% - Component health checks
+
+\subsection{Probe Implementation Details}
+% Topics to cover (based on Q&A.md Q43):
+%
+% Probe Types:
+% 1. Liveness Probe (/v1/health/live):
+%    - Purpose: Detect stuck/deadlocked processes
+%    - Response: Simple 200 OK if process is alive
+%    - Frequency: Every 10 seconds (configurable)
+%    - Failure Action: Container restart
+%
+% 2. Readiness Probe (/v1/health/ready):
+%    - Purpose: Determine if ready to accept traffic
+%    - Checks: Database connectivity, Redis availability
+%    - Response: 200 OK if ready, 503 if not ready
+%    - Failure Action: Remove from load balancer
+%
+% 3. Startup Probe (/v1/health/startup):
+%    - Purpose: Detect slow-starting containers
+%    - Checks: All dependencies initialized
+%    - Response: 200 OK when startup complete
+%    - Timeout: Configurable startup period
+%
+% Component Health (/v1/health/components):
+% - Detailed status of each component
+% - Components checked:
+%   - PostgreSQL: Connection pool, query execution
+%   - Redis: Ping latency, memory usage
+%   - Memgraph: Connection, query capability
+%   - LLM Providers: Per-provider health status
+%   - Background Workers: Heartbeat status
+%
+% Response Format:
+% - status: healthy | degraded | unhealthy
+% - components: Object with per-component status
+% - timestamp: Health check time
+% - version: Application version
+%
+% Kubernetes Integration:
+% - livenessProbe, readinessProbe, startupProbe configurations
+% - Configurable initialDelaySeconds, periodSeconds, timeoutSeconds
+% - failureThreshold and successThreshold settings
+
+\section{Operational Playbooks and Runbooks}
+\label{sec:runbooks}
+% Content later:
+% - Operator response to common incidents (DB down, Redis down, Memgraph issues)
+% - LLM provider outage, job queue backlog, degraded health states
+% - How to use metrics/logs/traces/health endpoints to triage
+
+
+%==============================================================================
+% PART V: IMPLEMENTATION, DEPLOYMENT, AND EVALUATION
+%==============================================================================
+
+\chapter{Implementation and Engineering Practices}
+\label{ch:implementation}
+
+% TODO: Fill this chapter
+
+\section{Technology Stack}
+\label{sec:tech-stack}
+% Topics to cover:
+% - Python 3.10+ and FastAPI
+% - PostgreSQL, Redis, Memgraph
+% - Next.js and Streamlit
+% - LLM providers (Ollama, OpenAI)
+
+\section{Codebase Structure}
+\label{sec:codebase}
+% Topics to cover:
+% - Directory organization:
+%   - src/: Main application source (app.py, config.py, routers/, services/, mcp/, security/)
+%   - db/: Database layer (postgres\_control/, redis\_cache/, memgraph\_domain/)
+%   - tests/: Test suite (3000+ test cases in 27 categories)
+%   - scripts/: Utility scripts (auth, database, deployment, testing)
+%   - docs/: Documentation (adr/, api/, architecture/, guides/)
+%   - api/: OpenAPI specifications
+%   - ui\_agent/: Next.js chat UI
+%   - ui\_control\_panel/: Streamlit admin UI
+%   - ops/: Operations configuration (nginx, prometheus, grafana)
+% - Module dependencies
+% - Naming conventions
+
+\subsection{Key Entry Points}
+% Topics to cover:
+% - src/app.py: FastAPI application factory
+% - src/services/orchestrator.py: Agent run execution engine
+% - src/routers/: HTTP endpoints by domain (23 modules)
+% - src/security/: JWT, RBAC, PII, rate limits
+% - src/mcp/tools/: MCP tool implementations (19 categories)
+% - db/postgres\_control/repositories/: Data access layer
+% - src/workers/: Background job processing
+
+\section{Coding Standards and Conventions}
+\label{sec:coding-standards}
+% Content later:
+% - Naming conventions and module organization
+% - Error handling patterns (RFC 7807 Problem Details)
+% - Logging conventions (structlog) and typing conventions
+% - General backend style guidelines derived from README/Q\&A
+
+\section{Testing Strategy}
+\label{sec:testing}
+% Topics to cover:
+% - Test categories (unit, integration, e2e, security, performance)
+% - 3000+ test cases, 236 test files, 2720 test functions
+% - Test coverage
+% - Common test fixtures for Postgres, Redis, Memgraph
+% - In-memory/fake versions for testing
+
+\subsection{Testing Infrastructure Details}
+% Topics to cover (based on Q&A.md Q44):
+%
+% Test Suite Statistics:
+% - 272 test files across 27 categories
+% - ~64,500 lines of test code
+% - 2,700+ test functions
+% - Coverage targeting all layers
+%
+% Test Categories (27 directories):
+% - tests/agents/: Agent run behavior, sessions, orchestration
+% - tests/api/: OpenAPI contract compliance, schema validation
+% - tests/auth/: Authentication flows, JWT handling
+% - tests/background/: Scheduler, cleanup tasks
+% - tests/cache/: Redis caching, TTL management
+% - tests/config/: Configuration loading, environment handling
+% - tests/cypher/: NL-to-Cypher pipeline, query validation
+% - tests/db/: Database operations, migrations
+% - tests/e2e/: Full system workflows
+% - tests/errors/: Error handling, RFC 7807 compliance
+% - tests/health/: Probe behavior, component checks
+% - tests/i18n/: Internationalization
+% - tests/idempotency/: Idempotent operation testing
+% - tests/jobs/: Job lifecycle, worker behavior
+% - tests/logging/: Structured logging, PII scrubbing
+% - tests/mcp/: Tool invocation, discovery
+% - tests/memgraph/: Graph database operations
+% - tests/metrics/: Prometheus metrics emission
+% - tests/models/: LLM provider handling
+% - tests/observability/: Tracing, span context
+% - tests/performance/: Load testing, benchmarks
+% - tests/ratelimit/: Rate limiting algorithms
+% - tests/repositories/: Data access layer
+% - tests/resilience/: Circuit breakers, retries
+% - tests/routers/: HTTP endpoint tests
+% - tests/security/: RBAC, permissions, PII
+% - tests/utils/: Utility function tests
+%
+% Test Markers (pytest markers):
+% - @pytest.mark.slow: Long-running tests
+% - @pytest.mark.integration: Requires external services
+% - @pytest.mark.e2e: Full end-to-end tests
+% - @pytest.mark.security: Security-focused tests
+% - @pytest.mark.skip\_ci: Skip in CI environment
+%
+% Common Fixtures:
+% - db\_session: PostgreSQL test database with rollback
+% - redis\_client: Redis test instance or mock
+% - memgraph\_client: Memgraph test connection
+% - auth\_headers: JWT tokens for different roles
+% - test\_tenant: Isolated tenant for testing
+% - mock\_llm\_provider: Stubbed LLM responses
+
+\subsection{Memgraph NL Test Mode}
+% Topics to cover:
+% - Deterministic testing of NL graph queries
+% - JSON file mapping normalized prompts to expected Cypher
+% - Environment variables controlling test mode
+% - Test hints file path configuration
+% - Independence from LLM output variability
+% - Improved test reliability for graph features
+
+\subsection{Continuous Integration and Quality Gates}
+% Content later:
+% - CI test subsets vs full local suite
+% - Linting/formatting/type-checking gates (if used)
+% - Minimal quality checks and recommended developer workflow
+
+\section{Platform Engineering Utilities}
+\label{sec:platform-utilities}
+% Note: Content merged from former Utilities chapter
+
+\subsection{Pagination and ETags}
+\label{subsec:pagination}
+% Topics to cover:
+% - Stateless token-based pagination (page\_token, page\_size)
+% - ETag support for caching paginated endpoints
+% - Strong/weak ETag computation
+% - Conditional GET/PUT operations
+
+\subsection{Idempotency}
+\label{subsec:idempotency}
+% Topics to cover:
+% - Decorators and helpers for idempotent operations
+% - Redis-backed idempotency keys
+% - In-memory stores for testing
+
+\subsection{JSON Utilities}
+\label{subsec:json-utils}
+% Topics to cover:
+% - Canonical JSON serialization (datetime, UUID, Decimal, Enum, paths)
+% - Error-tolerant decoding and normalization
+% - Run output normalization
+
+\subsection{Provider Resolution}
+\label{subsec:provider-resolution}
+% Topics to cover:
+% - Base URL interpretation
+% - Timeout configuration
+% - Upstream model ID mapping (Ollama)
+
+\subsection{Deprecation Framework}
+\label{subsec:deprecation}
+% Topics to cover:
+% - Marking endpoints and features as deprecated
+% - Removal version tracking
+% - Deprecation headers
+
+
+%==============================================================================
+\chapter{Configuration and Deployment}
+\label{ch:deployment}
+
+% TODO: Fill this chapter
+
+\section{Configuration System}
+\label{sec:configuration}
+% Topics to cover:
+% - Pydantic settings
+% - Environment variables
+% - Compute configuration
+% - Device-aware defaults
+
+\subsection{Compute Configuration}
+% Topics to cover:
+% - Concurrency levels
+% - Timeouts for LLM calls and tool invocations
+% - CPU vs GPU vs MPS usage for local LLMs (Ollama)
+% - Test mode overrides (shorter timeouts, stubbed providers)
+% - Adaptation to different runtime environments (laptop, CI, production)
+
+\section{Environment Profiles (Development, Testing, Production)}
+\label{sec:env-profiles}
+% Content later:
+% - Configuration differences between dev/test/prod
+% - Mocked providers in test mode, reduced timeouts
+% - Stricter security and operational defaults in production
+
+\section{Docker Deployment}
+\label{sec:docker-deployment}
+% Topics to cover:
+% - Docker Compose setup
+% - Service definitions
+% - Networking
+% - Volume management
+
+\section{Deployment Topologies and Scaling Strategies}
+\label{sec:deployment-topologies}
+% Content later:
+% - Single-node vs multi-node deployments
+% - Horizontal scaling (multiple FastAPI instances)
+% - Separating worker processes, Redis scaling/clustering
+% - Kubernetes vs Docker Compose patterns (if applicable)
+
+\section{Production Considerations}
+\label{sec:production}
+% Topics to cover:
+% - Security headers (HSTS, CSP)
+% - TLS termination with NGINX
+% - Scaling considerations
+% - GPU support
+
+\section{Production Checklist}
+\label{sec:production-checklist}
+% Topics to cover:
+% - Security: passwords, OIDC, HTTPS/TLS, APP\_ENV
+% - Database: managed PostgreSQL, SSL, connection pooling
+% - Observability: Prometheus, OpenTelemetry, log aggregation
+% - Scaling: Redis cluster, rate limits, horizontal autoscaling
+
+\section{Operational Scripts}
+\label{sec:operational-scripts}
+% Topics to cover:
+% - ETL Loader: Generate synthetic Memgraph data, load graph datasets
+% - OpenAPI Export: Export specification to JSON/YAML
+% - Backup Script: Graph and Redis backup with manifest.json and checksums
+% - Auth Automation: Shell scripts for token fetching (admin/user/machine)
+% - Makefile Targets: install, test, lint, build, seed, export
+
+\subsection{Developer Tooling and Test Modes}
+% Content later:
+% - Token fetching helpers, seeding data, OpenAPI export
+% - Enabling NL-to-Cypher test mode and other deterministic/testing utilities
+% - Running focused test suites and local dev workflows
+
+\section{Troubleshooting}
+\label{sec:troubleshooting}
+% Topics to cover:
+% - 401/403 errors: Token refresh, JWT validation, scope verification
+% - Backend dependencies not ready: Container status, health endpoints
+% - UI connectivity issues: CORS, routing, base URL configuration
+% - Component health diagnostics: /v1/health/components
+% - Common deployment issues and solutions
+
+
+%==============================================================================
+\chapter{Evaluation}
+\label{ch:evaluation}
+
+% TODO: Fill this chapter
+
+\section{Evaluation Methodology and Setup}
+\label{sec:eval-methodology}
+% Topics to cover:
+% - Evaluation approach and rationale
+% - Test environment setup (hardware, software, configurations)
+% - Data sets and workloads used for evaluation
+% - Metrics collection methodology
+% - Baseline comparisons and control conditions
+% - Reproducibility considerations
+
+\section{End-to-End Workflows}
+\label{sec:e2e-workflows}
+% Topics to cover:
+% - Chat / Agent Run flow (authentication → UI → backend → response)
+% - Graph Q\&A flow (intent classification → NL-to-Cypher → execution → summary)
+% - Long-Running Job flow (creation → worker processing → SSE streaming)
+% - Provider Onboarding flow (registration → model metadata → resilience policies)
+
+\section{Functional Evaluation}
+\label{sec:functional-eval}
+% Topics to cover:
+% - Use case validation
+% - End-to-end workflow testing
+% - API contract compliance
+
+\section{Performance Evaluation}
+\label{sec:performance-eval}
+% Topics to cover:
+% - Response time analysis
+% - Throughput measurements
+% - Resource utilization
+% - Scalability tests
+
+\section{Availability, Fault-Tolerance, and Degradation Behavior}
+\label{sec:availability-ft}
+% Content later:
+% - Qualitative/empirical behavior under failures (provider outage, Redis issues)
+% - Circuit breaker and retry impact
+% - Worker recovery and queue backlog handling
+
+\section{Security Evaluation}
+\label{sec:security-eval}
+% Topics to cover:
+% - Security audit results
+% - Penetration testing
+% - Compliance verification
+
+\section{Operational Cost and Budget Evaluation}
+\label{sec:cost-eval}
+% Content later:
+% - Cost tracking accuracy and overhead
+% - Usefulness of budgets and alerts for admins/operators
+% - Limitations and improvement opportunities
+
+\section{Threats to Validity}
+\label{sec:threats-validity}
+% Topics to cover:
+% - Internal validity threats
+%   - Confounding variables in performance measurements
+%   - Test environment vs production differences
+%   - Implementation bugs affecting results
+% - External validity threats
+%   - Generalizability beyond CINECA context
+%   - Representativeness of workloads and use cases
+%   - Synthetic vs real-world data limitations
+% - Construct validity threats
+%   - Appropriateness of chosen metrics
+%   - Measurement instrumentation accuracy
+% - Reliability threats
+%   - Reproducibility of experiments
+%   - Statistical significance considerations
+% - Mitigations applied
+
+\section{Comparison with Related Work}
+\label{sec:comparison}
+% Topics to cover:
+% - Feature comparison table
+% - Strengths and weaknesses
+% - Unique contributions
+
+\subsection{Comparison Against Baselines (Experimental and Operational)}
+% This section provides an empirical and operational comparison,
+% distinct from the conceptual SOTA survey in Chapter 2.
+%
+% Topics to cover (based on Q&A.md Q50):
+%
+% Comparison Matrix (Cineca vs. SOTA):
+%
+% | Feature                    | Cineca | LangChain | LlamaIndex | Semantic Kernel | OpenAI Assistants | AutoGen | crewAI |
+% |----------------------------|--------|-----------|------------|-----------------|-------------------|---------|--------|
+% | Multi-tenancy (native)     | ✓      | ✗         | ✗          | ✗               | ✗                 | ✗       | ✗      |
+% | Background Job System      | ✓      | ✗         | ✗          | ✗               | ✗                 | ✗       | ✗      |
+% | Graph DB (Memgraph)        | ✓      | Plugin    | Plugin     | ✗               | ✗                 | ✗       | ✗      |
+% | NL-to-Cypher Pipeline      | ✓      | ✗         | Plugin     | ✗               | ✗                 | ✗       | ✗      |
+% | MCP Tool Protocol          | ✓      | ✗         | ✗          | Partial         | ✗                 | ✗       | ✗      |
+% | RBAC + Scopes              | ✓      | ✗         | ✗          | ✗               | ✗                 | ✗       | ✗      |
+% | PII Scrubbing              | ✓      | ✗         | ✗          | ✗               | ✗                 | ✗       | ✗      |
+% | Rate Limiting (built-in)   | ✓      | ✗         | ✗          | ✗               | ✓                 | ✗       | ✗      |
+% | Circuit Breakers           | ✓      | ✗         | ✗          | ✗               | ✓                 | ✗       | ✗      |
+% | Prometheus Metrics         | ✓      | ✗         | ✗          | ✗               | ✗                 | ✗       | ✗      |
+% | OpenTelemetry Tracing      | ✓      | Plugin    | Plugin     | ✗               | ✗                 | ✗       | ✗      |
+% | Health Probes (K8s)        | ✓      | ✗         | ✗          | ✗               | ✗                 | ✗       | ✗      |
+% | Dual UI (Chat + Admin)     | ✓      | ✗         | ✗          | ✗               | ✓                 | ✗       | ✗      |
+% | Multi-Agent Collaboration  | Planned| ✓         | ✗          | ✓               | ✗                 | ✓       | ✓      |
+%
+% Key Differentiators:
+% 1. Enterprise-First Design:
+%    - Built-in multi-tenancy at database and API level
+%    - Production-ready security framework
+%    - Comprehensive observability stack
+%
+% 2. Graph-Native AI:
+%    - Native Memgraph integration
+%    - NL-to-Cypher pipeline with safety validation
+%    - Knowledge graph Q\&A as first-class feature
+%
+% 3. MCP Protocol Adoption:
+%    - 34 tools following MCP specification
+%    - Tool discovery and invocation APIs
+%    - JSON-schema validation for tool inputs
+%
+% 4. Background Processing:
+%    - Long-running job support with SSE streaming
+%    - Worker architecture with heartbeats
+%    - Graceful cancellation and shutdown
+%
+% Limitations vs. SOTA:
+% - Multi-agent collaboration: Not yet implemented (vs. AutoGen, crewAI)
+% - RAG pipelines: Basic compared to LlamaIndex
+% - Community size: Smaller ecosystem than LangChain
+
+\subsection{Qualitative Comparison and Trade-offs}
+% Content later:
+% - Synthesize practical trade-offs (complexity, flexibility, enterprise readiness, DX)
+% - Include MCP servers and graph-centric approaches where relevant
+% - Grounded in the detailed comparison and earlier SOTA matrix
+
+
+%==============================================================================
+\chapter{Conclusions and Future Work}
+\label{ch:conclusions}
+
+% TODO: Fill this chapter
+
+\section{Summary of Contributions}
+\label{sec:summary}
+% Topics to cover:
+% - Recap of main achievements
+% - Design decisions validated
+% - Production deployment success
+
+\section{Lessons Learned}
+\label{sec:lessons}
+% Topics to cover:
+% - Architectural insights
+% - Development challenges
+% - Best practices identified
+
+\section{Limitations}
+\label{sec:limitations}
+% Topics to cover:
+% - Known weaknesses
+% - Scope constraints
+% - Areas for improvement
+
+\subsection{Technical Debt Analysis}
+% Topics to cover (based on Q&A.md Q46):
+%
+% Large File Complexity:
+% - orchestrator.py: 8,263 lines - primary orchestration logic
+% - Recommendation: Split into separate modules (intent, execution, providers)
+% - conftest.py files: Some exceed 1,500 lines of fixtures
+%
+% Identified Technical Debt:
+% 1. Redis Coupling:
+%    - Many components directly depend on Redis client
+%    - Should abstract behind repository interfaces
+%    - Limits testing without Redis mock
+%
+% 2. Error Handling Inconsistencies:
+%    - Some modules use exceptions, others return Result objects
+%    - Need unified error propagation strategy
+%    - RFC 7807 not uniformly applied internally
+%
+% 3. TODO Comments in Codebase:
+%    - Multiple TODO markers for future improvements
+%    - Some date back to early development phases
+%    - Should be tracked as GitHub issues
+%
+% 4. Test Coverage Gaps:
+%    - Some edge cases in NL-to-Cypher pipeline
+%    - Circuit breaker recovery scenarios
+%    - Multi-tenant isolation boundary tests
+%
+% 5. Documentation Drift:
+%    - Some inline comments outdated after refactoring
+%    - OpenAPI spec may lag behind implementation
+%    - Need documentation generation automation
+%
+% 6. Configuration Complexity:
+%    - Large number of environment variables
+%    - Some defaults only work in development mode
+%    - Need configuration validation on startup
+%
+% Mitigation Strategies:
+% - Regular refactoring sprints
+% - Automated linting and code quality checks
+% - Integration test coverage requirements
+% - Documentation review in PR process
+
+\section{Future Work}
+\label{sec:future-work}
+% Topics to cover:
+% - Multi-agent capabilities and collaboration patterns
+% - Enhanced NL-to-Cypher with more complex query support
+% - Event sourcing for complete audit trail
+% - Microservices decomposition for larger deployments
+% - Additional LLM providers (Anthropic, Google, etc.)
+% - Improved caching strategies
+% - Federated multi-cluster deployment
+% - Advanced graph analytics algorithms
+% - Real-time streaming responses (beyond SSE)
+% - Integration with external workflow engines
+
+\section{Implications for Enterprise AI Architectures}
+\label{sec:implications}
+% Content later:
+% - General lessons for enterprise agentic systems (tool protocols, graph reasoning, observability, cost governance)
+% - What this platform suggests for future architecture patterns
+
+
+%==============================================================================
+% APPENDICES
+%==============================================================================
+% Note: Appendices come BEFORE \backmatter and AFTER the main chapters.
+% The \appendix command changes chapter numbering to A, B, C, etc.
+
+\appendix
+
+\chapter{API Endpoint Reference}
+\label{app:api-reference}
+% TODO: Add complete API endpoint table
+%
+% Summary: 76 endpoints across 60 unique paths in 16 categories
+%
+% Categories and counts:
+% - admin-tenants: 5 endpoints (Multi-tenant management)
+% - agents: 9 endpoints (Agent sessions and execution)
+% - jobs: 8 endpoints (Background job management)
+% - models-instances: 7 endpoints (LLM model instances)
+% - models-providers: 7 endpoints (LLM provider management)
+% - health: 6 endpoints (Health and readiness probes)
+% - internal: 6 endpoints (Internal operations)
+% - models-manifests-builtins: 5 endpoints (Built-in model manifests)
+% - admin-db: 4 endpoints (Database administration)
+% - admin-processes: 4 endpoints (Process management)
+% - batch: 4 endpoints (Bulk operations)
+% - tools: 4 endpoints (Tool discovery and invocation)
+% - export/import: 3 endpoints (Configuration import/export)
+% - admin-ops: 2 endpoints (Admin operations)
+% - auth: 1 endpoint (Authentication)
+% - meta: 1 endpoint (API metadata)
+%
+% Key endpoints:
+% - Health: /v1/health/live, /ready, /startup, /components
+% - Auth: /v1/auth/me
+% - Agents: POST /v1/agent-runs, GET /v1/agent-runs/\{id\}
+% - Jobs: POST /v1/jobs, GET /v1/jobs/\{id\}/events (SSE)
+% - Tools: GET /v1/tools, POST /v1/tools/\{name\}/invocations
+
+\chapter{MCP Tool Reference}
+\label{app:tool-reference}
+% TODO: Add complete tool inventory
+%
+% Summary: 34 tools across 17 categories
+%
+% Graph Tools (8):
+% - graph.query: Execute Cypher queries against Memgraph
+% - graph.secure\_query: Execute secure, validated Cypher queries
+% - graph.search: Full-text and pattern search in graph
+% - graph.schema: Retrieve graph schema information
+% - graph.analytics: Graph analytics (centrality, paths, clustering)
+% - graph.crud: Create, read, update, delete graph nodes/edges
+% - graph.bulk: Bulk graph operations
+% - graph.generate\_cypher: Generate Cypher from natural language
+%
+% Security Tools (5):
+% - security.check: Validate security constraints
+% - security.audit: Audit logging and compliance
+% - security.permissions: Check user permissions
+% - security.allowed\_operations: List allowed operations for principal
+% - security.describe\_principal: Get principal/user information
+%
+% System Tools (4):
+% - system.health, system.status, system.metrics, system.backup
+%
+% Data Tools (2): data.archive, data.quality
+% Model Tools (2): model.manage, model.test
+% Output Tools (2): output.format, output.summarize
+%
+% Other Tools (11):
+% - agent.context, cache.manage, catalog.discover, db.switch
+% - errors.report, privacy.consent, ratelimit.manage
+% - session.manage, tenancy.manage, user.profile, viz.render
+
+\chapter{Database Schema}
+\label{app:database-schema}
+% TODO: Add database schema diagrams
+% - PostgreSQL tables
+% - Memgraph graph schema
+
+\chapter{Architecture Decision Records Summary}
+\label{app:adr-summary}
+% Content later:
+% - Summarize key ADRs (ID, title, date, short rationale)
+% - Extract from docs/adr/
+
+\chapter{Configuration Reference}
+\label{app:config-reference}
+% TODO: Add configuration settings reference
+% - Environment variables
+% - Default values
+% - Descriptions
+
+\chapter{Example Configurations and Environment Templates}
+\label{app:example-configs}
+% Content later:
+% - Example .env layouts
+% - Sample Docker Compose overrides
+% - Minimal dev/test/prod templates derived from README
+
+\chapter{Glossary of Terms}
+\label{app:glossary}
+% TODO: Add glossary
+%
+% Key Domain Terms:
+% - Tenant: Isolation boundary for data access, configuration, defaults, authorization
+% - Principal: Authenticated caller from JWT (subject + tenant + roles + scopes)
+% - Agent Run: Single execution request producing final output and step trace
+% - Session: Conversational context/state across steps (may span multiple runs)
+% - Step: One unit of work in agent run (LLM call, tool invocation, graph query)
+% - Tool (MCP Tool): Registered capability callable by agents with JSON-schema validation
+% - Tool Invocation: Single execution of a tool, recorded for auditability
+% - Provider: Runtime LLM provider configuration (OpenAI-style, Ollama, Azure)
+% - Model Instance: Resolved model configuration for inference
+% - Control Plane: PostgreSQL authoritative store
+% - Data Plane: Redis low-latency layer
+%
+% State Machines:
+% - Agent Run: pending \textrightarrow running \textrightarrow succeeded | failed | cancelled
+% - Job: queued \textrightarrow running \textrightarrow finished | failed | cancelled
+% - Circuit Breaker: CLOSED \textrightarrow OPEN \textrightarrow HALF\_OPEN \textrightarrow CLOSED
+%
+% Acronyms:
+% - MCP: Model Context Protocol
+% - OIDC: OpenID Connect
+% - JWT: JSON Web Token
+% - JWKS: JSON Web Key Set
+% - RBAC: Role-Based Access Control
+% - SSE: Server-Sent Events
+% - DMR: Default Model Resolver
+% - PII: Personally Identifiable Information
+% - OTLP: OpenTelemetry Protocol
+% - HPC: High-Performance Computing
+
+
+%==============================================================================
+% BACK MATTER
+%==============================================================================
+% The \backmatter command is used for unnumbered sections after the appendices,
+% typically for the bibliography.
+
+\backmatter
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% BIBLIOGRAPHY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% For proper hyperref linking with the table of contents
+\cleardoublepage
+\phantomsection  % Required when using hyperref
+\addcontentsline{toc}{chapter}{\bibname}
+
+% Option 1: Using BibTeX (recommended for large bibliographies)
+% \bibliographystyle{sapthesis}  % Use sapthesis.bst for English thesis
+% \bibliography{references}       % Your .bib file
+
+% Option 2: Using BibLaTeX (modern alternative)
+% Add to preamble: \usepackage[backend=biber,style=numeric]{biblatex}
+% Add to preamble: \addbibresource{references.bib}
+% Then use: \printbibliography
+
+% Option 3: Manual bibliography (current - replace with BibTeX when ready)
+\begin{thebibliography}{99}
+
+% === LLM and AI Foundations ===
+\bibitem{openai2023gpt4}
+OpenAI. (2023). GPT-4 Technical Report. \textit{arXiv preprint arXiv:2303.08774}.
+
+\bibitem{touvron2023llama}
+Touvron, H., et al. (2023). LLaMA: Open and Efficient Foundation Language Models. \textit{arXiv preprint arXiv:2302.13971}.
+
+\bibitem{brown2020gpt3}
+Brown, T., et al. (2020). Language Models are Few-Shot Learners. \textit{Advances in Neural Information Processing Systems}, 33, 1877--1901.
+
+% === Agent Frameworks ===
+\bibitem{langchain2023}
+LangChain. (2023). LangChain: Building applications with LLMs through composability. \url{https://github.com/langchain-ai/langchain}
+
+\bibitem{yao2022react}
+Yao, S., et al. (2022). ReAct: Synergizing Reasoning and Acting in Language Models. \textit{arXiv preprint arXiv:2210.03629}.
+
+\bibitem{significant2023autogpt}
+Significant Gravitas. (2023). AutoGPT: An Autonomous GPT-4 Experiment. \url{https://github.com/Significant-Gravitas/AutoGPT}
+
+% === Model Context Protocol ===
+\bibitem{anthropic2024mcp}
+Anthropic. (2024). Model Context Protocol Specification. \url{https://modelcontextprotocol.io/}
+
+% === Graph Databases ===
+\bibitem{memgraph2023}
+Memgraph. (2023). Memgraph: Real-time Graph Database. \url{https://memgraph.com/}
+
+\bibitem{francis2018cypher}
+Francis, N., et al. (2018). Cypher: An Evolving Query Language for Property Graphs. \textit{Proceedings of the 2018 International Conference on Management of Data}, 1433--1445.
+
+% === Security Standards ===
+\bibitem{oidc2014}
+Sakimura, N., et al. (2014). OpenID Connect Core 1.0. OpenID Foundation.
+
+\bibitem{rfc7519jwt}
+Jones, M., Bradley, J., \& Sakimura, N. (2015). JSON Web Token (JWT). RFC 7519.
+
+% === Observability ===
+\bibitem{prometheus2023}
+Prometheus Authors. (2023). Prometheus: Monitoring system and time series database. \url{https://prometheus.io/}
+
+\bibitem{opentelemetry2023}
+OpenTelemetry Authors. (2023). OpenTelemetry: High-quality, ubiquitous, and portable telemetry. \url{https://opentelemetry.io/}
+
+% === Web Frameworks ===
+\bibitem{fastapi2023}
+Ram{\'i}rez, S. (2023). FastAPI: Modern, Fast Web Framework for Building APIs with Python. \url{https://fastapi.tiangolo.com/}
+
+% === HPC Context ===
+\bibitem{cineca2023}
+CINECA. (2023). CINECA: Italian Interuniversity Consortium for Supercomputing. \url{https://www.cineca.it/}
+
+% TODO: Add more references as needed
+
+\end{thebibliography}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% COLOPHON / AUTHOR INFORMATION (appears at the end)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\thispagestyle{empty}
+\vspace*{\fill}
+
+\begin{center}
+\textbf{\Large About the Author}
+\end{center}
+
+\vspace{1cm}
+
+\noindent
+\textbf{Arman Feili} is a Master's student in Data Science at Sapienza Università di Roma. 
+This thesis was developed in collaboration with CINECA, Italy's national supercomputing center, 
+as part of research into enterprise-grade AI agent orchestration systems.
+
+\vspace{1cm}
+
+\noindent
+\textbf{Contact and Links:}
+\begin{itemize}
+    \item \textbf{Email:} \href{mailto:feili.2101835@studenti.uniroma1.it}{feili.2101835@studenti.uniroma1.it}
+    \item \textbf{GitHub:} \url{https://github.com/armanfeili}
+    \item \textbf{Google Scholar:} \url{https://scholar.google.com/citations?user=qfG60rMAAAAJ&hl=en}
+    \item \textbf{LinkedIn:} \url{https://www.linkedin.com/in/arman-feili/}
+\end{itemize}
+
+\vspace{1cm}
+
+\noindent
+\textbf{Supervisors:}
+\begin{itemize}
+    \item \textbf{Prof. Marco Raoul Marini} (Sapienza) -- \href{mailto:marini@di.uniroma1.it}{marini@di.uniroma1.it}
+    \item \textbf{Dr. Valerio Venanzi} (Sapienza) -- \href{mailto:venanzi@di.uniroma1.it}{venanzi@di.uniroma1.it}
+    \item \textbf{Dr. Giuseppe Melfi} (CINECA) -- \href{mailto:G.MELFI@cineca.it}{G.MELFI@cineca.it}
+    \item \textbf{Dr. Marco Puccini} (CINECA) -- \href{mailto:m.puccini@cineca.it}{m.puccini@cineca.it}
+\end{itemize}
+
+\vspace*{\fill}
+
+\end{document}

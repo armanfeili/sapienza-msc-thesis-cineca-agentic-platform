@@ -1,0 +1,275 @@
+% TODO checklist:
+% - [x] Inspected src/security/tenants.py (Multi-tenancy implementation)
+% - [x] Reviewed src/config.py (Tenant configuration settings)
+% - [x] Reviewed Q&A.md (Multi-tenancy design patterns)
+% - [x] Reviewed README.md (Tenant isolation features)
+% - [x] Reviewed db/postgres_control/repositories (Tenant-scoped queries)
+
+\section{Multi-Tenancy}
+\label{sec:multi-tenancy}
+
+The Cineca Agentic Platform is designed from the ground up as a multi-tenant system, enabling secure and isolated operation for multiple organizations, research groups, or departments within a single deployment. Multi-tenancy is implemented at multiple architectural layers to ensure complete data isolation while maximizing resource efficiency.
+
+\subsection{Tenant Isolation Model}
+\label{subsec:tenant-isolation-model}
+
+The platform implements a \textit{shared-infrastructure, isolated-data} multi-tenancy model. This approach provides:
+
+\begin{itemize}
+    \item \textbf{Cost Efficiency}: A single deployment serves multiple tenants, reducing operational overhead.
+    \item \textbf{Data Isolation}: Each tenant's data is logically separated and access is strictly controlled.
+    \item \textbf{Configuration Independence}: Tenants can have customized settings, rate limits, and defaults.
+    \item \textbf{Compliance Support}: Audit trails and access controls are maintained per-tenant.
+\end{itemize}
+
+\subsection{Tenant Identification}
+\label{subsec:tenant-identification}
+
+Tenant context is established at the beginning of each request through a prioritized extraction process:
+
+\begin{enumerate}
+    \item \textbf{HTTP Header}: The \texttt{X-Tenant-Id} header takes highest precedence.
+    \item \textbf{Query Parameter}: The \texttt{tenant}, \texttt{tid}, or \texttt{tenant\_id} query parameters.
+    \item \textbf{Token Claims}: The \texttt{tid} or \texttt{tenant\_id} claim from the JWT.
+    \item \textbf{Default Tenant}: A configured fallback when no tenant is specified.
+\end{enumerate}
+
+\begin{lstlisting}[language=Python,caption={Tenant selection with priority-based extraction}]
+def select_tenant(
+    request: Request | None = None,
+    user: Any | None = None,
+    *,
+    fallback_to_default: bool = True,
+    set_context: bool = True,
+) -> TenantContext:
+    """Resolve tenant id using: header -> query -> user -> default."""
+    tenant_id: str | None = None
+    source = "none"
+    
+    if request is not None:
+        # 1) Check header
+        header = request.headers.get(_header_name())
+        if header:
+            tenant_id, source = header, "header"
+        else:
+            # 2) Check query params
+            qp = request.query_params.get(_query_param())
+            if qp:
+                tenant_id, source = qp, "query"
+    
+    if not tenant_id and user is not None:
+        # 3) Extract from user/token claims
+        for key in ("tenant_id", "tid", "tenant", "org"):
+            if hasattr(user, key) and getattr(user, key):
+                tenant_id, source = str(getattr(user, key)), "user"
+                break
+    
+    if not tenant_id and fallback_to_default:
+        tenant_id, source = _default_tenant(), "default"
+    
+    return TenantContext(id=tenant_id, source=source, allowed=True)
+\end{lstlisting}
+
+\subsection{Tenant Identifier Validation}
+\label{subsec:tenant-validation}
+
+Tenant identifiers are validated against a strict format to prevent injection attacks and ensure consistent namespacing:
+
+\begin{lstlisting}[language=Python,caption={Tenant identifier validation}]
+TENANT_RE = re.compile(r"^[A-Za-z][A-Za-z0-9._-]{0,63}$")
+
+def _validate(tenant_id: str) -> None:
+    if not tenant_id:
+        raise ValueError("tenant id must not be empty")
+    if not TENANT_RE.fullmatch(tenant_id):
+        raise ValueError(
+            "tenant id must match ^[A-Za-z][A-Za-z0-9._-]{0,63}$"
+        )
+\end{lstlisting}
+
+This validation ensures:
+\begin{itemize}
+    \item Identifiers start with a letter (avoiding numeric or special character prefixes).
+    \item Only alphanumeric characters, dots, underscores, and hyphens are allowed.
+    \item Maximum length of 64 characters to fit standard database column constraints.
+\end{itemize}
+
+\subsection{Tenant Allowlist Enforcement}
+\label{subsec:tenant-allowlist}
+
+When \texttt{TENANCY\_ENABLED} is set to \texttt{true}, the platform can enforce an allowlist of valid tenants:
+
+\begin{lstlisting}[language=Python,caption={Tenant allowlist configuration}]
+# Configuration options
+TENANCY_ENABLED = True          # Enable tenant enforcement
+TENANCY_DEFAULT = "default"     # Fallback tenant
+TENANCY_ALLOWED = [             # Allowed tenant list
+    "acme-corp",
+    "research-lab",
+    "cineca-hpc"
+]
+# Or use wildcard: TENANCY_ALLOWED = "*"
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python,caption={Allowlist enforcement logic}]
+def _is_allowed(tenant_id: str) -> bool:
+    allowed = _allowed_set()
+    if allowed is None or "*" in allowed:
+        return True
+    if len(allowed) == 0:
+        return True  # No allowlist configured = allow any
+    return tenant_id.lower() in allowed
+
+def enforce_tenant(request: Request, user: Any | None = None) -> str:
+    """Resolve and enforce tenant selection."""
+    ctx = select_tenant(request, user=user)
+    if _enabled() and ctx.id and not ctx.allowed:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            detail={"message": "Tenant not allowed", "tenant": ctx.id}
+        )
+    return ctx.id or ""
+\end{lstlisting}
+
+\subsection{Context Variable Propagation}
+\label{subsec:tenant-context}
+
+The current tenant is stored in a Python context variable, making it accessible throughout the request lifecycle without explicit parameter threading:
+
+\begin{lstlisting}[language=Python,caption={Tenant context variable management}]
+_current_tenant: contextvars.ContextVar[str | None] = \
+    contextvars.ContextVar("current_tenant", default=None)
+
+def set_current_tenant(tenant_id: str | None) -> None:
+    """Set the current tenant in context variable."""
+    _current_tenant.set(tenant_id)
+
+def get_current_tenant() -> str | None:
+    """Return the current tenant id from context (or None)."""
+    return _current_tenant.get()
+\end{lstlisting}
+
+This design enables lower layers (repositories, services) to access tenant context without modifying function signatures.
+
+\subsection{Database-Level Isolation}
+\label{subsec:db-isolation}
+
+All database queries are automatically scoped to the current tenant:
+
+\paragraph{PostgreSQL Control Plane}
+Repository queries include implicit tenant filtering:
+
+\begin{lstlisting}[language=Python,caption={Tenant-scoped database query example}]
+class TenantScopedRepository(BaseRepository[T]):
+    async def list(self, tenant_id: str, **filters) -> list[T]:
+        query = select(self.model).where(
+            self.model.tenant_id == tenant_id
+        )
+        for key, value in filters.items():
+            query = query.where(getattr(self.model, key) == value)
+        return await self.session.execute(query)
+\end{lstlisting}
+
+\paragraph{Memgraph Graph Database}
+Graph queries are filtered by tenant boundaries to prevent cross-tenant data access:
+
+\begin{lstlisting}[language=cypher,caption={Tenant-scoped Cypher query}]
+MATCH (n:User {tenant_id: $tenant_id})-[:WORKS_AT]->(i:Institution)
+WHERE i.tenant_id = $tenant_id
+RETURN n, i
+\end{lstlisting}
+
+\paragraph{Redis Data Plane}
+Cache and queue keys are namespaced by tenant:
+
+\begin{lstlisting}[language=Python,caption={Tenant-scoped key namespacing}]
+def tenantize_key(key: str, tenant_id: str | None = None) -> str:
+    """Prefix cache/DB key with tenant to avoid collisions.
+    
+    Example: tenantize_key("rate:count") -> "t:acme:rate:count"
+    """
+    t = tenant_id if tenant_id is not None else get_current_tenant()
+    t = t or "global"
+    return f"t:{t}:{key}"
+\end{lstlisting}
+
+\subsection{Per-Tenant Configuration}
+\label{subsec:per-tenant-config}
+
+Tenants can have individualized settings that override platform defaults:
+
+\begin{itemize}
+    \item \textbf{Rate Limits}: Custom request and token limits per tenant.
+    \item \textbf{Default Models}: Preferred LLM providers and model instances.
+    \item \textbf{Tool Access}: Enabled or restricted tool categories.
+    \item \textbf{Safety Settings}: PII scrubbing levels and intent filter strictness.
+    \item \textbf{Cost Budgets}: Monthly or per-request spending limits.
+\end{itemize}
+
+\begin{lstlisting}[language=Python,caption={Per-tenant configuration example}]
+@dataclass
+class TenantConfig:
+    tenant_id: str
+    rate_limit_rpm: int = 60
+    rate_limit_tpm: int = 40000
+    default_model: str = "gpt-4o-mini"
+    max_concurrent_jobs: int = 5
+    pii_mode: str = "redact"
+    allowed_tools: list[str] = field(default_factory=list)
+    budget_usd_monthly: float | None = None
+\end{lstlisting}
+
+\subsection{Tenant-Scoped Audit Logging}
+\label{subsec:tenant-audit}
+
+All audit events include tenant context for compliance and forensic analysis:
+
+\begin{lstlisting}[language=Python,caption={Audit event with tenant context}]
+audit_policy_decision(
+    policy="tenancy",
+    subject=principal,
+    action="select",
+    resource=f"tenant:{tenant_id}",
+    allowed=allowed,
+    reason="tenant not in allowlist" if not allowed else None,
+    tenant_id=tenant_id,
+    attributes={"enabled": _enabled(), "source": source}
+)
+\end{lstlisting}
+
+\subsection{FastAPI Integration}
+\label{subsec:tenant-fastapi}
+
+The \texttt{require\_tenant} dependency ensures tenant context is established for protected endpoints:
+
+\begin{lstlisting}[language=Python,caption={Tenant requirement in FastAPI routes}]
+def require_tenant():
+    """Ensure tenant is selected and (if enabled) allowed."""
+    async def _dep(
+        request: Request, 
+        user=Depends(get_current_user)
+    ):
+        return enforce_tenant(request, user=user)
+    return _dep
+
+# Usage in routers
+@router.get("/items", dependencies=[Depends(require_tenant())])
+async def list_items(tenant: str = Depends(get_current_tenant)):
+    key = tenantize_key("items:list", tenant)
+    # ... tenant-scoped operation
+\end{lstlisting}
+
+\subsection{Cross-Tenant Operations}
+\label{subsec:cross-tenant}
+
+Administrative operations that span tenants require explicit \texttt{admin:all} scope and are logged with elevated scrutiny:
+
+\begin{itemize}
+    \item Tenant creation and deletion
+    \item Cross-tenant reporting and analytics
+    \item System-wide configuration changes
+    \item Bulk operations affecting multiple tenants
+\end{itemize}
+
+These operations are protected by additional authorization checks and generate detailed audit trails for compliance review.
+

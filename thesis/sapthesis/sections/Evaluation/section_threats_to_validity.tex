@@ -1,0 +1,244 @@
+% TODO checklist:
+% - [x] Inspected: sapthesis-doc.tex (threats to validity section outline)
+% - [x] Inspected: README.md (deployment assumptions)
+% - [x] Inspected: Q&A.md (Q7: deployment assumptions, Q46: technical debt)
+% - [x] Inspected: tests/README.md (test environment configuration)
+
+\section{Threats to Validity}
+\label{sec:threats-validity}
+
+This section discusses potential threats to the validity of the evaluation results and the mitigations applied. Acknowledging limitations ensures appropriate interpretation of findings and identifies areas for future work.
+
+\subsection{Internal Validity}
+
+Internal validity concerns whether the evaluation correctly measures what it claims to measure.
+
+\subsubsection{Confounding Variables in Performance Measurements}
+
+\begin{table}[ht]
+\centering
+\caption{Confounding variables in performance evaluation.}
+\label{tab:confounding-perf}
+\small
+\begin{tabular}{p{4cm}p{5.5cm}p{3.5cm}}
+\hline
+\textbf{Threat} & \textbf{Description} & \textbf{Mitigation} \\
+\hline
+Background processes & Other processes consuming CPU/memory during tests & Dedicated test environment; repeated measurements \\
+JIT compilation & Python interpreter warmup affecting initial requests & Warmup phase before measurements \\
+Database caching & Subsequent queries faster due to caching & Cache clearing between test runs \\
+Network variability & Localhost vs production network differences & Acknowledgment in limitations \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Test Environment vs Production Differences}
+
+The evaluation was conducted in a development/staging environment that differs from production in several ways:
+
+\begin{enumerate}
+    \item \textbf{Hardware}: Single-machine deployment vs distributed cluster
+    \item \textbf{Scale}: Limited concurrent users vs production traffic volumes
+    \item \textbf{Data}: Synthetic datasets vs real-world data complexity
+    \item \textbf{Dependencies}: Mocked LLM providers vs real cloud services with network latency
+\end{enumerate}
+
+\textbf{Mitigation}: Where possible, tests were run against real services (PostgreSQL, Redis, Memgraph). LLM provider latency was simulated based on documented API response times.
+
+\subsubsection{Implementation Bugs Affecting Results}
+
+The platform is under active development, and undiscovered bugs may affect evaluation results:
+
+\begin{itemize}
+    \item Memory leaks not detected in short test runs
+    \item Race conditions not triggered under test loads
+    \item Edge cases in error handling paths
+\end{itemize}
+
+\textbf{Mitigation}: Comprehensive test suite with 2,720+ test functions; static analysis via linting tools; code review processes.
+
+\subsection{External Validity}
+
+External validity concerns whether results generalize beyond the specific evaluation context.
+
+\subsubsection{Generalizability Beyond CINECA Context}
+
+The platform was designed for CINECA's HPC/research environment, which may not reflect all enterprise contexts:
+
+\begin{table}[ht]
+\centering
+\caption{CINECA-specific vs general enterprise characteristics.}
+\label{tab:cineca-vs-enterprise}
+\small
+\begin{tabular}{ll}
+\hline
+\textbf{CINECA Context} & \textbf{General Enterprise} \\
+\hline
+Research/academic users & Commercial users \\
+HPC infrastructure & Cloud/on-premise mix \\
+Bioinformatics workflows & Diverse industry workflows \\
+Italian regulatory context & Varied compliance requirements \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Mitigation}: The platform is designed with configurable policies and extensible tool system to support diverse use cases. Multi-tenancy enables isolation for different organizational units.
+
+\subsubsection{Representativeness of Workloads}
+
+Test workloads may not represent all real-world usage patterns:
+
+\begin{itemize}
+    \item \textbf{Prompt distribution}: Test prompts may not reflect actual user queries
+    \item \textbf{Query complexity}: Graph queries may be simpler/more complex than production
+    \item \textbf{Concurrency patterns}: Locust simulations may not capture burst patterns
+\end{itemize}
+
+\textbf{Mitigation}: Load tests designed to model realistic user behavior with varied request types and wait times between actions.
+
+\subsubsection{Synthetic vs Real-World Data Limitations}
+
+Synthetic data used in evaluation has limitations:
+
+\begin{enumerate}
+    \item \textbf{Graph structure}: May not reflect real knowledge graph complexity
+    \item \textbf{Data volume}: Test datasets smaller than production scale
+    \item \textbf{Data distribution}: Uniform distributions vs real-world skew
+\end{enumerate}
+
+\textbf{Mitigation}: ETL scripts generate data with realistic cardinalities based on domain analysis; performance tests include variable data sizes.
+
+\subsection{Construct Validity}
+
+Construct validity concerns whether the chosen metrics accurately represent the concepts being evaluated.
+
+\subsubsection{Appropriateness of Chosen Metrics}
+
+\begin{table}[ht]
+\centering
+\caption{Metric appropriateness assessment.}
+\label{tab:metric-appropriateness}
+\small
+\begin{tabular}{p{3cm}p{4cm}p{5cm}}
+\hline
+\textbf{Metric} & \textbf{Measures} & \textbf{Limitations} \\
+\hline
+Response latency & User-perceived performance & Does not capture perceived quality \\
+Throughput (RPS) & System capacity & Does not account for request complexity \\
+Error rate & Reliability & Does not distinguish error severity \\
+Test pass rate & Functional correctness & Does not guarantee production behavior \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Mitigation}: Multiple complementary metrics used; qualitative assessment included where appropriate.
+
+\subsubsection{Measurement Instrumentation Accuracy}
+
+Measurement tools introduce their own overhead and limitations:
+
+\begin{itemize}
+    \item \textbf{Timing precision}: \texttt{time.perf\_counter()} provides microsecond precision but measures wall-clock time, not CPU time
+    \item \textbf{Prometheus scrape interval}: Metrics collected at intervals (default 15s) may miss transient spikes
+    \item \textbf{Locust coordination}: Distributed load generation may have coordination delays
+\end{itemize}
+
+\textbf{Mitigation}: Multiple measurement approaches cross-validated; statistical aggregation (percentiles) reduces impact of outliers.
+
+\subsection{Reliability}
+
+Reliability concerns whether experiments can be reproduced with consistent results.
+
+\subsubsection{Reproducibility of Experiments}
+
+To enable reproducibility, the following are documented:
+
+\begin{itemize}
+    \item \textbf{Environment configuration}: Docker Compose files with pinned versions
+    \item \textbf{Test data}: Seed scripts and sample data files
+    \item \textbf{Configuration}: Environment variables and configuration files
+    \item \textbf{Commands}: Exact commands to run tests
+\end{itemize}
+
+\subsubsection{Statistical Significance Considerations}
+
+Performance measurements are subject to statistical variability:
+
+\begin{table}[ht]
+\centering
+\caption{Statistical approach for performance evaluation.}
+\label{tab:statistical-approach}
+\small
+\begin{tabular}{ll}
+\hline
+\textbf{Aspect} & \textbf{Approach} \\
+\hline
+Sample size & Minimum 5 measurements per metric \\
+Aggregation & Percentiles (P50, P95, P99) reported \\
+Outlier handling & Trimmed means where appropriate \\
+Warmup & Excluded from measurements \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Limitation}: Formal statistical significance testing (p-values, confidence intervals) was not performed for all metrics due to time constraints.
+
+\subsection{Mitigations Applied}
+
+The following mitigations were systematically applied throughout the evaluation:
+
+\begin{enumerate}
+    \item \textbf{Controlled environment}: Dedicated test environment with minimal background processes.
+    
+    \item \textbf{Multiple measurement techniques}: pytest instrumentation, Prometheus metrics, and Locust load testing cross-validated.
+    
+    \item \textbf{Real service dependencies}: Tests run against real PostgreSQL, Redis, and Memgraph where possible.
+    
+    \item \textbf{Deterministic test modes}: NL-to-Cypher test mode eliminates LLM variability for functional tests.
+    
+    \item \textbf{Warmup phases}: Performance tests include warmup to eliminate cold-start effects.
+    
+    \item \textbf{Fixture isolation}: Test fixtures create isolated environments to prevent test interference.
+    
+    \item \textbf{Documentation}: All configurations and procedures documented for reproducibility.
+\end{enumerate}
+
+\subsection{Known Limitations Requiring Future Work}
+
+The following limitations are acknowledged and recommended for future work:
+
+\begin{enumerate}
+    \item \textbf{Production-scale testing}: Evaluation at CINECA production scale not performed.
+    
+    \item \textbf{Long-duration stability}: Multi-day continuous operation not tested.
+    
+    \item \textbf{Geographic distribution}: Distributed deployment across data centers not evaluated.
+    
+    \item \textbf{Formal security audit}: Third-party penetration testing not conducted.
+    
+    \item \textbf{User acceptance testing}: End-user feedback on UI/UX not systematically collected.
+    
+    \item \textbf{Comparison benchmarks}: Head-to-head performance comparison with alternatives not performed due to differing deployment models.
+\end{enumerate}
+
+\subsection{Summary of Validity Assessment}
+
+\begin{table}[ht]
+\centering
+\caption{Summary of validity threats and overall assessment.}
+\label{tab:validity-summary}
+\small
+\begin{tabular}{llc}
+\hline
+\textbf{Validity Type} & \textbf{Key Threats} & \textbf{Risk Level} \\
+\hline
+Internal & Environment differences, confounding variables & Medium \\
+External & CINECA-specific context, synthetic data & Medium \\
+Construct & Metric appropriateness, instrumentation & Low \\
+Reliability & Reproducibility, statistical significance & Low \\
+\hline
+\end{tabular}
+\end{table}
+
+The evaluation results should be interpreted with awareness of these limitations. The comprehensive test suite and multiple evaluation approaches provide reasonable confidence in the platform's capabilities, while acknowledging that production deployment may reveal additional considerations.
+

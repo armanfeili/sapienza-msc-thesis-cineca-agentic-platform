@@ -1,0 +1,278 @@
+{
+  "prompt": {
+    "index": 3,
+    "id": "p04",
+    "text": "What distinct relationship types exist from :Blast?",
+    "category": "read_only",
+    "todo_mode": "optional",
+    "notes": "Relationship type enumeration"
+  },
+  "role": "admin",
+  "run_id": "6bbc34a8-fadc-4e63-a31d-ceb1bd040bec",
+  "status": "succeeded",
+  "started_at": "2025-11-25T10:05:34.527317+00:00",
+  "finished_at": "2025-11-25T10:13:10.080862+00:00",
+  "duration_seconds": 455.55,
+  "metrics": {
+    "overall_ms": 454465,
+    "llm": [
+      {
+        "model": "phi3:mini",
+        "latency_ms": 453321,
+        "success": true,
+        "input_tokens": 321,
+        "output_tokens": 116,
+        "total_tokens": 437,
+        "purpose": "todo_list_creation",
+        "error": null
+      }
+    ],
+    "tools": [
+      {
+        "name": "graph.generate_cypher",
+        "latency_ms": 329,
+        "success": true
+      },
+      {
+        "name": "graph.secure_query",
+        "latency_ms": 583,
+        "success": true
+      }
+    ],
+    "model_warmup_ms": 453321,
+    "first_llm_call_ms": 453321,
+    "total_llm_calls": 1,
+    "llm_call_count": 1,
+    "tool_calls": 2,
+    "tool_errors": 0
+  },
+  "steps": [
+    {
+      "type": "step",
+      "step_id": "create-todos",
+      "action": "Create TODO list",
+      "input": {
+        "goal": "What distinct relationship types exist from :Blast?"
+      },
+      "started_at": "2025-11-25T10:05:35.465000Z",
+      "finished_at": "2025-11-25T10:13:08.829000Z",
+      "latency_ms": 453364
+    },
+    {
+      "type": "step",
+      "step_id": "todo-0-direct-generate",
+      "action": "graph.generate_cypher",
+      "input": {
+        "label": "Blast",
+        "action": "select"
+      },
+      "started_at": "2025-11-25T10:13:08.839000Z",
+      "finished_at": "2025-11-25T10:13:09.325000Z",
+      "latency_ms": 486
+    },
+    {
+      "type": "step",
+      "step_id": "todo-0-direct-query",
+      "action": "graph.secure_query",
+      "input": {
+        "query": "MATCH (b:Blast)-[r]->(target)\nRETURN DISTINCT type(r) AS relationship_type LIMIT $limit",
+        "cypher": "MATCH (b:Blast)-[r]->(target)\nRETURN DISTINCT type(r) AS relationship_type LIMIT $limit",
+        "params": {
+          "limit": 25
+        },
+        "read_only": true,
+        "statement": "MATCH (b:Blast)-[r]->(target)\nRETURN DISTINCT type(r) AS relationship_type LIMIT $limit"
+      },
+      "started_at": "2025-11-25T10:13:09.326000Z",
+      "finished_at": "2025-11-25T10:13:09.923000Z",
+      "latency_ms": 597
+    },
+    {
+      "type": "step",
+      "step_id": "todo-1-memgraph-summary",
+      "action": "memgraph.summary",
+      "input": {
+        "count": 1,
+        "label": "Blast"
+      },
+      "started_at": "2025-11-25T10:13:09.927000Z",
+      "finished_at": "2025-11-25T10:13:09.927000Z",
+      "latency_ms": 0
+    },
+    {
+      "type": "output",
+      "step_id": "create-todos",
+      "output": {
+        "todos": [
+          {
+            "meta": {
+              "mode": "memgraph_direct",
+              "prompt_id": "p04",
+              "memgraph_task": "query",
+              "expected_pattern": "MATCH (:Blast)-[r]"
+            },
+            "task": "Generate and execute Cypher via graph.generate_cypher + graph.secure_query for :Blast nodes",
+            "status": "completed",
+            "evidence": [
+              "graph.generate_cypher",
+              "graph.secure_query"
+            ],
+            "expect_evidence": true,
+            "requires_llm_planning": false
+          },
+          {
+            "meta": {
+              "mode": "memgraph_direct",
+              "prompt_id": "p04",
+              "memgraph_task": "summarize",
+              "expect_evidence": false,
+              "expected_pattern": "MATCH (:Blast)-[r]",
+              "collapsed_summaries": [
+                "Aggregate results with output.summarize, then present findings in a visual format via viz.render to easily interpret distinct relationship types."
+              ]
+            },
+            "task": "Summarize graph query results with memgraph.summary for :Blast nodes",
+            "status": "completed",
+            "evidence": [
+              "memgraph.summary"
+            ],
+            "expect_evidence": false,
+            "requires_llm_planning": false
+          }
+        ]
+      },
+      "error": null,
+      "started_at": "2025-11-25T10:05:35.465000Z",
+      "finished_at": "2025-11-25T10:13:08.829000Z",
+      "latency_ms": 453364
+    },
+    {
+      "type": "output",
+      "step_id": "todo-0-direct-generate",
+      "output": {
+        "ok": true,
+        "action": "select",
+        "cypher": "MATCH (n:`Blast`) RETURN n LIMIT $limit",
+        "params": {
+          "limit": 25
+        },
+        "read_only": true
+      },
+      "error": null,
+      "started_at": "2025-11-25T10:13:08.839000Z",
+      "finished_at": "2025-11-25T10:13:09.325000Z",
+      "latency_ms": 486
+    },
+    {
+      "type": "output",
+      "step_id": "todo-0-direct-query",
+      "output": {
+        "ok": true,
+        "rows": [
+          {
+            "relationship_type": "OUTPUT"
+          }
+        ],
+        "action": "execute",
+        "cypher": "MATCH (b:Blast)-[r]->(target)\nRETURN DISTINCT type(r) AS relationship_type LIMIT $limit",
+        "format": "rows",
+        "params": {
+          "limit": 25
+        },
+        "columns": [
+          "relationship_type"
+        ],
+        "rowcount": 1,
+        "truncated": false,
+        "formatted_output": null
+      },
+      "error": null,
+      "started_at": "2025-11-25T10:13:09.326000Z",
+      "finished_at": "2025-11-25T10:13:09.923000Z",
+      "latency_ms": 596
+    },
+    {
+      "type": "output",
+      "step_id": "todo-1-memgraph-summary",
+      "output": {
+        "ok": true,
+        "text": "There is 1 :Blast node.",
+        "count": 1,
+        "label": "Blast"
+      },
+      "error": null,
+      "started_at": "2025-11-25T10:13:09.927000Z",
+      "finished_at": "2025-11-25T10:13:09.927000Z",
+      "latency_ms": 0
+    },
+    {
+      "type": "output",
+      "step_id": "final-output",
+      "output": {
+        "text": "There is 1 :Blast node."
+      },
+      "error": null,
+      "started_at": "2025-11-25T10:13:09.929000Z",
+      "finished_at": "2025-11-25T10:13:09.929000Z",
+      "latency_ms": 0
+    }
+  ],
+  "todos": [
+    {
+      "task": "Generate and execute Cypher via graph.generate_cypher + graph.secure_query for :Blast nodes",
+      "status": "completed",
+      "expect_evidence": true,
+      "evidence": [
+        "graph.generate_cypher",
+        "graph.secure_query"
+      ],
+      "meta": {
+        "mode": "memgraph_direct",
+        "prompt_id": "p04",
+        "memgraph_task": "query",
+        "expected_pattern": "MATCH (:Blast)-[r]"
+      },
+      "requires_llm_planning": false
+    },
+    {
+      "task": "Summarize graph query results with memgraph.summary for :Blast nodes",
+      "status": "completed",
+      "expect_evidence": false,
+      "evidence": [
+        "memgraph.summary"
+      ],
+      "meta": {
+        "mode": "memgraph_direct",
+        "prompt_id": "p04",
+        "memgraph_task": "summarize",
+        "expect_evidence": false,
+        "expected_pattern": "MATCH (:Blast)-[r]",
+        "collapsed_summaries": [
+          "Aggregate results with output.summarize, then present findings in a visual format via viz.render to easily interpret distinct relationship types."
+        ]
+      },
+      "requires_llm_planning": false
+    }
+  ],
+  "output": {
+    "text": "There is 1 :Blast node."
+  },
+  "warnings": [],
+  "errors": [],
+  "cypher_queries": [
+    "MATCH (b:Blast)-[r]->(target)\nRETURN DISTINCT type(r) AS relationship_type LIMIT $limit"
+  ],
+  "orchestrator_config": {
+    "device": "cpu",
+    "run_timeout_seconds": "1800",
+    "step_timeout_seconds": "1200",
+    "model_name": "phi3-mini",
+    "api_base": "http://ollama:11434/v1",
+    "db_instance_name": "phi3-mini",
+    "db_provider_model_id": "phi3:mini",
+    "db_provider_name": "ollama-local",
+    "db_base_url": "http://ollama:11434/v1",
+    "config_source": "db_default",
+    "env_provider_name": null
+  }
+}

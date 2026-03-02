@@ -1,0 +1,10 @@
+{
+  "name": "graph.query",
+  "arguments": {
+    "action": "execute",
+    "cypher": "MATCH (u:User)-[:WORKS_AT]->(i:Institution)\nOPTIONAL MATCH (u)-[:RUNS]->(t)\nWITH u, i, count(t) AS task_count\nRETURN u.user_name AS username, i.name AS institution, task_count\nORDER BY task_count DESC, username\nLIMIT $limit",
+    "params": {
+      "limit": 10
+    }
+  }
+}

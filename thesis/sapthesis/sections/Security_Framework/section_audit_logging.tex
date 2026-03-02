@@ -1,0 +1,412 @@
+% TODO checklist:
+% - [x] Inspected src/security/audit.py (Audit event model and helpers)
+% - [x] Inspected src/provenance.py (Tamper-evident provenance chain)
+% - [x] Reviewed Q&A.md (Audit logging patterns)
+% - [x] Reviewed README.md (Compliance features)
+% - [x] Reviewed security modules for audit integration points
+
+\section{Audit Logging}
+\label{sec:audit-logging}
+
+The Cineca Agentic Platform implements a comprehensive audit logging system that captures security-relevant events throughout the request lifecycle. The audit subsystem is designed to support compliance requirements, security forensics, and operational monitoring while maintaining performance and reliability.
+
+\subsection{Audit Event Model}
+\label{subsec:audit-event-model}
+
+All audit events are captured using a structured data model that ensures consistency across event types:
+
+\begin{lstlisting}[language=Python,caption={Audit event data model}]
+@dataclass(slots=True)
+class AuditEvent:
+    event_id: str           # Unique UUID for each event
+    ts: datetime            # UTC timestamp
+    category: str           # auth, access, policy, ratelimit, model, data
+    action: str             # login, check, allow, deny, complete, etc.
+    outcome: str            # success, failure, allow, deny, info
+    severity: str           # info, warning, critical
+    principal: str | None   # User or service identifier
+    tenant_id: str | None   # Tenant context
+    resource: str | None    # Affected resource
+    trace_id: str | None    # Distributed trace correlation
+    meta: dict[str, Any]    # Additional context (scrubbed)
+    input_hash: str | None  # SHA-256 of input (not raw content)
+    output_hash: str | None # SHA-256 of output (not raw content)
+\end{lstlisting}
+
+\paragraph{Key Design Decisions:}
+\begin{itemize}
+    \item \textbf{Content Hashing}: Input and output are stored as cryptographic hashes, not raw content. This enables verification and correlation while preventing sensitive data from appearing in logs.
+    \item \textbf{Metadata Scrubbing}: The \texttt{meta} field is automatically scrubbed of sensitive keys (passwords, tokens, secrets) before storage.
+    \item \textbf{Trace Correlation}: The \texttt{trace\_id} field enables correlation with distributed tracing systems (OpenTelemetry).
+\end{itemize}
+
+\subsection{Audit Event Categories}
+\label{subsec:audit-categories}
+
+The platform categorizes audit events into distinct domains:
+
+\begin{table}[ht]
+\centering
+\caption{Audit Event Categories}
+\label{tab:audit-categories}
+\begin{tabular}{llp{6cm}}
+\hline
+\textbf{Category} & \textbf{Actions} & \textbf{Description} \\
+\hline
+\texttt{auth} & login, logout & Authentication attempts and session lifecycle \\
+\texttt{access} & allow, deny & Resource access decisions \\
+\texttt{policy} & check, evaluate & Policy evaluation results \\
+\texttt{ratelimit} & check & Rate limit enforcement decisions \\
+\texttt{model} & complete & LLM invocations with token usage \\
+\texttt{data} & read, write, delete, export & Data access operations \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Convenience Helpers}
+\label{subsec:audit-helpers}
+
+The audit module provides specialized helpers for common event types:
+
+\subsubsection{Authentication Events}
+
+\begin{lstlisting}[language=Python,caption={Authentication audit helpers}]
+def audit_auth_success(
+    *,
+    username: str,
+    scopes: Iterable[str] | None = None,
+    tenant_id: str | None = None,
+    trace_id: str | None = None,
+) -> AuditEvent:
+    return audit_event(
+        category="auth",
+        action="login",
+        outcome="success",
+        severity="info",
+        principal=username,
+        tenant_id=tenant_id,
+        trace_id=trace_id,
+        meta={"scopes": list(scopes or [])}
+    )
+
+def audit_auth_failure(
+    *, 
+    username: str | None, 
+    reason: str,
+    tenant_id: str | None = None
+) -> AuditEvent:
+    return audit_event(
+        category="auth",
+        action="login",
+        outcome="failure",
+        severity="warning",
+        principal=username,
+        tenant_id=tenant_id,
+        meta={"reason": reason}
+    )
+\end{lstlisting}
+
+\subsubsection{Access Control Events}
+
+\begin{lstlisting}[language=Python,caption={Access control audit helper}]
+def audit_access(
+    *,
+    principal: str | None,
+    resource: str,
+    method: str = "GET",
+    allowed: bool,
+    reason: str | None = None,
+    tenant_id: str | None = None,
+) -> AuditEvent:
+    return audit_event(
+        category="access",
+        action="allow" if allowed else "deny",
+        outcome="allow" if allowed else "deny",
+        severity="info" if allowed else "warning",
+        principal=principal,
+        resource=resource,
+        tenant_id=tenant_id,
+        meta={"method": method, "reason": reason}
+    )
+\end{lstlisting}
+
+\subsubsection{Policy Decision Events}
+
+\begin{lstlisting}[language=Python,caption={Policy decision audit helper}]
+def audit_policy_decision(
+    *,
+    policy: str,
+    subject: str | None,
+    action: str,
+    resource: str,
+    allowed: bool,
+    reason: str | None = None,
+    attributes: dict[str, Any] | None = None,
+) -> AuditEvent:
+    return audit_event(
+        category="policy",
+        action=action,
+        outcome="allow" if allowed else "deny",
+        severity="info" if allowed else "warning",
+        principal=subject,
+        resource=resource,
+        meta={
+            "policy": policy, 
+            "reason": reason, 
+            "attributes": _scrub_meta(attributes or {})
+        }
+    )
+\end{lstlisting}
+
+\subsubsection{Rate Limit Events}
+
+\begin{lstlisting}[language=Python,caption={Rate limit audit helper}]
+def audit_rate_limit(
+    *,
+    principal: str | None,
+    key: str,
+    allowed: bool,
+    limit: int,
+    window_seconds: int,
+    count: int,
+) -> AuditEvent:
+    return audit_event(
+        category="ratelimit",
+        action="check",
+        outcome="allow" if allowed else "deny",
+        severity="info" if allowed else "warning",
+        principal=principal,
+        resource=key,
+        meta={
+            "limit": limit, 
+            "window_seconds": window_seconds, 
+            "count": count
+        }
+    )
+\end{lstlisting}
+
+\subsubsection{Model Usage Events}
+
+\begin{lstlisting}[language=Python,caption={Model usage audit helper}]
+def audit_model_usage(
+    *,
+    principal: str | None,
+    model: str,
+    prompt_tokens: int,
+    completion_tokens: int,
+    total_tokens: int,
+    success: bool = True,
+) -> AuditEvent:
+    return audit_event(
+        category="model",
+        action="complete",
+        outcome="success" if success else "failure",
+        principal=principal,
+        resource=model,
+        meta={
+            "usage": {
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "total_tokens": total_tokens
+            }
+        }
+    )
+\end{lstlisting}
+
+\subsubsection{Data Access Events}
+
+\begin{lstlisting}[language=Python,caption={Data access audit helper}]
+def audit_data_access(
+    *,
+    principal: str | None,
+    operation: str,  # read, write, delete, export
+    data_classification: str = "internal",
+    resource: str | None = None,
+    record_count: int | None = None,
+) -> AuditEvent:
+    return audit_event(
+        category="data",
+        action=operation,
+        outcome="success",
+        principal=principal,
+        resource=resource,
+        meta={
+            "classification": data_classification, 
+            "record_count": record_count
+        }
+    )
+\end{lstlisting}
+
+\subsection{Sensitive Data Handling}
+\label{subsec:audit-data-handling}
+
+The audit system implements strict controls on sensitive data:
+
+\subsubsection{Metadata Scrubbing}
+
+\begin{lstlisting}[language=Python,caption={Sensitive metadata scrubbing}]
+_SENSITIVE_KEYS = {
+    "password", "authorization", "authorization_header",
+    "auth", "token", "id_token", "access_token", 
+    "refresh_token", "api_key", "apikey", 
+    "secret", "client_secret", "ssn"
+}
+
+def _scrub_meta(meta: dict[str, Any] | None) -> dict[str, Any]:
+    """Redact sensitive keys and trim large values."""
+    if not meta:
+        return {}
+    out = {}
+    for k, v in meta.items():
+        lk = str(k).lower()
+        if lk in _SENSITIVE_KEYS:
+            out[k] = "***"
+            continue
+        if isinstance(v, str) and len(v) > 512:
+            out[k] = v[:512] + "..."
+        else:
+            out[k] = v
+    return out
+\end{lstlisting}
+
+\subsubsection{Content Hashing}
+
+\begin{lstlisting}[language=Python,caption={Content hashing for audit records}]
+def _sha256_hex(data: Any) -> str:
+    """Generate SHA-256 hash of content for audit purposes."""
+    if isinstance(data, (bytes, bytearray)):
+        b = bytes(data)
+    elif isinstance(data, str):
+        b = data.encode("utf-8")
+    else:
+        b = _canonical(data).encode("utf-8")
+    return hashlib.sha256(b).hexdigest()
+\end{lstlisting}
+
+\subsection{Output Channels}
+\label{subsec:audit-channels}
+
+Audit events are emitted through multiple channels for redundancy and integration:
+
+\subsubsection{Structured Logging}
+
+All audit events are written as structured log entries:
+
+\begin{lstlisting}[language=Python,caption={Structured log emission}]
+try:
+    logger.info(
+        "security_audit",
+        **ev.to_dict()
+    )
+except Exception:
+    pass  # Never fail the request path due to logging
+\end{lstlisting}
+
+The structured format enables:
+\begin{itemize}
+    \item Integration with log aggregation systems (ELK, Splunk, Loki)
+    \item Automated alerting based on event patterns
+    \item Long-term storage for compliance requirements
+\end{itemize}
+
+\subsubsection{Prometheus Metrics}
+
+Audit events increment Prometheus counters:
+
+\begin{lstlisting}[language=Python,caption={Prometheus metrics for audit events}]
+AUDIT_EVENTS = Counter(
+    "security_audit_events_total",
+    "Number of security audit events",
+    labelnames=("category", "action", "outcome", "severity")
+)
+
+if AUDIT_EVENTS is not None:
+    AUDIT_EVENTS.labels(
+        category=ev.category, 
+        action=ev.action, 
+        outcome=ev.outcome, 
+        severity=ev.severity
+    ).inc()
+\end{lstlisting}
+
+This enables:
+\begin{itemize}
+    \item Real-time dashboards showing security event rates
+    \item Alerting on unusual patterns (e.g., spike in auth failures)
+    \item SLA monitoring for security operations
+\end{itemize}
+
+\subsubsection{Provenance Chain}
+
+Audit events are mirrored to a tamper-evident provenance chain:
+
+\begin{lstlisting}[language=Python,caption={Provenance chain integration}]
+if record_provenance is not None:
+    with suppress(Exception):
+        record_provenance(
+            actor="security",
+            action=f"audit.{ev.category}.{ev.action}",
+            resource=ev.resource or "security",
+            input={
+                "principal": ev.principal, 
+                "tenant_id": ev.tenant_id, 
+                "meta": ev.meta
+            },
+            output={
+                "outcome": ev.outcome, 
+                "severity": ev.severity
+            },
+            meta={"trace_id": ev.trace_id} if ev.trace_id else {}
+        )
+\end{lstlisting}
+
+The provenance chain provides:
+\begin{itemize}
+    \item Cryptographic proof of event sequence
+    \item Tamper detection for audit records
+    \item Long-term archival with integrity verification
+\end{itemize}
+
+\subsection{Reliability Guarantees}
+\label{subsec:audit-reliability}
+
+The audit system is designed for high reliability:
+
+\paragraph{Fail-Safe Design:} Audit functions never raise exceptions that would interrupt the request flow. All emissions are wrapped in exception handlers:
+
+\begin{lstlisting}[language=Python]
+try:
+    logger.info("security_audit", **ev.to_dict())
+except Exception:
+    pass  # Audit failure must not break requests
+\end{lstlisting}
+
+\paragraph{Append-Only Storage:} Audit records are written to append-only storage (log files, database tables with INSERT-only access) to prevent tampering.
+
+\paragraph{Best-Effort Delivery:} While the system makes every effort to record all events, it prioritizes availability over audit completeness in extreme failure scenarios.
+
+\subsection{Compliance Support}
+\label{subsec:audit-compliance}
+
+The audit system supports common compliance requirements:
+
+\begin{itemize}
+    \item \textbf{GDPR}: Data access logging with principal identification enables fulfilling access request audits.
+    \item \textbf{SOC 2}: Comprehensive authentication and authorization logging supports control objectives.
+    \item \textbf{HIPAA}: Audit trails for data access support breach investigation requirements.
+    \item \textbf{PCI-DSS}: Logging of all access to cardholder data environments (when applicable).
+\end{itemize}
+
+\subsection{Retention and Archival}
+\label{subsec:audit-retention}
+
+Audit records are subject to configurable retention policies:
+
+\begin{itemize}
+    \item \textbf{Hot Storage}: Recent events (7-30 days) in high-performance storage for real-time querying.
+    \item \textbf{Warm Storage}: Historical events (30-365 days) in cost-optimized storage with slower query performance.
+    \item \textbf{Cold Storage}: Long-term archives (1+ years) in compliance with regulatory requirements.
+\end{itemize}
+
+The provenance chain provides cryptographic verification that archived records have not been modified since creation.
+

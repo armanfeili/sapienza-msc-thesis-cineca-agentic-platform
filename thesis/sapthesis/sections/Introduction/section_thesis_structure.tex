@@ -1,0 +1,111 @@
+% TODO checklist:
+% - [x] sapthesis-doc.tex: Complete chapter structure and section organization
+% - [x] README.md: Project structure overview for content verification
+% - [x] Q&A.md: Section organization verification
+
+\section{Thesis Structure}
+\label{sec:thesis-structure}
+
+This thesis is organized into thirteen chapters, structured into five logical parts, followed by appendices. This section provides a roadmap to guide readers through the document.
+
+\subsection{Part I: Introduction and Background}
+
+\paragraph{Chapter~\ref{ch:introduction}: Introduction}
+(This chapter) Establishes the motivation for the work, identifies stakeholders and use cases, describes the industrial context at CINECA, articulates the problem statement, defines research objectives, clarifies scope boundaries, summarizes contributions, and outlines the thesis structure.
+
+\paragraph{Chapter~\ref{ch:background}: Background and Related Work}
+Provides the theoretical and technical foundations for the thesis. Covers the evolution of Large Language Models and AI agents, surveys existing orchestration frameworks (LangChain, LlamaIndex, AutoGen, Semantic Kernel, crewAI), introduces the Model Context Protocol (MCP), discusses graph databases and natural language interfaces, reviews security and multi-tenancy patterns, and establishes observability concepts. Includes a comparative analysis matrix positioning the Cineca Agentic Platform relative to state-of-the-art alternatives.
+
+\paragraph{Chapter~\ref{ch:requirements}: Requirements and Design Goals}
+Formalizes the requirements derived from stakeholder analysis and the CINECA context. Presents functional requirements (agent execution, tool invocation, graph querying), non-functional requirements (security, performance, reliability), constraints and assumptions, design principles, evaluation criteria, and a requirements traceability matrix linking requirements to their verification in later chapters.
+
+\subsection{Part II: Architecture and Design}
+
+\paragraph{Chapter~\ref{ch:architecture}: System Architecture}
+Presents the comprehensive architectural design of the platform. Describes the three-layer architecture (core backend, data/persistence, presentation), details the API layer design with 76 endpoints across 16 categories, explains the repository pattern implementation, discusses cross-cutting concerns (logging, metrics, tracing, security, rate limiting, error handling), and documents the dual user interface architecture (Next.js and Streamlit).
+
+\paragraph{Chapter~\ref{ch:orchestration}: Agent Orchestration Engine}
+Details the agent orchestration subsystem. Covers orchestration design principles, intent classification pipeline, agent run lifecycle and state machine, NL-to-Cypher pipeline stages with safety validation, LLM provider management with resilience framework (circuit breakers, fallback chains, cost tracking), and the Default Model Resolver hierarchy.
+
+\paragraph{Chapter~\ref{ch:mcp-tools}: MCP Tools Ecosystem}
+Describes the Model Context Protocol tool implementation. Explains the MCP runtime architecture, documents the 34 tools across 17 categories, details tool authorization mechanisms, and provides guidance for extending the tool ecosystem with difficulty ratings for different extension types.
+
+\paragraph{Chapter~\ref{ch:jobs-workers}: Background Jobs and Workers}
+Covers the asynchronous job processing system. Details the job model and lifecycle states, worker architecture with queue polling and heartbeats, Server-Sent Events (SSE) streaming for progress updates, job cancellation mechanisms, and the APScheduler-based background task framework for scheduled operations (health checks, backups, cleanup).
+
+\subsection{Part III: Security and Governance}
+
+\paragraph{Chapter~\ref{ch:security}: Security Framework}
+Presents the comprehensive security implementation. Covers OIDC/JWT authentication with JWKS management, Role-Based Access Control with scope-based permissions, multi-tenancy implementation with database-level isolation, rate limiting algorithms, data protection (PII scrubbing, output guards), threat modeling, and audit logging for compliance.
+
+\subsection{Part IV: Observability and Operations}
+
+\paragraph{Chapter~\ref{ch:observability}: Observability}
+Details the observability stack implementation. Covers Prometheus metrics catalog (HTTP, agents, jobs, tools, LLM calls, providers), structured logging with structlog and request correlation, OpenTelemetry distributed tracing, Kubernetes-compatible health probes, and operational runbooks for common scenarios.
+
+\subsection{Part V: Implementation, Deployment, and Evaluation}
+
+\paragraph{Chapter~\ref{ch:implementation}: Implementation and Engineering Practices}
+Describes the technical implementation. Covers the technology stack (Python, FastAPI, PostgreSQL, Redis, Memgraph, Next.js, Streamlit), codebase organization with approximately 77,000 lines of code, coding standards, testing strategy with over 2,700 test functions, and platform engineering utilities (pagination, idempotency, JSON handling, deprecation framework).
+
+\paragraph{Chapter~\ref{ch:deployment}: Configuration and Deployment}
+Addresses deployment concerns. Covers the Pydantic-based configuration system, environment profiles (development, testing, production), Docker Compose deployment, deployment topologies and scaling strategies, production hardening considerations (TLS, security headers, GPU support), operational scripts, and troubleshooting guidance.
+
+\paragraph{Chapter~\ref{ch:evaluation}: Evaluation}
+Presents the evaluation methodology and results. Covers evaluation setup, end-to-end workflow testing, functional evaluation against requirements, performance benchmarking, availability and fault-tolerance assessment, security evaluation, cost tracking evaluation, threats to validity, and comparative analysis against related frameworks with empirical results.
+
+\paragraph{Chapter~\ref{ch:conclusions}: Conclusions and Future Work}
+Synthesizes findings and looks forward. Summarizes contributions and their validation, discusses lessons learned from the development and deployment experience, acknowledges limitations and technical debt, proposes future work directions (multi-agent collaboration, advanced memory, streaming responses), and reflects on implications for enterprise AI architectures.
+
+\subsection{Appendices}
+
+The thesis includes seven appendices providing reference material:
+
+\begin{description}
+    \item[Appendix~\ref{app:api-reference}: API Endpoint Reference] Complete documentation of all 76 API endpoints across 16 categories, including methods, paths, descriptions, and authorization requirements.
+    
+    \item[Appendix~\ref{app:tool-reference}: MCP Tool Reference] Comprehensive inventory of all 34 MCP tools with categories, descriptions, required scopes, and usage examples.
+    
+    \item[Appendix~\ref{app:database-schema}: Database Schema] PostgreSQL table definitions and Memgraph graph schema with entity relationships.
+    
+    \item[Appendix~\ref{app:adr-summary}: Architecture Decision Records Summary] Summary of key architectural decisions with rationale and alternatives considered.
+    
+    \item[Appendix~\ref{app:config-reference}: Configuration Reference] Complete listing of environment variables and configuration parameters with defaults and descriptions.
+    
+    \item[Appendix~\ref{app:example-configs}: Example Configurations] Sample configuration files for development, testing, and production deployments.
+    
+    \item[Appendix~\ref{app:glossary}: Glossary of Terms] Definitions of key domain terms, state machines, and acronyms used throughout the thesis.
+\end{description}
+
+\subsection{Reading Paths}
+
+Different readers may benefit from different paths through this thesis:
+
+\paragraph{For Architects and Technical Leaders:}
+Begin with this introduction (Chapter~\ref{ch:introduction}), then proceed to System Architecture (Chapter~\ref{ch:architecture}), Security Framework (Chapter~\ref{ch:security}), and Evaluation (Chapter~\ref{ch:evaluation}). Consult the Comparison section (Section~\ref{sec:comparison}) for positioning relative to alternatives.
+
+\paragraph{For Developers and Implementers:}
+After the introduction, focus on Implementation (Chapter~\ref{ch:implementation}), MCP Tools (Chapter~\ref{ch:mcp-tools}), and Configuration and Deployment (Chapter~\ref{ch:deployment}). The appendices provide essential reference material.
+
+\paragraph{For Researchers:}
+Proceed through Background (Chapter~\ref{ch:background}), Requirements (Chapter~\ref{ch:requirements}), and the Agent Orchestration Engine (Chapter~\ref{ch:orchestration}), particularly the NL-to-Cypher pipeline. The Evaluation chapter validates the research contributions.
+
+\paragraph{For Operations Engineers:}
+Focus on Observability (Chapter~\ref{ch:observability}), Background Jobs (Chapter~\ref{ch:jobs-workers}), and Configuration and Deployment (Chapter~\ref{ch:deployment}). The operational runbooks and troubleshooting sections are particularly relevant.
+
+\subsection{Notation and Conventions}
+
+Throughout this thesis:
+
+\begin{itemize}
+    \item \textbf{Code snippets} appear in monospace font within \lstinline{listings} environments
+    \item \textbf{File paths} are shown in monospace, e.g., \texttt{src/services/orchestrator.py}
+    \item \textbf{API endpoints} follow REST conventions, e.g., \texttt{GET /v1/health/ready}
+    \item \textbf{Configuration variables} use uppercase with underscores, e.g., \texttt{REDIS\_URL}
+    \item \textbf{Cross-references} use \LaTeX\ labels, e.g., Section~\ref{sec:motivation}
+    \item \textbf{Citations} reference the bibliography, e.g., \cite{openai2023gpt4}
+    \item \textbf{Emphasis} indicates terms being defined or key concepts
+\end{itemize}
+
+Tables are numbered within chapters (e.g., Table~\ref{tab:contribution-summary}) and figures follow the same convention. Algorithms, when presented, use the \texttt{algorithmic} environment.
+

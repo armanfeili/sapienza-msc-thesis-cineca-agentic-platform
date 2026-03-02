@@ -1,0 +1,412 @@
+% TODO checklist - Files inspected for this section:
+% - README.md (lines 1-2050): Feature descriptions, architecture overview, API endpoints
+% - Q&A.md (lines 1-7907): Q42-46 (observability/testing), Q50 (SOTA comparison)
+% - tests/: Test structure, coverage, pytest markers
+% - tests/conftest.py: Test fixtures, markers, configuration
+% - src/health/: Health check implementation for operational criteria
+% - pyproject.toml: Test configuration, coverage settings
+% - docs/testing/: Testing documentation
+
+\section{Evaluation Criteria}
+\label{sec:evaluation-criteria}
+
+This section establishes the criteria by which the Cineca Agentic Platform will be evaluated in subsequent chapters. These criteria are derived from the functional and non-functional requirements (Sections~\ref{sec:functional-requirements} and~\ref{sec:nonfunctional-requirements}) and provide measurable benchmarks for assessing implementation success.
+
+%------------------------------------------------------------------------------
+\subsection{Evaluation Framework}
+\label{subsec:evaluation-framework}
+
+The evaluation follows a structured framework addressing four dimensions:
+
+\begin{enumerate}
+    \item \textbf{Functional Completeness:} Does the implementation satisfy stated functional requirements?
+    \item \textbf{Quality Attributes:} Does the system exhibit required non-functional characteristics?
+    \item \textbf{Operational Readiness:} Is the system suitable for production deployment?
+    \item \textbf{Comparative Positioning:} How does the platform compare to state-of-the-art alternatives?
+\end{enumerate}
+
+Each dimension uses specific metrics, test methodologies, and success thresholds defined in the following subsections.
+
+%------------------------------------------------------------------------------
+\subsection{Functional Completeness Criteria}
+\label{subsec:functional-criteria}
+
+Functional requirements are evaluated through feature coverage analysis and end-to-end testing:
+
+\begin{table}[htbp]
+\centering
+\caption{Functional Evaluation Criteria}
+\label{tab:functional-eval}
+\small
+\begin{tabularx}{\textwidth}{|l|l|X|l|}
+\hline
+\textbf{Category} & \textbf{Metric} & \textbf{Success Threshold} & \textbf{Method} \\
+\hline
+Agent Execution & FR coverage & 100\% of Must requirements implemented & Feature audit \\
+\hline
+Agent Execution & E2E success rate & $\geq$ 95\% of test scenarios pass & Automated E2E tests \\
+\hline
+Model Management & Provider support & $\geq$ 3 LLM providers operational & Integration test \\
+\hline
+Model Management & DMR functionality & Hierarchical resolution verified & Unit test \\
+\hline
+Tool Ecosystem & Tool count & $\geq$ 30 tools across $\geq$ 15 categories & Inventory count \\
+\hline
+Tool Ecosystem & Schema compliance & 100\% tools have valid JSON schemas & Schema validation \\
+\hline
+Graph Query & NL$\rightarrow$Cypher & $\geq$ 80\% accuracy on benchmark queries & Test query set \\
+\hline
+Graph Query & Safety validation & 100\% injection attempts blocked & Security test \\
+\hline
+Background Jobs & Lifecycle coverage & All state transitions implemented & State machine test \\
+\hline
+Background Jobs & SSE delivery & Events delivered within 2 seconds & Integration test \\
+\hline
+API Design & Endpoint count & $\geq$ 70 endpoints implemented & OpenAPI analysis \\
+\hline
+API Design & Schema validation & 100\% requests validated & Fuzz testing \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Feature Coverage Analysis}
+
+Each functional requirement from Tables~\ref{tab:fr-agent-execution} through~\ref{tab:fr-ui} is mapped to implementation evidence:
+
+\begin{itemize}
+    \item \textbf{Code Reference:} Source file(s) implementing the requirement
+    \item \textbf{Test Reference:} Test file(s) verifying the requirement
+    \item \textbf{API Endpoint:} OpenAPI path(s) exposing the feature
+    \item \textbf{Documentation:} User-facing documentation of the feature
+\end{itemize}
+
+Requirements are classified as:
+\begin{description}
+    \item[Fully Implemented:] All aspects of the requirement are present and tested
+    \item[Partially Implemented:] Core functionality exists but some aspects are incomplete
+    \item[Not Implemented:] Requirement is documented but not addressed in current version
+\end{description}
+
+%------------------------------------------------------------------------------
+\subsection{Performance Evaluation Criteria}
+\label{subsec:performance-criteria}
+
+Performance requirements are evaluated through benchmark testing under controlled conditions:
+
+\begin{table}[htbp]
+\centering
+\caption{Performance Evaluation Criteria}
+\label{tab:performance-eval}
+\small
+\begin{tabularx}{\textwidth}{|l|l|l|X|}
+\hline
+\textbf{Metric} & \textbf{Target (p95)} & \textbf{Target (p99)} & \textbf{Measurement Method} \\
+\hline
+Health probe latency & $<$ 5ms & $<$ 10ms & Prometheus histogram \\
+\hline
+API latency (non-LLM) & $<$ 300ms & $<$ 500ms & Load test with Locust \\
+\hline
+Tool invocation & $<$ 500ms & $<$ 2s & Per-tool latency histogram \\
+\hline
+Database query & $<$ 50ms & $<$ 100ms & Query timing metrics \\
+\hline
+Cache hit latency & $<$ 2ms & $<$ 5ms & Redis operation timing \\
+\hline
+Job queue latency & $<$ 1s & $<$ 2s & Queue-to-start timing \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Load Testing Methodology}
+
+Performance evaluation employs the following test scenarios:
+
+\begin{enumerate}
+    \item \textbf{Baseline Test:} Single-user sequential requests to establish minimum latency
+    \item \textbf{Concurrent Load:} 50 concurrent users with realistic request distribution
+    \item \textbf{Stress Test:} Increasing load until error rate exceeds 1\%
+    \item \textbf{Endurance Test:} Sustained load for 1 hour to detect memory leaks or degradation
+\end{enumerate}
+
+\subsubsection{LLM Operation Exclusion}
+
+LLM-dependent operations are evaluated separately due to external provider latency variability. For LLM endpoints:
+\begin{itemize}
+    \item Measure platform overhead (request handling, response processing) separately from LLM latency
+    \item Verify circuit breaker activation under provider degradation
+    \item Confirm timeout enforcement prevents resource exhaustion
+\end{itemize}
+
+%------------------------------------------------------------------------------
+\subsection{Security Evaluation Criteria}
+\label{subsec:security-criteria}
+
+Security requirements are evaluated through a combination of automated testing, code review, and targeted security assessments:
+
+\begin{table}[htbp]
+\centering
+\caption{Security Evaluation Criteria}
+\label{tab:security-eval}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{Control} & \textbf{Evaluation Method} & \textbf{Success Criterion} \\
+\hline
+Authentication & Attempt access without token, with expired token, with invalid signature & All attempts rejected with 401 \\
+\hline
+Authorization & Attempt privileged operations with insufficient scopes & All attempts rejected with 403 \\
+\hline
+Tenant Isolation & Cross-tenant data access attempts & Zero cross-tenant data leakage \\
+\hline
+Input Validation & Malformed request payloads, oversized inputs & Graceful rejection with 400 \\
+\hline
+Cypher Injection & Injection attempt test suite & All injection vectors blocked \\
+\hline
+SSRF Prevention & Internal network access attempts & All attempts blocked \\
+\hline
+PII Scrubbing & Log inspection for sensitive data & No PII in application logs \\
+\hline
+Rate Limiting & Exceed configured limits & Requests throttled with 429 \\
+\hline
+Audit Logging & Security event verification & All events captured with required fields \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Security Test Categories}
+
+\begin{description}
+    \item[Authentication Tests:] Verify JWKS validation, token expiration, claim extraction, and error handling for malformed tokens.
+    
+    \item[Authorization Tests:] Verify scope enforcement at endpoint and tool levels, including edge cases (missing scopes, scope combinations).
+    
+    \item[Isolation Tests:] Verify tenant boundary enforcement through explicit cross-tenant access attempts at database and cache layers.
+    
+    \item[Injection Tests:] Execute known injection patterns (SQL, Cypher, command) against all input vectors.
+    
+    \item[Compliance Audit:] Verify audit log completeness for security-relevant events.
+\end{description}
+
+%------------------------------------------------------------------------------
+\subsection{Reliability Evaluation Criteria}
+\label{subsec:reliability-criteria}
+
+Reliability is evaluated through fault injection and recovery testing:
+
+\begin{table}[htbp]
+\centering
+\caption{Reliability Evaluation Criteria}
+\label{tab:reliability-eval}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{Failure Scenario} & \textbf{Expected Behavior} & \textbf{Recovery Target} \\
+\hline
+LLM provider timeout & Circuit breaker opens, fallback response & $<$ configured timeout \\
+\hline
+LLM provider error & Error logged, circuit breaker increments & Immediate \\
+\hline
+Redis unavailable & Degraded mode (no caching/rate limiting) & Graceful degradation \\
+\hline
+PostgreSQL connection loss & Request fails, reconnection attempt & $<$ 30 seconds \\
+\hline
+Memgraph unavailable & Graph queries fail, readiness degrades & Immediate detection \\
+\hline
+Worker crash & Job remains queued, picked by another worker & $<$ heartbeat interval \\
+\hline
+Graceful shutdown signal & In-flight requests complete & $<$ 30 seconds \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Fault Injection Methods}
+
+\begin{enumerate}
+    \item \textbf{Network Partition:} Use iptables or Docker network manipulation to simulate connectivity loss
+    \item \textbf{Service Termination:} Stop dependent containers during active requests
+    \item \textbf{Latency Injection:} Introduce artificial delays in external service responses
+    \item \textbf{Error Injection:} Force error responses from mocked external services
+\end{enumerate}
+
+%------------------------------------------------------------------------------
+\subsection{Observability Evaluation Criteria}
+\label{subsec:observability-criteria}
+
+Observability implementation is evaluated for completeness and utility:
+
+\begin{table}[htbp]
+\centering
+\caption{Observability Evaluation Criteria}
+\label{tab:observability-eval}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{Aspect} & \textbf{Evaluation Method} & \textbf{Success Criterion} \\
+\hline
+Metrics coverage & Audit Prometheus metrics against requirements & $\geq$ 50 metrics exposed \\
+\hline
+Metric labels & Verify label cardinality and usefulness & Labels enable filtering by endpoint, status, tenant \\
+\hline
+Log structure & Parse sample logs for required fields & All logs contain request\_id, level, timestamp \\
+\hline
+Log correlation & Trace request through log entries & Single request traceable end-to-end \\
+\hline
+Trace propagation & Verify trace context across service calls & Traces span multiple components \\
+\hline
+Health probe accuracy & Compare probe status with actual health & Probes correctly reflect dependency state \\
+\hline
+Dashboard utility & Review Grafana dashboards for operational value & Key metrics visualized with alerts \\
+\hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\subsection{Operational Readiness Criteria}
+\label{subsec:operational-criteria}
+
+Operational readiness assesses deployment and maintenance characteristics:
+
+\begin{table}[htbp]
+\centering
+\caption{Operational Readiness Criteria}
+\label{tab:operational-eval}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{Criterion} & \textbf{Description} & \textbf{Target} \\
+\hline
+Deployment time & Time from code commit to running service & $<$ 10 minutes (CI/CD) \\
+\hline
+Configuration management & Environment-based configuration support & All secrets externalized \\
+\hline
+Documentation & API documentation, deployment guides & OpenAPI spec + README \\
+\hline
+Backup/restore & Configuration and data export/import & Functional backup endpoints \\
+\hline
+Upgrade path & Database migrations, API versioning & Alembic migrations, /v1 versioning \\
+\hline
+Rollback capability & Ability to revert to previous version & Container image tags, migration down \\
+\hline
+Monitoring setup & Pre-configured dashboards and alerts & Grafana dashboards included \\
+\hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\subsection{Testing Coverage Criteria}
+\label{subsec:testing-criteria}
+
+The test suite is evaluated for comprehensiveness and effectiveness:
+
+\begin{table}[htbp]
+\centering
+\caption{Testing Coverage Criteria}
+\label{tab:testing-eval}
+\small
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\textbf{Metric} & \textbf{Target} & \textbf{Measurement} \\
+\hline
+Line coverage & $\geq$ 80\% & Coverage.py report \\
+\hline
+Branch coverage & $\geq$ 70\% & Coverage.py with branch analysis \\
+\hline
+Unit test count & $\geq$ 200 tests & pytest collection \\
+\hline
+Integration test count & $\geq$ 50 tests & pytest marker filter \\
+\hline
+E2E test count & $\geq$ 20 tests & pytest marker filter \\
+\hline
+Security test count & $\geq$ 30 tests & pytest marker filter \\
+\hline
+Test execution time & $<$ 5 minutes (unit) & CI timing \\
+\hline
+Flaky test rate & $<$ 2\% & CI failure analysis \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Test Pyramid Adherence}
+
+The test suite should follow the test pyramid principle:
+\begin{itemize}
+    \item \textbf{Unit Tests (60\%):} Fast, isolated tests of individual functions and classes
+    \item \textbf{Integration Tests (30\%):} Tests verifying component interactions with real or simulated dependencies
+    \item \textbf{E2E Tests (10\%):} Full workflow tests through the HTTP API
+\end{itemize}
+
+%------------------------------------------------------------------------------
+\subsection{Comparative Evaluation Criteria}
+\label{subsec:comparative-criteria}
+
+The platform is compared against state-of-the-art alternatives using the following dimensions:
+
+\begin{table}[htbp]
+\centering
+\caption{Comparative Evaluation Dimensions}
+\label{tab:comparative-eval}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{Dimension} & \textbf{Description} & \textbf{Comparators} \\
+\hline
+Multi-tenancy & Native tenant isolation and configuration & LangChain, LlamaIndex, Semantic Kernel \\
+\hline
+Enterprise security & OIDC, RBAC, audit logging & OpenAI Assistants, AutoGen, crewAI \\
+\hline
+Observability & Metrics, logging, tracing completeness & All comparators \\
+\hline
+Graph integration & NL$\rightarrow$Cypher pipeline & Neo4j MCP, LangChain Neo4j \\
+\hline
+Production readiness & Deployment, scaling, operations & All comparators \\
+\hline
+Extensibility & Tool addition, provider integration & LangChain, LlamaIndex \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Comparison Methodology}
+
+For each dimension:
+\begin{enumerate}
+    \item Document the feature's presence/absence in each system
+    \item Rate implementation completeness (None, Partial, Full)
+    \item Provide qualitative assessment of trade-offs
+    \item Identify areas where Cineca Agentic Platform is ahead, on par, or behind
+\end{enumerate}
+
+%------------------------------------------------------------------------------
+\subsection{Evaluation Summary Matrix}
+\label{subsec:eval-summary}
+
+\begin{table}[htbp]
+\centering
+\caption{Evaluation Criteria Summary}
+\label{tab:eval-summary}
+\small
+\begin{tabular}{|l|c|l|}
+\hline
+\textbf{Category} & \textbf{Criteria Count} & \textbf{Evaluation Chapter Section} \\
+\hline
+Functional Completeness & 12 & Section 12.2 \\
+\hline
+Performance & 6 & Section 12.3 \\
+\hline
+Security & 9 & Section 12.4 \\
+\hline
+Reliability & 7 & Section 12.5 \\
+\hline
+Observability & 7 & Section 12.6 \\
+\hline
+Operational Readiness & 7 & Section 12.7 \\
+\hline
+Testing Coverage & 8 & Section 12.8 \\
+\hline
+Comparative Analysis & 6 & Section 12.9 \\
+\hline
+\textbf{Total} & \textbf{62} & --- \\
+\hline
+\end{tabular}
+\end{table}
+
+% TODO: Update chapter/section references once evaluation chapter structure is finalized

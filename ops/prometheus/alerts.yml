@@ -1,0 +1,274 @@
+# ops/prometheus/alerts.yml
+# Alerting rules for Cineca Agentic Platform
+# These rules are intentionally generic so they work with the default
+# prometheus_client metrics and common FastAPI/Starlette instrumentation.
+
+groups:
+  # ---------------- Availability & Liveness ----------------
+  - name: availability.rules
+    rules:
+      - alert: AppInstanceDown
+        expr: up{job="app"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+          service: cineca-agentic-platform
+        annotations:
+          summary: "App instance is down"
+          description: "The app target (job=app) is not responding to Prometheus scrapes for >2m."
+          runbook: "Check docker compose status and app logs: `docker compose ps && docker compose logs -f app`"
+
+      - alert: AppMetricsMissing
+        # Triggers when no process_start_time_seconds metric exists for the app (e.g., exporter not registered)
+        expr: absent(process_start_time_seconds{job="app"})
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service: cineca-agentic-platform
+        annotations:
+          summary: "No app metrics found"
+          description: "Prometheus cannot find 'process_start_time_seconds' for job=app for >10m. The app may be misconfigured or metrics endpoint missing."
+          runbook: "Ensure prometheus-client is enabled and /metrics is exposed."
+
+      - alert: PrometheusTargetsDown
+        # Any job with at least one target down for 2 minutes
+        expr: (count by (job) (up == 0) > 0)
+        for: 2m
+        labels:
+          severity: warning
+          team: platform
+          service: monitoring
+        annotations:
+          summary: "One or more targets are down"
+          description: "Prometheus detected at least one target with up==0 for >2m. Jobs affected: {{ $labels.job }}"
+          runbook: "Open Prometheus UI → /targets to inspect failing scrapes."
+
+  # ---------------- HTTP Health & Errors ----------------
+  - name: http.rules
+    rules:
+      - alert: AppHigh5xxErrorRate
+        # Requires a typical http_requests_total metric with status label (from popular FastAPI instrumentors)
+        expr: |
+          sum(rate(http_requests_total{job="app",status=~"5.."}[5m]))
+          /
+          clamp_min(sum(rate(http_requests_total{job="app"}[5m])), 1e-9)
+          > 0.05
+        for: 10m
+        labels:
+          severity: critical
+          team: platform
+          service: cineca-agentic-platform
+        annotations:
+          summary: "High 5xx error rate (>5%)"
+          description: "The app returned a high ratio of 5xx responses over the last 10 minutes (value: {{ printf \"%.4f\" $value }})."
+          runbook: "Check app logs and recent deploys. Consider rolling back or enabling degraded mode."
+
+      - alert: AppHighLatencyP95
+        # Requires a typical histogram http_request_duration_seconds_bucket
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(http_request_duration_seconds_bucket{job="app"}[5m]))
+          ) > 0.75
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service: cineca-agentic-platform
+        annotations:
+          summary: "High latency (P95 > 750ms)"
+          description: "95th percentile HTTP latency is above 750ms for the last 10 minutes."
+          runbook: "Check DB (Memgraph) health, upstream LLM latency, and recent traffic spikes."
+
+      - alert: AppRequestBurst
+        expr: sum(rate(http_requests_total{job="app"}[1m])) > 100
+        for: 5m
+        labels:
+          severity: info
+          team: platform
+          service: cineca-agentic-platform
+        annotations:
+          summary: "Traffic spike detected (>100 RPS)"
+          description: "Sustained request rate exceeded 100 req/s for 5 minutes."
+          runbook: "Confirm if this is expected. Consider scaling or enabling caching/rate-limits."
+
+  # ---------------- Resource Usage (Process) ----------------
+  - name: resources.rules
+    rules:
+      - alert: AppHighMemoryUsage
+        # Uses process_resident_memory_bytes from prometheus_client
+        expr: process_resident_memory_bytes{job="app"} > 500 * 1024 * 1024
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service: cineca-agentic-platform
+        annotations:
+          summary: "High memory usage (>500MiB)"
+          description: "Resident memory used by the app process is above 500MiB for over 10 minutes."
+          runbook: "Inspect memory profiles/leaks. Check batch sizes, caches, and LLM client settings."
+
+      - alert: AppHighCPUUsage
+        # CPU seconds per second ~ utilization of a single CPU core
+        expr: rate(process_cpu_seconds_total{job="app"}[5m]) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service: cineca-agentic-platform
+        annotations:
+          summary: "High CPU usage (>90% of a core)"
+          description: "Average CPU usage per core equivalent exceeded 90% for >10 minutes."
+          runbook: "Check hot paths, enable caching, or scale instances."
+
+  # ---------------- Prometheus Self-Health ----------------
+  - name: prometheus.rules
+    rules:
+      - alert: PrometheusTooManyScrapeFailures
+        expr: rate(prometheus_target_scrapes_exceeded_sample_limit_total[5m]) > 0
+        for: 10m
+        labels:
+          severity: info
+          team: platform
+          service: monitoring
+        annotations:
+          summary: "Prometheus is dropping samples due to limits"
+          description: "One or more scrapes exceeded the sample limit in the last 10 minutes."
+          runbook: "Increase sample limits or reduce target metrics."
+
+      - alert: PrometheusRuleEvalFailures
+        expr: rate(prometheus_rule_evaluation_failures_total[5m]) > 0
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service: monitoring
+        annotations:
+          summary: "Prometheus rule evaluation failures"
+          description: "There were rule evaluation failures in the last 10 minutes."
+          runbook: "Check alert/recording rules syntax and Prometheus logs."
+
+      - alert: PrometheusTargetDown
+        expr: up{job="prometheus"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+          service: monitoring
+        annotations:
+          summary: "Prometheus instance is down"
+          description: "Prometheus target is not responding to scrapes."
+          runbook: "Restart the prometheus container and check its persistent storage."
+
+  # ---------------- Job Store Health ----------------
+  - name: job_store.rules
+    rules:
+      - alert: JobStoreHighCreateLatency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (backend, le) (rate(job_create_duration_seconds_bucket[5m]))
+          ) > 2.0
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service: job-store
+        annotations:
+          summary: "High job creation latency (P95 > 2s) on {{ $labels.backend }} backend"
+          description: "95th percentile job creation time is above 2 seconds for backend {{ $labels.backend }}."
+          runbook: "Check Redis latency if backend=redis. Check memory pressure if backend=memory. See docs/runbooks/redis-job-store.md"
+
+      - alert: JobStoreHighGetLatency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (backend, le) (rate(job_get_duration_seconds_bucket[5m]))
+          ) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service: job-store
+        annotations:
+          summary: "High job retrieval latency (P95 > 500ms) on {{ $labels.backend }} backend"
+          description: "95th percentile job GET time is above 500ms for backend {{ $labels.backend }}."
+          runbook: "Check Redis connection pool saturation. Verify network latency to Redis."
+
+      - alert: JobStoreHighFailureRate
+        expr: |
+          sum(rate(job_create_total{status="failed"}[5m])) by (backend)
+          /
+          clamp_min(sum(rate(job_create_total[5m])) by (backend), 1e-9)
+          > 0.05
+        for: 10m
+        labels:
+          severity: critical
+          team: platform
+          service: job-store
+        annotations:
+          summary: "High job creation failure rate (>5%) on {{ $labels.backend }} backend"
+          description: "More than 5% of job creations are failing on backend {{ $labels.backend }}."
+          runbook: "Check Redis connectivity, authentication, and memory limits. Review app logs for StorageError exceptions."
+
+      - alert: RedisConnectionErrors
+        expr: rate(redis_connection_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          service: job-store
+        annotations:
+          summary: "Redis connection errors detected"
+          description: "Redis connection errors are occurring at {{ $value }} per second."
+          runbook: "Check Redis health (docker exec redis redis-cli PING). Verify REDIS_URL configuration. Check network connectivity."
+
+      - alert: SSETooManyGaps
+        expr: rate(sse_gap_events_total[10m]) > 1
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          service: job-store
+        annotations:
+          summary: "High SSE gap rate (ring buffer eviction)"
+          description: "SSE clients are experiencing frequent ring buffer gaps (>1/min avg over 15min)."
+          runbook: "Consider increasing SSE_RING_SIZE. Check if jobs are generating excessive events. Review SSE client connection patterns."
+
+      - alert: SSEHighConnectionCount
+        expr: sse_connections_active > 100
+        for: 10m
+        labels:
+          severity: info
+          team: platform
+          service: job-store
+        annotations:
+          summary: "High active SSE connection count (>100)"
+          description: "There are {{ $value }} active SSE connections."
+          runbook: "Monitor server resources. Consider scaling or implementing connection limits."
+
+      - alert: JobStoreBackendMismatch
+        expr: changes(job_backend_info[5m]) > 0
+        for: 1m
+        labels:
+          severity: info
+          team: platform
+          service: job-store
+        annotations:
+          summary: "Job storage backend changed"
+          description: "The job storage backend configuration has changed in the last 5 minutes."
+          runbook: "Expected during deployment. Verify JOB_STORE_BACKEND env var is set correctly. Check for any unintended rollbacks."
+
+      - alert: IndexOrphansAccumulating
+        expr: rate(index_orphans_cleaned_total[1h]) > 10
+        for: 1h
+        labels:
+          severity: warning
+          team: platform
+          service: job-store
+        annotations:
+          summary: "High rate of orphaned index cleanup"
+          description: "More than 10 orphaned ZSET members per hour are being cleaned."
+          runbook: "Normal if TTLs are expiring. Investigate if rate is unexpectedly high (could indicate improper deletions)."

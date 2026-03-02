@@ -1,0 +1,470 @@
+% TODO checklist:
+% [x] Inspected: src/mcp/tools/graph/generate_cypher.py (NL-to-Cypher generation)
+% [x] Inspected: src/mcp/tools/graph/secure_query.py (secure query execution with NL support)
+% [x] Inspected: src/mcp/tools/graph/query.py (direct Cypher execution)
+% [x] Inspected: src/security/graph_access_policy.py (Cypher validation and safety)
+% [x] Inspected: src/services/orchestrator.py (_handle_graph_query, _build_simple_memgraph_query)
+% [x] Inspected: src/memgraph/test_mode.py (test mode hints)
+% [x] Inspected: Q&A.md (Questions 29-35 on NL-to-Cypher pipeline)
+% [x] Inspected: README.md (NL-to-Cypher overview)
+
+\section{NL-to-Cypher Pipeline}
+\label{sec:nl-cypher}
+
+The Natural Language to Cypher (NL-to-Cypher) pipeline enables users to query the Memgraph knowledge graph using natural language, abstracting away the complexity of the Cypher query language while maintaining security and performance. This section examines the pipeline architecture, processing stages, safety mechanisms, and the advantages this approach offers over traditional retrieval-augmented generation (RAG) systems.
+
+\subsection{Pipeline Architecture Overview}
+
+The NL-to-Cypher pipeline transforms natural language questions into executable Cypher queries through a multi-stage process. Figure~\ref{fig:nl-cypher-pipeline} illustrates the complete flow.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.5cm,
+    box/.style={rectangle, draw, rounded corners, minimum width=3cm, minimum height=0.8cm, align=center, font=\small},
+    decision/.style={diamond, draw, aspect=2, minimum width=2cm, align=center, font=\scriptsize},
+    arrow/.style={->, thick}
+]
+    % Nodes
+    \node[box] (input) {Natural Language\\Input};
+    \node[box, below of=input] (normalize) {Normalization};
+    \node[decision, below of=normalize] (catalog) {Catalog\\Match?};
+    \node[box, below left of=catalog, xshift=-1.5cm, yshift=-0.5cm] (direct) {Direct Cypher\\Template};
+    \node[box, below right of=catalog, xshift=1.5cm, yshift=-0.5cm] (llm) {LLM-Based\\Generation};
+    \node[box, below of=catalog, yshift=-1.5cm] (validate) {Safety\\Validation};
+    \node[box, below of=validate] (execute) {Query\\Execution};
+    \node[box, below of=execute] (summarize) {Result\\Summarization};
+    \node[box, below of=summarize] (output) {Natural Language\\Response};
+    
+    % Arrows
+    \draw[arrow] (input) -- (normalize);
+    \draw[arrow] (normalize) -- (catalog);
+    \draw[arrow] (catalog) -| node[above, font=\tiny] {Yes} (direct);
+    \draw[arrow] (catalog) -| node[above, font=\tiny] {No} (llm);
+    \draw[arrow] (direct) |- (validate);
+    \draw[arrow] (llm) |- (validate);
+    \draw[arrow] (validate) -- (execute);
+    \draw[arrow] (execute) -- (summarize);
+    \draw[arrow] (summarize) -- (output);
+\end{tikzpicture}
+\caption{NL-to-Cypher pipeline stages}
+\label{fig:nl-cypher-pipeline}
+\end{figure}
+
+The pipeline implements a defense-in-depth strategy, applying multiple validation layers before any query reaches the database. This design prioritizes security while enabling flexible natural language interaction with graph data.
+
+\subsection{Pipeline Stages}
+\label{subsec:pipeline-stages}
+
+\subsubsection{Stage 1: Natural Language Normalization}
+
+The first stage prepares the input text for processing:
+
+\begin{enumerate}
+    \item \textbf{Input Sanitization}: Strip leading/trailing whitespace, collapse multiple spaces
+    \item \textbf{Entity Extraction}: Identify node labels (e.g., \texttt{:Blast}), property names, and values
+    \item \textbf{Context Enrichment}: Incorporate session history for pronoun resolution and context
+    \item \textbf{Intent Signals}: Extract hints about query type (count, list, aggregate)
+\end{enumerate}
+
+\begin{lstlisting}[language=Python, caption={Input normalization}, label=lst:normalize-input]
+def _normalize_nl_input(text: str) -> str:
+    """Normalize natural language input for processing."""
+    text = text.strip()
+    text = re.sub(r"\s+", " ", text)  # Collapse whitespace
+    text = text.rstrip("?.!")         # Remove trailing punctuation
+    return text
+\end{lstlisting}
+
+\subsubsection{Stage 2: Catalog Lookup and Pattern Matching}
+
+Before invoking the LLM, the pipeline checks if the query matches a known pattern in the prompt catalog:
+
+\begin{lstlisting}[language=Python, caption={Catalog-based query generation}, label=lst:catalog-lookup]
+# Check prompt catalog for known patterns
+catalog_match = match_prompt_by_text(normalized_text, threshold=0.85)
+
+if catalog_match:
+    # Use catalog-provided hints
+    hints = get_execution_hints(catalog_match)
+    if hints.get("expected_pattern"):
+        # Generate Cypher from template
+        cypher = generate_from_template(
+            pattern=hints["expected_pattern"],
+            limit=hints.get("limit_hint", 10),
+            random=hints.get("random", False),
+        )
+        return cypher
+\end{lstlisting}
+
+This fast path enables deterministic execution for common queries, bypassing LLM invocation entirely.
+
+\subsubsection{Stage 3: LLM-Based Cypher Generation}
+
+For queries not matching the catalog, the pipeline invokes an LLM to generate Cypher:
+
+\begin{lstlisting}[language=Python, caption={LLM-based Cypher generation prompt}, label=lst:cypher-generation]
+CYPHER_GENERATION_PROMPT = """
+You are a Cypher query generator for Memgraph.
+
+Schema:
+{schema}
+
+User Question: {question}
+
+Generate a valid Cypher query that answers the question.
+Rules:
+- Use only node labels and relationships from the schema
+- Include appropriate LIMIT clauses (default: 10)
+- Use parameterized queries where possible
+- Prefer read-only operations (MATCH, RETURN)
+
+Respond with ONLY the Cypher query, no explanation.
+"""
+\end{lstlisting}
+
+The generation process:
+\begin{enumerate}
+    \item Load current graph schema from Memgraph
+    \item Construct prompt with schema context and user question
+    \item Invoke LLM with low temperature (0.1-0.3) for consistency
+    \item Extract Cypher from response, handling code blocks and formatting
+\end{enumerate}
+
+\subsubsection{Stage 4: Safety Validation}
+
+The generated Cypher undergoes rigorous safety validation through multiple layers, implemented in \texttt{src/security/graph\_access\_policy.py}:
+
+\paragraph{Layer 1: Syntax Validation} Basic Cypher syntax checking ensures the query is well-formed before execution.
+
+\paragraph{Layer 2: Read-Only Enforcement} For non-admin users, queries must be read-only:
+
+\begin{lstlisting}[language=Python, caption={Write operation detection}, label=lst:write-detection]
+WRITE_PATTERNS = [
+    r"\bCREATE\b",
+    r"\bMERGE\b",
+    r"\bDELETE\b",
+    r"\bDETACH\s+DELETE\b",
+    r"\bSET\b",
+    r"\bREMOVE\b",
+]
+
+def is_read_only(cypher: str) -> bool:
+    """Check if query is read-only."""
+    for pattern in WRITE_PATTERNS:
+        if re.search(pattern, cypher, re.IGNORECASE):
+            return False
+    return True
+\end{lstlisting}
+
+\paragraph{Layer 3: Tenant Boundary Isolation} Queries are automatically filtered to the caller's tenant:
+
+\begin{lstlisting}[language=Python, caption={Tenant filtering}, label=lst:tenant-filter]
+def inject_tenant_filter(cypher: str, tenant_id: str) -> str:
+    """Inject tenant_id filter into Cypher query."""
+    # Ensure WHERE clause includes tenant constraint
+    if "WHERE" in cypher.upper():
+        cypher = re.sub(
+            r"WHERE\s+",
+            f"WHERE n.tenant_id = '{tenant_id}' AND ",
+            cypher,
+            flags=re.IGNORECASE,
+        )
+    return cypher
+\end{lstlisting}
+
+\paragraph{Layer 4: Depth and Complexity Limits} Path traversal and query complexity are bounded:
+
+\begin{lstlisting}[language=Python, caption={Depth limit enforcement}, label=lst:depth-limits]
+MAX_PATH_DEPTH = 5
+MAX_RESULT_SIZE = 1000
+
+def validate_depth(cypher: str) -> bool:
+    """Check path traversal depth."""
+    # Detect unbounded path patterns like [*] or [*1..]
+    if re.search(r"\[\*\s*\]", cypher):
+        return False
+    if re.search(r"\[\*\d+\.\.\]", cypher):
+        return False
+    return True
+\end{lstlisting}
+
+\paragraph{Layer 5: Timeout Guards} Query execution is bounded by configurable timeouts to prevent resource exhaustion.
+
+\paragraph{Layer 6: Result Size Caps} Results are limited to prevent memory exhaustion from large result sets.
+
+\subsubsection{Stage 5: Query Execution}
+
+Validated queries are executed against Memgraph:
+
+\begin{lstlisting}[language=Python, caption={Secure query execution}, label=lst:query-execution]
+async def execute_secure_query(
+    cypher: str,
+    params: dict | None = None,
+    tenant_id: str | None = None,
+    timeout_ms: int = 30000,
+) -> dict[str, Any]:
+    """Execute validated Cypher query."""
+    
+    # Apply tenant filter
+    if tenant_id:
+        cypher = inject_tenant_filter(cypher, tenant_id)
+    
+    # Execute with timeout
+    with timeout(timeout_ms / 1000):
+        results = memgraph.query(cypher, params)
+    
+    return {
+        "rows": results[:MAX_RESULT_SIZE],
+        "total_count": len(results),
+        "truncated": len(results) > MAX_RESULT_SIZE,
+        "query": cypher,
+        "latency_ms": elapsed_ms,
+    }
+\end{lstlisting}
+
+\subsubsection{Stage 6: Result Summarization}
+
+Query results are summarized into natural language:
+
+\begin{lstlisting}[language=Python, caption={Result summarization}, label=lst:result-summarization]
+SUMMARIZATION_PROMPT = """
+Summarize the following Memgraph query results for the user.
+Keep it concise (<=100 words).
+
+Original Question: {question}
+Cypher Query: {cypher}
+Results: {results}
+
+Provide a natural language summary that directly answers the question.
+"""
+\end{lstlisting}
+
+For simple counts, the pipeline bypasses LLM summarization:
+
+\begin{lstlisting}[language=Python, caption={Direct count formatting}, label=lst:count-format]
+def format_count_result(count: int, label: str) -> str:
+    """Format count result without LLM."""
+    if count == 0:
+        return f"There are no {label} nodes in the graph."
+    elif count == 1:
+        return f"There is 1 {label} node in the graph."
+    else:
+        return f"There are {count:,} {label} nodes in the graph."
+\end{lstlisting}
+
+\subsection{Failure Modes and Safety Guardrails}
+\label{subsec:failure-modes}
+
+The NL-to-Cypher pipeline implements comprehensive handling for potential failure modes:
+
+\subsubsection{Hallucinated Queries}
+
+LLMs may generate syntactically valid but semantically incorrect Cypher:
+
+\begin{itemize}
+    \item \textbf{Mitigation}: Schema context in generation prompt constrains output to valid labels/relationships
+    \item \textbf{Mitigation}: Expected pattern validation for catalog-matched queries
+    \item \textbf{Mitigation}: Test mode with deterministic hints for known query patterns
+\end{itemize}
+
+\subsubsection{Schema Mismatch}
+
+Generated queries may reference non-existent schema elements:
+
+\begin{itemize}
+    \item \textbf{Mitigation}: Schema is loaded dynamically before generation
+    \item \textbf{Mitigation}: Query validation checks label and relationship existence
+    \item \textbf{Mitigation}: User-friendly error messages on schema mismatches
+\end{itemize}
+
+\subsubsection{Injection Attacks}
+
+Malicious input may attempt to inject harmful Cypher:
+
+\begin{itemize}
+    \item \textbf{Mitigation}: Parameterized queries for user-provided values
+    \item \textbf{Mitigation}: Read-only mode enforcement for non-admin users
+    \item \textbf{Mitigation}: Tenant boundary filtering prevents cross-tenant access
+    \item \textbf{Mitigation}: CALL procedure allowlist blocks dangerous operations
+\end{itemize}
+
+\begin{lstlisting}[language=Python, caption={CALL procedure allowlist}, label=lst:call-allowlist]
+ALLOWED_PROCEDURES = {
+    "db.labels",
+    "db.relationshipTypes",
+    "db.propertyKeys",
+    "db.schema",
+}
+
+def _check_unsafe_calls(cypher: str) -> list[str]:
+    """Check for unsafe CALL procedures."""
+    violations = []
+    for match in re.finditer(r"CALL\s+(\w+(?:\.\w+)*)", cypher, re.IGNORECASE):
+        proc = match.group(1)
+        if proc not in ALLOWED_PROCEDURES:
+            violations.append(f"Unsafe procedure: {proc}")
+    return violations
+\end{lstlisting}
+
+\subsubsection{Performance Issues}
+
+Queries may cause performance problems:
+
+\begin{itemize}
+    \item \textbf{Mitigation}: Query timeout enforcement (default: 30 seconds)
+    \item \textbf{Mitigation}: Result size caps (default: 1000 rows)
+    \item \textbf{Mitigation}: Path depth limits (default: 5 hops)
+    \item \textbf{Mitigation}: LIMIT clause injection for unbounded queries
+\end{itemize}
+
+\subsubsection{Tenant Data Leakage}
+
+Queries might access data from other tenants:
+
+\begin{itemize}
+    \item \textbf{Mitigation}: Mandatory tenant\_id filter injection
+    \item \textbf{Mitigation}: Query validation verifies tenant constraints
+    \item \textbf{Mitigation}: Database-level row security (if available)
+\end{itemize}
+
+\subsection{Test Mode for Deterministic Testing}
+
+The pipeline supports a test mode enabling deterministic testing independent of LLM output variability:
+
+\begin{lstlisting}[language=Python, caption={Test mode configuration}, label=lst:test-mode]
+# Environment variable enables test mode
+MEMGRAPH_NL_TEST_MODE = os.getenv("MEMGRAPH_NL_TEST_MODE", "false")
+
+# Test hints file provides prompt -> Cypher mapping
+def get_prompt_hints() -> dict[str, str]:
+    """Load test hints mapping prompts to expected Cypher."""
+    hints_path = os.getenv("MEMGRAPH_NL_HINTS_FILE")
+    if hints_path and Path(hints_path).exists():
+        with open(hints_path) as f:
+            return json.load(f)
+    return {}
+\end{lstlisting}
+
+When test mode is enabled:
+\begin{enumerate}
+    \item The pipeline checks if the normalized prompt has a hint entry
+    \item If found, the hint Cypher is used directly, bypassing LLM generation
+    \item This enables reliable integration testing with known expected outputs
+\end{enumerate}
+
+\subsection{NL-to-Cypher Advantages over RAG}
+\label{subsec:nl-cypher-advantages}
+
+The NL-to-Cypher approach offers several advantages over traditional Retrieval-Augmented Generation (RAG) for knowledge graph access:
+
+\subsubsection{Structured Reasoning}
+
+Graph traversal preserves relationship semantics that embedding-based retrieval may lose:
+
+\begin{itemize}
+    \item \textbf{Explicit Relationships}: Cypher queries express relationships directly (e.g., \texttt{(a)-[:CREATED]->(b)})
+    \item \textbf{Path Semantics}: Multi-hop queries follow actual graph paths
+    \item \textbf{Direction Awareness}: Relationship direction is preserved and queryable
+\end{itemize}
+
+\subsubsection{Multi-Hop Queries}
+
+Complex queries spanning multiple relationships are natural in Cypher:
+
+\begin{lstlisting}[language=cypher, caption={Multi-hop query example}, label=lst:multi-hop]
+// Find all files created by users who work at CINECA
+MATCH (u:User)-[:WORKS_AT]->(:Institution {name: "CINECA"})
+MATCH (u)-[:CREATED]->(f:File)
+RETURN f.name, u.name
+\end{lstlisting}
+
+RAG systems struggle with such queries, as embedding similarity does not capture relational paths.
+
+\subsubsection{Aggregation Support}
+
+Cypher natively supports aggregations that RAG requires post-processing for:
+
+\begin{lstlisting}[language=cypher, caption={Aggregation query example}, label=lst:aggregation]
+// Count files per institution
+MATCH (u:User)-[:WORKS_AT]->(i:Institution)
+MATCH (u)-[:CREATED]->(f:File)
+RETURN i.name, COUNT(DISTINCT f) as file_count
+ORDER BY file_count DESC
+\end{lstlisting}
+
+\subsubsection{Schema Awareness}
+
+Queries are grounded in the actual data model:
+
+\begin{itemize}
+    \item \textbf{Type Safety}: Node labels and relationship types are validated
+    \item \textbf{Property Access}: Specific properties can be queried directly
+    \item \textbf{Constraint Enforcement}: Schema constraints are respected
+\end{itemize}
+
+\subsubsection{Deterministic Execution}
+
+For the same query, results are deterministic and reproducible:
+
+\begin{itemize}
+    \item \textbf{Reproducibility}: Same Cypher produces same results (given same data)
+    \item \textbf{Testability}: Expected results can be verified in tests
+    \item \textbf{Auditability}: Query execution is logged for compliance
+\end{itemize}
+
+\subsubsection{RBAC Integration}
+
+Security controls integrate naturally with query execution:
+
+\begin{itemize}
+    \item \textbf{Tenant Filtering}: Queries are scoped to tenant boundaries
+    \item \textbf{Permission Checks}: Operations require appropriate scopes
+    \item \textbf{Audit Logging}: All queries are logged with principal context
+\end{itemize}
+
+\subsection{Trade-offs and Limitations}
+
+The NL-to-Cypher approach has limitations compared to RAG:
+
+\begin{itemize}
+    \item \textbf{Schema Dependence}: Queries require understanding of the graph schema
+    \item \textbf{Generation Brittleness}: LLM may generate invalid Cypher for complex queries
+    \item \textbf{Limited Fuzzy Matching}: Exact property values are required (no semantic similarity)
+    \item \textbf{Maintenance Burden}: Schema changes may require prompt catalog updates
+    \item \textbf{No Vector Search}: Cannot search by semantic similarity within node properties
+\end{itemize}
+
+For use cases requiring semantic search over unstructured text, a hybrid approach combining NL-to-Cypher for structured queries with vector search for content retrieval may be appropriate.
+
+\subsection{Integration with Orchestrator}
+
+The NL-to-Cypher pipeline integrates with the orchestrator through dedicated MCP tools:
+
+\begin{description}
+    \item[graph.generate\_cypher] Generates Cypher from natural language without execution
+    \item[graph.secure\_query] Generates and executes validated Cypher with full safety checks
+    \item[graph.query] Executes provided Cypher directly (for pre-validated queries)
+\end{description}
+
+The orchestrator routes graph-intent requests through these tools:
+
+\begin{lstlisting}[language=Python, caption={Graph query orchestration}, label=lst:graph-orchestration]
+async def _handle_graph_query(self, goal: str, ctx: RunContext):
+    """Handle graph-mode queries via NL-to-Cypher."""
+    
+    # Try direct query building for simple patterns
+    direct_query = self._build_simple_memgraph_query(goal)
+    
+    if direct_query:
+        # Execute directly without LLM
+        result = await self.invoke_tool("graph.query", {"cypher": direct_query})
+    else:
+        # Use LLM-based generation with safety validation
+        result = await self.invoke_tool("graph.secure_query", {"prompt": goal})
+    
+    return self._format_graph_result(result, goal)
+\end{lstlisting}
+
+This design enables optimization for common patterns while maintaining flexibility for complex queries.
+

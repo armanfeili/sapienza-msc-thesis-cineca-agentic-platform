@@ -1,0 +1,257 @@
+% TODO checklist:
+% - [x] Inspected src/security/jwt.py (JWKS validation, Principal construction)
+% - [x] Inspected src/security/auth.py (Password hashing, JWT creation, demo authenticator)
+% - [x] Inspected src/routers/auth.py (GET /auth/me endpoint, token validation)
+% - [x] Inspected fetch_auth0_tokens.sh (Auth0 token fetching script)
+% - [x] Reviewed Q&A.md Q16 (Authentication flow details)
+% - [x] Reviewed README.md (Security features overview)
+
+\section{Authentication}
+\label{sec:authentication}
+
+Authentication in the Cineca Agentic Platform follows industry-standard practices for enterprise security, implementing OpenID Connect (OIDC) with JSON Web Token (JWT) validation. The authentication subsystem is designed to integrate seamlessly with external Identity Providers (IdPs) such as Auth0, Okta, or any OIDC-compliant provider, while also supporting legacy symmetric key validation for backward compatibility.
+
+\subsection{OIDC/JWT-Based Authentication}
+\label{subsec:oidc-jwt}
+
+The platform implements a stateless authentication model where all security context is carried within signed JWT tokens. This approach eliminates server-side session storage requirements and enables horizontal scaling of backend instances without shared session state.
+
+\paragraph{Token Structure and Claims}
+JWT tokens in the platform carry several critical claims that drive authentication and authorization decisions:
+
+\begin{itemize}
+    \item \textbf{sub} (Subject): The unique identifier for the authenticated user, serving as the primary identity anchor.
+    \item \textbf{iss} (Issuer): The Identity Provider's URL, validated against the configured \texttt{OIDC\_ISSUER} setting.
+    \item \textbf{aud} (Audience): The intended recipient of the token, validated against \texttt{OIDC\_AUDIENCE}.
+    \item \textbf{exp} (Expiration): Token expiration timestamp, enforced to prevent use of stale credentials.
+    \item \textbf{nbf} (Not Before): Earliest valid usage time, preventing replay of pre-issued tokens.
+    \item \textbf{iat} (Issued At): Token creation timestamp, used for freshness validation.
+    \item \textbf{scope/scopes}: Permission strings granted to the token holder.
+    \item \textbf{permissions}: Explicit permission array (Auth0-style claims).
+    \item \textbf{roles}: Role assignments that expand to scopes during authorization.
+    \item \textbf{tid/tenant\_id}: Multi-tenancy identifier for data isolation.
+\end{itemize}
+
+\paragraph{Cryptographic Validation}
+The platform supports two cryptographic schemes for token validation:
+
+\begin{enumerate}
+    \item \textbf{RS256/ES256 (Asymmetric)}: The recommended production configuration uses JWKS (JSON Web Key Set) from the OIDC provider. Public keys are fetched from the provider's \texttt{/.well-known/jwks.json} endpoint and cached with configurable TTL.
+    \item \textbf{HS256 (Symmetric)}: A legacy fallback for development and testing environments where a shared secret (\texttt{JWT\_SECRET}) is configured.
+\end{enumerate}
+
+\subsection{Authentication Flow Details}
+\label{subsec:auth-flow-details}
+
+The authentication flow in the Cineca Agentic Platform follows a resource server model where the platform validates tokens issued by an external Identity Provider. Figure~\ref{fig:auth-flow} illustrates the complete authentication sequence.
+
+\subsubsection{Client Token Acquisition}
+
+Before accessing platform resources, clients must obtain a valid JWT from the configured OIDC provider. The platform supports multiple OAuth 2.0 grant types depending on the use case:
+
+\begin{enumerate}
+    \item \textbf{Authorization Code Flow}: For interactive web applications where users authenticate through a browser-based flow.
+    \item \textbf{Resource Owner Password Credentials (ROPC)}: For trusted first-party applications with direct credential submission (used in the \texttt{fetch\_auth0\_tokens.sh} utility script).
+    \item \textbf{Client Credentials}: For machine-to-machine (M2M) communication where no user context is required.
+\end{enumerate}
+
+The platform provides a utility script (\texttt{fetch\_auth0\_tokens.sh}) that demonstrates token acquisition for different user types:
+
+\begin{lstlisting}[language=bash,caption={Token acquisition via Auth0 ROPC flow}]
+# Admin token with full scopes
+fetch_token "Admin" "password" \
+    "$AUTH0_USER_CLIENT_ID" \
+    "$AUTH0_USER_CLIENT_SECRET" \
+    "$AUTH0_ADMIN_USERNAME" \
+    "$AUTH0_ADMIN_PASSWORD" \
+    "user:me tools:invoke:all admin:all"
+
+# User token with basic scopes
+fetch_token "User" "password" \
+    "$AUTH0_USER_CLIENT_ID" \
+    "$AUTH0_USER_CLIENT_SECRET" \
+    "$AUTH0_USER_USERNAME" \
+    "$AUTH0_USER_PASSWORD" \
+    "user:me tools:invoke:basic"
+
+# Machine token for service-to-service
+fetch_token "Machine" "client_credentials" \
+    "$AUTH0_MACHINE_CLIENT_ID" \
+    "$AUTH0_MACHINE_CLIENT_SECRET"
+\end{lstlisting}
+
+\subsubsection{Request Authentication}
+
+When a client makes an API request, the authentication process follows these steps:
+
+\begin{enumerate}
+    \item \textbf{Bearer Token Extraction}: The \texttt{bearer\_required} dependency extracts the token from the HTTP \texttt{Authorization} header using the pattern \texttt{Bearer <token>}. Requests without valid bearer tokens receive HTTP 401 Unauthorized.
+    
+    \item \textbf{Header Parsing}: The JWT header is decoded (without verification) to extract the \texttt{kid} (Key ID), which identifies which public key should be used for signature verification.
+    
+    \item \textbf{JWKS Key Retrieval}: The public key corresponding to the \texttt{kid} is retrieved from the JWKS cache. If the key is not cached or has expired, a fresh JWKS is fetched from the OIDC provider:
+    
+\begin{lstlisting}[language=Python,caption={JWKS key retrieval with caching}]
+async def _get_key_for_kid(kid: str) -> dict:
+    now = time.time()
+    if kid in _JWKS_CACHE:
+        key, exp = _JWKS_CACHE[kid]
+        if exp > now:
+            return key
+    # Refresh JWKS and cache all keys
+    jwks, ttl = await _fetch_jwks()
+    keys = jwks.get("keys") or []
+    exp = now + ttl
+    for k in keys:
+        k_kid = k.get("kid")
+        if k_kid:
+            _JWKS_CACHE[k_kid] = (k, exp)
+    return _JWKS_CACHE[kid][0]
+\end{lstlisting}
+    
+    \item \textbf{Signature Verification}: Using the \texttt{python-jose} library, the signature is verified against the public key. Invalid signatures result in immediate rejection.
+    
+    \item \textbf{Claims Validation}: Time-based claims are validated:
+    \begin{itemize}
+        \item \texttt{exp}: Token must not be expired
+        \item \texttt{nbf}: Current time must be after the not-before timestamp
+        \item \texttt{iat}: Issued-at must not be significantly in the future (60-second clock skew tolerance)
+    \end{itemize}
+    
+    \item \textbf{Issuer and Audience Validation}: The \texttt{iss} and \texttt{aud} claims are compared against configured values to prevent token misuse across different applications.
+    
+    \item \textbf{Principal Construction}: Upon successful validation, a \texttt{Principal} object is constructed containing the user's identity and effective scopes:
+    
+\begin{lstlisting}[language=Python,caption={Principal dataclass for authenticated users}]
+@dataclass(frozen=True)
+class Principal:
+    sub: str              # Subject identifier
+    scopes: tuple[str, ...] # Effective permissions
+    raw: dict[str, Any]   # Original token claims
+\end{lstlisting}
+\end{enumerate}
+
+\subsubsection{Scope Extraction and Normalization}
+
+The platform supports multiple claim formats for scopes and permissions, accommodating different IdP configurations:
+
+\begin{lstlisting}[language=Python,caption={Multi-format scope extraction}]
+def _extract_scopes_from_claims(claims: dict) -> list[str]:
+    collected: set[str] = set()
+    
+    # Space-separated scope string (standard OAuth2)
+    scope_val = claims.get("scope")
+    if isinstance(scope_val, str):
+        collected.update(s for s in scope_val.split() if s)
+    
+    # Array-based claims (Auth0 style)
+    for key in ("scopes", "roles", "permissions", "claims"):
+        value = claims.get(key)
+        if isinstance(value, (list, tuple)):
+            collected.update(str(x) for x in value if x)
+    
+    # Derive admin:all from admin role
+    roles = claims.get("roles")
+    if isinstance(roles, (list, tuple)):
+        if any(str(r).lower() == "admin" for r in roles):
+            collected.add("admin:all")
+    
+    return sorted(collected)
+\end{lstlisting}
+
+\subsubsection{Internal Endpoint TTL Enforcement}
+
+For sensitive internal endpoints, the platform enforces stricter token TTL requirements. Tokens with excessively long validity periods are rejected:
+
+\begin{lstlisting}[language=Python,caption={TTL enforcement for internal endpoints}]
+if enforce_short_ttl:
+    exp = claims.get("exp")
+    iat = claims.get("iat")
+    if exp and iat:
+        ttl = int(exp) - int(iat)
+        max_ttl = settings.INTERNAL_TOKEN_MAX_TTL_SECONDS  # default: 3600
+        if ttl > max_ttl:
+            raise HTTPException(
+                status_code=401,
+                detail={
+                    "type": "https://cineca.example/errors/token-ttl-exceeded",
+                    "title": "Token TTL Too Long",
+                    "status": 401,
+                    "detail": f"Internal endpoints require TTL <= {max_ttl}s",
+                }
+            )
+\end{lstlisting}
+
+\subsubsection{JWKS Caching Strategy}
+
+The JWKS caching implementation balances security with performance:
+
+\begin{itemize}
+    \item \textbf{Default TTL}: 900 seconds (15 minutes), configurable via \texttt{OIDC\_JWKS\_CACHE\_TTL\_SECONDS}.
+    \item \textbf{Minimum TTL}: 600 seconds, preventing cache thrashing from malformed \texttt{Cache-Control} headers.
+    \item \textbf{Per-Key Caching}: Each key is cached individually by \texttt{kid}, allowing efficient handling of key rotation.
+    \item \textbf{On-Miss Refresh}: Cache misses trigger a full JWKS refresh, automatically discovering new keys.
+    \item \textbf{Respect for Cache-Control}: The \texttt{max-age} directive from the JWKS response is honored within configured bounds.
+\end{itemize}
+
+\subsubsection{Error Handling}
+
+Authentication failures are handled with consistent error responses following RFC 7807 Problem Details:
+
+\begin{itemize}
+    \item \textbf{401 Unauthorized}: Missing, malformed, or invalid tokens.
+    \item \textbf{Structured Error Details}: When issuer or audience validation fails, detailed error information is provided to aid debugging while avoiding information leakage.
+\end{itemize}
+
+\begin{lstlisting}[language=Python,caption={Structured authentication error response}]
+raise HTTPException(
+    status_code=401,
+    detail={
+        "type": "https://cineca.example/errors/invalid-issuer",
+        "title": "Invalid Token Issuer",
+        "status": 401,
+        "detail": "Token issuer does not match expected issuer",
+        "extensions": {
+            "expected_issuer": iss_expected,
+            "received_issuer": claims.get("iss")
+        }
+    }
+)
+\end{lstlisting}
+
+\subsubsection{Development and Testing Support}
+
+For development and testing environments, the platform provides a demo authenticator that is automatically disabled in production:
+
+\begin{lstlisting}[language=Python,caption={Demo authenticator with production guard}]
+def authenticate_demo(username: str, password: str) -> UserInfo:
+    """Minimal demo authentication (DEVELOPMENT ONLY)."""
+    if settings.APP_ENV == "prod":
+        raise RuntimeError(
+            "Demo authenticator is disabled in production! "
+            "Configure proper OIDC authentication."
+        )
+    if not username or not password:
+        raise ValueError("username and password are required")
+    scopes = ["user"] + (["admin"] if username.lower() == "admin" else [])
+    return UserInfo(username=username, scopes=scopes)
+\end{lstlisting}
+
+This approach ensures that insecure authentication methods cannot accidentally be enabled in production deployments.
+
+\subsubsection{Public Authentication Endpoint}
+
+The platform exposes a single public authentication endpoint for token introspection:
+
+\begin{itemize}
+    \item \textbf{GET /v1/auth/me}: Returns the authenticated user's claims, permissions, and roles extracted from their token. This endpoint is rate-limited (30 requests per 60 seconds) and requires the \texttt{user:me} or \texttt{admin:all} scope.
+\end{itemize}
+
+This endpoint serves multiple purposes:
+\begin{enumerate}
+    \item \textbf{UI Personalization}: Frontend applications use it to display user identity and available features.
+    \item \textbf{Permission Discovery}: Clients can determine what actions are available before attempting them.
+    \item \textbf{Token Validation}: Developers can verify their tokens are correctly configured.
+    \item \textbf{Debugging}: When users report permission errors, this endpoint confirms actual token contents.
+\end{enumerate}
+

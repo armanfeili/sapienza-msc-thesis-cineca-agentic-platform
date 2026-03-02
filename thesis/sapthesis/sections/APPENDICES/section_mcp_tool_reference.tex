@@ -1,0 +1,688 @@
+% TODO checklist: Inspected files:
+% - src/mcp/tools/README_mcp_tools.md
+% - src/mcp/tools/__init__.py
+% - src/mcp/tools/ subdirectories (agent, cache, catalog, data, db, errors, graph, model, output, privacy, ratelimit, security, session, system, tenancy, user, viz)
+% - Q&A.md (Q37: MCP Tool Ecosystem)
+
+\chapter{MCP Tool Reference}
+\label{app:tool-reference}
+
+This appendix provides a complete reference of the 34 Model Context Protocol (MCP) tools implemented in the Cineca Agentic Platform. Tools are organized into 17 functional categories covering graph operations, security, system management, and data processing.
+
+%------------------------------------------------------------------------------
+\section{Tool Architecture Overview}
+\label{app:tools:overview}
+
+\subsection{Tool Registration}
+
+All tools use the \texttt{@mcp\_tool} decorator for automatic discovery and registration:
+
+\begin{lstlisting}[language=Python]
+from src.mcp.registry import mcp_tool
+
+@mcp_tool(
+    name="graph.query",
+    description="Execute read-only Cypher queries",
+    required_scopes=["graph:read"],
+    capabilities=["reads_db"]
+)
+async def graph_query(payload: GraphQueryPayload) -> GraphQueryResult:
+    # Implementation
+\end{lstlisting}
+
+\subsection{Common Response Format}
+
+All tools return consistent response structures:
+
+\begin{lstlisting}[language=json]
+{
+  "ok": true,
+  "action": "execute",
+  "result": { /* tool-specific data */ },
+  "error": null,
+  "duration_ms": 150,
+  "trace_id": "trace-uuid"
+}
+\end{lstlisting}
+
+Error responses:
+
+\begin{lstlisting}[language=json]
+{
+  "ok": false,
+  "action": "execute",
+  "result": null,
+  "error": "Query timeout exceeded",
+  "error_code": "QUERY_TIMEOUT",
+  "details": { "timeout_ms": 30000 }
+}
+\end{lstlisting}
+
+%------------------------------------------------------------------------------
+\section{Graph Tools}
+\label{app:tools:graph}
+
+Graph tools provide comprehensive Memgraph database operations.
+
+\subsection{graph.query}
+
+Execute read-only Cypher queries against Memgraph.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Name} & \texttt{graph.query} \\
+    \textbf{Description} & Direct Cypher query execution with optional read-only enforcement \\
+    \textbf{Required Scopes} & \texttt{tools:basic} \\
+    \textbf{Actions} & \texttt{run}, \texttt{explain}, \texttt{profile} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\textbf{Payload Schema:}
+\begin{lstlisting}[language=json]
+{
+  "action": "run",  // Required: "run" | "explain" | "profile"
+  "cypher": "MATCH (p:Person) RETURN p.name LIMIT 10",  // Required: Cypher query
+  "params": {},  // Optional: Query parameter dictionary
+  "read_only": false,  // Optional: If true, blocks obvious writes (default: false)
+  "timeout_ms": 5000,  // Optional: Per-query timeout in milliseconds
+  "limit": 1000  // Optional: Soft client-side row cap (slices results)
+}
+\end{lstlisting}
+
+\textbf{Example Request:}
+\begin{lstlisting}[language=json]
+{
+  "action": "run",
+  "cypher": "MATCH (u:User)-[:WORKS_AT]->(i:Institution) RETURN u.name, i.name LIMIT 5",
+  "params": {},
+  "read_only": true,
+  "timeout_ms": 10000
+}
+\end{lstlisting}
+
+\textbf{Success Response Schema:}
+\begin{lstlisting}[language=json]
+{
+  "ok": true,
+  "action": "run",
+  "columns": ["u.name", "i.name"],  // Column names from RETURN clause
+  "rows": [
+    ["John Doe", "CINECA"],
+    ["Jane Smith", "Sapienza"]
+  ],
+  "rowcount": 2,
+  "truncated": false,  // True if client-side limit applied
+  "read_only": true
+}
+\end{lstlisting}
+
+\textbf{Error Response Schema:}
+\begin{lstlisting}[language=json]
+{
+  "ok": false,
+  "action": "run",
+  "error": "Query timeout exceeded",
+  "error_code": "QUERY_TIMEOUT",
+  "details": {
+    "timeout_ms": 10000,
+    "query_preview": "MATCH (u:User)..."
+  }
+}
+\end{lstlisting}
+
+\textbf{Common Errors:}
+\begin{itemize}
+    \item \texttt{QUERY\_TIMEOUT}: Query execution exceeded \texttt{timeout\_ms}
+    \item \texttt{SYNTAX\_ERROR}: Invalid Cypher syntax
+    \item \texttt{PERMISSION\_DENIED}: Required scope \texttt{tools:basic} not present
+\end{itemize}
+
+\textbf{Audit Fields:} Tool invocation logged with correlation ID, tenant ID, user ID, query preview (truncated), execution time, row count.
+
+\subsection{graph.secure\_query}
+
+Natural language to Cypher with safety validation (multi-layer pipeline).
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Name} & \texttt{graph.secure\_query} \\
+    \textbf{Description} & Natural language query with multi-layer safety validation pipeline \\
+    \textbf{Required Scopes} & \texttt{graph:read} \\
+    \textbf{Actions} & \texttt{query}, \texttt{explain}, \texttt{generate}, \texttt{validate} \\
+    \textbf{Safety Checks} & Syntax validation, read-only enforcement, tenant isolation, depth limits, forbidden keywords \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\textbf{Payload Schema:}
+\begin{lstlisting}[language=json]
+{
+  "action": "query",  // Required: "query" | "explain" | "generate" | "validate"
+  "nl_query": "Find all users who work at CINECA",  // Required for query/generate
+  "cypher": "MATCH (u:User)-[:WORKS_AT]->(i:Institution {name: 'CINECA'}) RETURN u",  // Optional: pre-generated Cypher
+  "max_hops": 3,  // Optional: Maximum graph traversal depth (default: 5)
+  "limit": 100  // Optional: Result row limit (default: 1000)
+}
+\end{lstlisting}
+
+\textbf{Example Request:}
+\begin{lstlisting}[language=json]
+{
+  "action": "query",
+  "nl_query": "Show me all tasks created by users at Sapienza",
+  "max_hops": 2
+}
+\end{lstlisting}
+
+\textbf{Success Response Schema:}
+\begin{lstlisting}[language=json]
+{
+  "ok": true,
+  "action": "query",
+  "cypher": "MATCH (u:User)-[:WORKS_AT]->(i:Institution {name: 'Sapienza'})-[:RUNS]->(t:Task) RETURN t LIMIT 100",
+  "columns": ["t"],
+  "rows": [ /* ... */ ],
+  "rowcount": 15,
+  "validation": {
+    "is_read_only": true,
+    "max_hops": 2,
+    "forbidden_keywords": []
+  }
+}
+\end{lstlisting}
+
+\textbf{Common Errors:}
+\begin{itemize}
+    \item \texttt{NL\_TO\_CYPHER\_FAILED}: LLM failed to generate valid Cypher
+    \item \texttt{QUERY\_NOT\_READ\_ONLY}: Generated query contains write operations (CREATE, DELETE, SET, REMOVE)
+    \item \texttt{MAX\_HOPS\_EXCEEDED}: Query exceeds maximum traversal depth
+    \item \texttt{FORBIDDEN\_KEYWORD}: Query contains forbidden keywords (e.g., \texttt{DROP}, \texttt{DETACH DELETE})
+    \item \texttt{TENANT\_ISOLATION\_VIOLATION}: Query attempts to access data outside tenant scope
+\end{itemize}
+
+\textbf{Safety Pipeline:}
+\begin{enumerate}
+    \item \textbf{Intent Classification}: Categorizes query intent (CHAT, GRAPH, DANGEROUS)
+    \item \textbf{NL-to-Cypher}: Generates Cypher from natural language (LLM-based)
+    \item \textbf{Syntax Validation}: Validates Cypher syntax
+    \item \textbf{Read-only Check}: Ensures query contains no write operations
+    \item \textbf{Forbidden Keywords}: Blocks dangerous operations (DROP, DETACH DELETE)
+    \item \textbf{Depth Limit}: Enforces maximum traversal depth
+    \item \textbf{Tenant Filtering}: Automatically adds tenant isolation filters
+\end{enumerate}
+
+\textbf{Audit Fields:} NL query, generated Cypher, validation results, execution time, row count, tenant ID.
+
+\subsection{graph.schema}
+
+Retrieve graph schema information including labels, relationships, and constraints.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Name} & \texttt{graph.schema} \\
+    \textbf{Description} & Schema discovery utilities for Memgraph (labels, relationships, properties, constraints) \\
+    \textbf{Required Scopes} & \texttt{graph:read} \\
+    \textbf{Actions} & \texttt{labels}, \texttt{relationship\_types}, \texttt{node\_properties}, \texttt{relationship\_properties}, \texttt{node\_counts}, \texttt{relationship\_counts}, \texttt{indexes}, \texttt{constraints}, \texttt{inventory} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\textbf{Payload Schema:}
+\begin{lstlisting}[language=json]
+{
+  "action": "labels",  // Required: action name (see table above)
+  "label": "User",  // Optional: filter for node_properties action
+  "type": "RUNS"  // Optional: filter for relationship_properties action
+}
+\end{lstlisting}
+
+\textbf{Example Request (List Labels):}
+\begin{lstlisting}[language=json]
+{
+  "action": "labels"
+}
+\end{lstlisting}
+
+\textbf{Success Response (Labels):}
+\begin{lstlisting}[language=json]
+{
+  "ok": true,
+  "action": "labels",
+  "items": ["User", "Institution", "Task", "File", "Blast", "CreateDb"]
+}
+\end{lstlisting}
+
+\textbf{Example Request (Node Properties):}
+\begin{lstlisting}[language=json]
+{
+  "action": "node_properties",
+  "label": "User"
+}
+\end{lstlisting}
+
+\textbf{Success Response (Node Properties):}
+\begin{lstlisting}[language=json]
+{
+  "ok": true,
+  "action": "node_properties",
+  "label": "User",
+  "items": ["user_id", "firstName", "lastName", "email", "user_name"]
+}
+\end{lstlisting}
+
+\textbf{Common Errors:}
+\begin{itemize}
+    \item \texttt{INVALID\_ACTION}: Unknown action name
+    \item \texttt{MISSING\_FILTER}: Required filter parameter missing (e.g., \texttt{label} for \texttt{node\_properties})
+\end{itemize}
+
+\textbf{Audit Fields:} Action type, filter parameters (if any), item count.
+
+\subsection{graph.search}
+
+Full-text and pattern search over nodes and edges.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{graph:read} \\
+    \textbf{Actions} & \texttt{search\_nodes}, \texttt{search\_edges}, \texttt{fulltext\_search} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{graph.crud}
+
+CRUD operations for nodes and edges with RBAC enforcement.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{graph:read} (read), \texttt{graph:write} (mutations) \\
+    \textbf{Actions} & \texttt{create\_node}, \texttt{read\_node}, \texttt{update\_node}, \texttt{delete\_node}, \texttt{create\_edge}, \texttt{read\_edge}, \texttt{update\_edge}, \texttt{delete\_edge} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{graph.bulk}
+
+Bulk graph operations with idempotency and batch processing.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{graph:write} \\
+    \textbf{Actions} & \texttt{create\_nodes}, \texttt{create\_edges}, \texttt{update\_properties}, \texttt{delete} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{graph.analytics}
+
+Graph analytics with bounded computation (centrality, paths, clustering).
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{graph:read} \\
+    \textbf{Actions} & \texttt{centrality}, \texttt{communities}, \texttt{paths}, \texttt{shortest\_path} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{graph.generate\_cypher}
+
+Generate Cypher queries from natural language descriptions.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{graph:read} \\
+    \textbf{Actions} & \texttt{generate}, \texttt{validate}, \texttt{explain} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Security Tools}
+\label{app:tools:security}
+
+Security tools provide policy-aware permission checking and audit capabilities.
+
+\subsection{security.check}
+
+Validate security configuration and constraints.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{security:admin} \\
+    \textbf{Actions} & \texttt{validate\_config}, \texttt{check\_permissions}, \texttt{audit\_config} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{security.audit}
+
+Record and query audit events for compliance.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{security:audit} \\
+    \textbf{Actions} & \texttt{log}, \texttt{query}, \texttt{export} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{security.permissions}
+
+Policy-aware permission checking with context evaluation.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{security:read} \\
+    \textbf{Actions} & \texttt{check}, \texttt{list\_policies}, \texttt{evaluate} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{security.allowed\_operations}
+
+List operations permitted for the current principal.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{security:read} \\
+    \textbf{Actions} & \texttt{list} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{security.describe\_principal}
+
+Introspect current principal identity, groups, and permissions.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{security:read} \\
+    \textbf{Actions} & \texttt{describe} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{System Tools}
+\label{app:tools:system}
+
+System tools provide health checks, metrics, and backup operations.
+
+\subsection{system.health}
+
+Liveness and readiness checks for platform components.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{tools:read} \\
+    \textbf{Actions} & \texttt{liveness}, \texttt{readiness}, \texttt{details} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{system.status}
+
+High-level service status snapshot including version and uptime.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{tools:read} \\
+    \textbf{Actions} & \texttt{status} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{system.metrics}
+
+Prometheus metrics scraping and registry information.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{tools:read} \\
+    \textbf{Actions} & \texttt{scrape}, \texttt{info} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{system.backup}
+
+Backup creation, restoration, and management operations.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{system:admin} \\
+    \textbf{Actions} & \texttt{create}, \texttt{list}, \texttt{restore}, \texttt{delete}, \texttt{export}, \texttt{import} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Data Tools}
+\label{app:tools:data}
+
+Data tools manage archival and quality operations.
+
+\subsection{data.archive}
+
+Archive graph data with soft-delete semantics.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{data:admin} \\
+    \textbf{Actions} & \texttt{archive\_nodes}, \texttt{archive\_edges}, \texttt{restore}, \texttt{purge} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{data.quality}
+
+Data quality checks and validation.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{data:read} \\
+    \textbf{Actions} & \texttt{check\_integrity}, \texttt{find\_orphans}, \texttt{validate\_schema}, \texttt{analyze\_duplicates} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Model Tools}
+\label{app:tools:model}
+
+Model tools manage LLM adapters and runtime configuration.
+
+\subsection{model.manage}
+
+Manage LLM model configurations and switching.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{model:admin} \\
+    \textbf{Actions} & \texttt{list}, \texttt{switch}, \texttt{status}, \texttt{configure} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{model.test}
+
+Lightweight LLM testing with simulation mode.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{model:read} \\
+    \textbf{Actions} & \texttt{test\_completion}, \texttt{test\_embedding}, \texttt{benchmark} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Output Tools}
+\label{app:tools:output}
+
+Output tools provide result formatting and summarization.
+
+\subsection{output.format}
+
+Format data as JSON, CSV, Markdown, or plain text.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{tools:read} \\
+    \textbf{Actions} & \texttt{json}, \texttt{csv}, \texttt{markdown}, \texttt{text} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{output.summarize}
+
+Extractive and abstractive summarization of text content.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Scope Required} & \texttt{tools:read} \\
+    \textbf{Actions} & \texttt{extractive}, \texttt{abstractive}, \texttt{keywords} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Additional Tools}
+\label{app:tools:additional}
+
+Table~\ref{tab:additional-tools} summarizes the remaining tool categories.
+
+\begin{table}[ht]
+\centering
+\caption{Additional Tool Categories}
+\label{tab:additional-tools}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Tool} & \textbf{Scope} & \textbf{Description} \\
+    \hline
+    \texttt{agent.context} & \texttt{tools:read} & Assemble execution context from sources \\
+    \texttt{cache.manage} & \texttt{tools:write} & Redis cache operations with TTL \\
+    \texttt{catalog.discover} & \texttt{tools:read} & Tool discovery and metadata \\
+    \texttt{db.switch} & \texttt{db:admin} & Database connection management \\
+    \texttt{errors.report} & \texttt{tools:read} & Structured error reporting \\
+    \texttt{privacy.consent} & \texttt{privacy:admin} & User consent registry \\
+    \texttt{ratelimit.manage} & \texttt{ratelimit:admin} & Rate limiting controls \\
+    \texttt{session.manage} & \texttt{session:write} & Session lifecycle management \\
+    \texttt{tenancy.manage} & \texttt{tools:admin} & Tenant administration \\
+    \texttt{user.profile} & \texttt{tools:user} & User preferences and profile \\
+    \texttt{viz.render} & \texttt{viz:render} & Data visualization (Mermaid/DOT) \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Tool Discovery API}
+\label{app:tools:discovery}
+
+Tools are discoverable via the REST API:
+
+\begin{lstlisting}[language=bash]
+# List all tools
+GET /v1/tools
+
+# Get specific tool schema
+GET /v1/tools/graph.query
+
+# Invoke tool
+POST /v1/tools/graph.query/invocations
+Content-Type: application/json
+{
+  "args": {
+    "action": "execute",
+    "query": "MATCH (n) RETURN count(n)"
+  },
+  "timeout_seconds": 30
+}
+\end{lstlisting}
+
+%------------------------------------------------------------------------------
+\section{Security and Audit}
+\label{app:tools:audit}
+
+All tool invocations are:
+\begin{itemize}
+    \item \textbf{Scope-validated}: Required scopes checked before execution
+    \item \textbf{Tenant-isolated}: Data automatically filtered by tenant
+    \item \textbf{PII-scrubbed}: Sensitive data redacted in logs
+    \item \textbf{Audit-logged}: All invocations recorded with correlation IDs
+    \item \textbf{Rate-limited}: Per-tool rate limits apply
+\end{itemize}
+

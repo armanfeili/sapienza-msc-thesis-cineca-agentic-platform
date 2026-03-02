@@ -1,0 +1,262 @@
+<mxfile host="app.diagrams.net" modified="2025-08-09T20:05:00Z" agent="5.0 (Macintosh)" etag="sequence-nl-to-cypher-v1" version="20.6.3" type="device">
+  <diagram id="sequence-nl-to-cypher" name="Sequence — NL → Cypher → Summary">
+    <mxGraphModel dx="1280" dy="720" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1080" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Lifeline headers -->
+        <mxCell id="u_hdr" value="User" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="60" y="40" width="120" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="api_hdr" value="API (FastAPI)" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="260" y="40" width="140" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="orc_hdr" value="Agent Orchestrator" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="470" y="40" width="160" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="llm_hdr" value="LLM Adapter" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="690" y="40" width="140" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="mcp_hdr" value="MCP Tool: Graph" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="890" y="40" width="160" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="db_hdr" value="Memgraph DB" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1120" y="40" width="140" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="obs_hdr" value="Observability (Prometheus/Grafana)" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1360" y="40" width="230" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- Lifeline lines -->
+        <mxCell id="u_line" style="shape=line;strokeColor=#6c8ebf;dashed=1;endArrow=none;" edge="1" parent="1" source="u_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="120" y="100" as="target"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="api_line" style="shape=line;strokeColor=#d79b00;dashed=1;endArrow=none;" edge="1" parent="1" source="api_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="330" y="100" as="target"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="orc_line" style="shape=line;strokeColor=#82b366;dashed=1;endArrow=none;" edge="1" parent="1" source="orc_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="550" y="100" as="target"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="llm_line" style="shape=line;strokeColor=#9673a6;dashed=1;endArrow=none;" edge="1" parent="1" source="llm_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="760" y="100" as="target"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mcp_line" style="shape=line;strokeColor=#82b366;dashed=1;endArrow=none;" edge="1" parent="1" source="mcp_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="970" y="100" as="target"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="db_line" style="shape=line;strokeColor=#d6b656;dashed=1;endArrow=none;" edge="1" parent="1" source="db_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1190" y="100" as="target"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="obs_line" style="shape=line;strokeColor=#b85450;dashed=1;endArrow=none;" edge="1" parent="1" source="obs_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1475" y="100" as="target"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 1. User → API -->
+        <mxCell id="s1" value="1) NL query (e.g., &quot;Top 5 projects by active contributors&quot;)" style="endArrow=block;html=1;strokeColor=#000000;" edge="1" parent="1" source="u_hdr" target="api_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="330" y="150" as="target"/>
+            <Array as="points">
+              <mxPoint x="120" y="150"/>
+              <mxPoint x="330" y="150"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 2. API → Orchestrator -->
+        <mxCell id="s2" value="2) POST /agent/run (session, goal, context)" style="endArrow=block;html=1;strokeColor=#000000;" edge="1" parent="1" source="api_hdr" target="orc_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="550" y="190" as="target"/>
+            <Array as="points">
+              <mxPoint x="330" y="190"/>
+              <mxPoint x="550" y="190"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 3. Orchestrator → LLM (Plan) -->
+        <mxCell id="s3" value="3) Plan(goal) → steps: generate_cypher, query_graph, summarize" style="endArrow=block;html=1;strokeColor=#000000;" edge="1" parent="1" source="orc_hdr" target="llm_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="760" y="230" as="target"/>
+            <Array as="points">
+              <mxPoint x="550" y="230"/>
+              <mxPoint x="760" y="230"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 4. LLM → Orchestrator (Plan JSON) -->
+        <mxCell id="s4" value="4) Plan JSON (steps[])" style="endArrow=block;html=1;strokeColor=#000000;" edge="1" parent="1" source="llm_hdr" target="orc_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="550" y="260" as="target"/>
+            <Array as="points">
+              <mxPoint x="760" y="260"/>
+              <mxPoint x="550" y="260"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 5. Orchestrator → LLM (Generate Cypher) -->
+        <mxCell id="s5" value="5) generate_cypher(prompt, schema hints, safety policy)" style="endArrow=block;html=1;strokeColor=#000000;" edge="1" parent="1" source="orc_hdr" target="llm_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="760" y="300" as="target"/>
+            <Array as="points">
+              <mxPoint x="550" y="300"/>
+              <mxPoint x="760" y="300"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 6. LLM → Orchestrator (Cypher) -->
+        <mxCell id="s6" value="6) Cypher (MATCH ... RETURN ... LIMIT 5)" style="endArrow=block;html=1;strokeColor=#000000;" edge="1" parent="1" source="llm_hdr" target="orc_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="550" y="330" as="target"/>
+            <Array as="points">
+              <mxPoint x="760" y="330"/>
+              <mxPoint x="550" y="330"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 7. Orchestrator → MCP Tool (Query) -->
+        <mxCell id="s7" value="7) graph.query { cypher, params }" style="endArrow=block;html=1;strokeColor=#000000;" edge="1" parent="1" source="orc_hdr" target="mcp_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="970" y="370" as="target"/>
+            <Array as="points">
+              <mxPoint x="550" y="370"/>
+              <mxPoint x="970" y="370"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 8. MCP Tool → Memgraph -->
+        <mxCell id="s8" value="8) Cypher exec" style="endArrow=block;html=1;strokeColor=#000000;" edge="1" parent="1" source="mcp_hdr" target="db_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1190" y="400" as="target"/>
+            <Array as="points">
+              <mxPoint x="970" y="400"/>
+              <mxPoint x="1190" y="400"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 9. Memgraph → MCP Tool (Rows) -->
+        <mxCell id="s9" value="9) Rows (data)" style="endArrow=block;html=1;strokeColor=#000000;" edge="1" parent="1" source="db_hdr" target="mcp_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="970" y="430" as="target"/>
+            <Array as="points">
+              <mxPoint x="1190" y="430"/>
+              <mxPoint x="970" y="430"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 10. MCP Tool → Orchestrator (Result) -->
+        <mxCell id="s10" value="10) result { rows, count }" style="endArrow=block;html=1;strokeColor=#000000;" edge="1" parent="1" source="mcp_hdr" target="orc_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="550" y="460" as="target"/>
+            <Array as="points">
+              <mxPoint x="970" y="460"/>
+              <mxPoint x="550" y="460"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 11. Orchestrator → LLM (Summarize) -->
+        <mxCell id="s11" value="11) summarize(rows) → natural language" style="endArrow=block;html=1;strokeColor=#000000;" edge="1" parent="1" source="orc_hdr" target="llm_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="760" y="500" as="target"/>
+            <Array as="points">
+              <mxPoint x="550" y="500"/>
+              <mxPoint x="760" y="500"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 12. LLM → Orchestrator (Answer) -->
+        <mxCell id="s12" value="12) final answer (concise + table)" style="endArrow=block;html=1;strokeColor=#000000;" edge="1" parent="1" source="llm_hdr" target="orc_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="550" y="530" as="target"/>
+            <Array as="points">
+              <mxPoint x="760" y="530"/>
+              <mxPoint x="550" y="530"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 13. Orchestrator → API (Response) -->
+        <mxCell id="s13" value="13) 200 OK { text, rows, trace }" style="endArrow=block;html=1;strokeColor=#000000;" edge="1" parent="1" source="orc_hdr" target="api_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="330" y="570" as="target"/>
+            <Array as="points">
+              <mxPoint x="550" y="570"/>
+              <mxPoint x="330" y="570"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 14. API → User -->
+        <mxCell id="s14" value="14) Render answer" style="endArrow=block;html=1;strokeColor=#000000;" edge="1" parent="1" source="api_hdr" target="u_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="120" y="600" as="target"/>
+            <Array as="points">
+              <mxPoint x="330" y="600"/>
+              <mxPoint x="120" y="600"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Side-channel observability events -->
+        <mxCell id="m1" value="metrics: api_request_duration" style="endArrow=block;html=1;strokeColor=#b85450;dashed=1;" edge="1" parent="1" source="api_hdr" target="obs_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1475" y="210" as="target"/>
+            <Array as="points">
+              <mxPoint x="330" y="210"/>
+              <mxPoint x="1475" y="210"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m2" value="metrics: job_duration (plan/steps)" style="endArrow=block;html=1;strokeColor=#b85450;dashed=1;" edge="1" parent="1" source="orc_hdr" target="obs_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1475" y="350" as="target"/>
+            <Array as="points">
+              <mxPoint x="550" y="350"/>
+              <mxPoint x="1475" y="350"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m3" value="metrics: dependency_up{memgraph}" style="endArrow=block;html=1;strokeColor=#b85450;dashed=1;" edge="1" parent="1" source="db_hdr" target="obs_hdr">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1475" y="420" as="target"/>
+            <Array as="points">
+              <mxPoint x="1190" y="420"/>
+              <mxPoint x="1475" y="420"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Notes -->
+        <mxCell id="note1" value="Security pipeline applied at API &amp; Orchestrator: authn/z, PII scrub, intent filter" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="230" y="640" width="600" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="note2" value="MCP tool boundary: validated Cypher only; batched reads; rate-limited" style="shape=note;whiteSpace=wrap;html=1;fillColor=#e6d0de;strokeColor=#b85496;" vertex="1" parent="1">
+          <mxGeometry x="870" y="640" width="460" height="60" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

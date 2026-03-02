@@ -1,0 +1,415 @@
+% TODO checklist - Files inspected for this section:
+% - README.md (lines 1-2050): Architecture overview, security model, observability stack
+% - Q&A.md (lines 1-7907): Q16-22 (security/multi-tenancy), Q23-28 (LLM resilience), Q42-46 (observability/testing)
+% - src/security/: Authentication, authorization, JWT handling
+% - src/middleware/: Rate limiting, tenant resolution
+% - src/observability/: Metrics, tracing, logging setup
+% - src/health/: Health check components
+% - SECURITY.md: Security policies and practices
+
+\section{Non-Functional Requirements}
+\label{sec:nonfunctional-requirements}
+
+This section specifies the non-functional requirements (NFRs) that govern the quality attributes of the Cineca Agentic Platform. These requirements address cross-cutting concerns including security, reliability, performance, and operational characteristics that are essential for enterprise deployment.
+
+%------------------------------------------------------------------------------
+\subsection{Security Requirements}
+\label{subsec:nfr-security}
+
+Security is paramount for an enterprise AI agent platform that processes sensitive research data and executes privileged operations. The following requirements establish the security posture:
+
+\begin{table}[htbp]
+\centering
+\caption{Security Non-Functional Requirements}
+\label{tab:nfr-security}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+NFR-SE-01 & The system shall authenticate all API requests using OAuth 2.0 / OpenID Connect (OIDC) with JWT bearer tokens. & Must \\
+\hline
+NFR-SE-02 & The system shall validate JWT tokens against OIDC provider public keys (JWKS) with caching and automatic refresh. & Must \\
+\hline
+NFR-SE-03 & The system shall enforce Role-Based Access Control (RBAC) using scope-based permissions embedded in JWT claims. & Must \\
+\hline
+NFR-SE-04 & The system shall support configurable RBAC scopes including: \texttt{user:me}, \texttt{admin:all}, \texttt{tools:invoke:basic}, \texttt{tools:invoke:all}, \texttt{graph:read}, \texttt{graph:write}. & Must \\
+\hline
+NFR-SE-05 & The system shall automatically detect and scrub Personally Identifiable Information (PII) from logs and outputs. & Must \\
+\hline
+NFR-SE-06 & The system shall prevent Server-Side Request Forgery (SSRF) attacks by validating and restricting outbound request targets. & Must \\
+\hline
+NFR-SE-07 & The system shall prevent Cypher injection attacks through parameterized queries and input validation. & Must \\
+\hline
+NFR-SE-08 & The system shall mask sensitive data (tokens, credentials) in all log outputs, displaying only prefix and suffix characters. & Must \\
+\hline
+NFR-SE-09 & The system shall enforce HTTPS for all external communications in production environments. & Must \\
+\hline
+NFR-SE-10 & The system shall implement defense-in-depth with multiple security layers (authentication, authorization, input validation, output filtering). & Must \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Authentication Architecture}
+
+The authentication subsystem implements the following security controls:
+
+\begin{itemize}
+    \item \textbf{Token Validation:} Every request to protected endpoints must include a valid JWT in the \texttt{Authorization: Bearer <token>} header. Tokens are validated against the OIDC provider's JSON Web Key Set (JWKS).
+    
+    \item \textbf{Claim Extraction:} Standard OIDC claims (\texttt{sub}, \texttt{iss}, \texttt{aud}, \texttt{exp}, \texttt{iat}) are extracted and validated. Custom claims (scopes, tenant\_id) are used for authorization decisions.
+    
+    \item \textbf{Key Rotation:} The system caches JWKS keys with automatic refresh when key IDs are not found, supporting transparent key rotation by the identity provider.
+    
+    \item \textbf{Clock Skew Tolerance:} A configurable clock skew tolerance (default: 30 seconds) accommodates minor time synchronization differences between servers.
+\end{itemize}
+
+\subsubsection{Authorization Model}
+
+The platform implements a scope-based RBAC model with the following hierarchy:
+
+\begin{table}[htbp]
+\centering
+\caption{RBAC Scope Hierarchy}
+\label{tab:rbac-scopes}
+\small
+\begin{tabular}{|l|l|p{7cm}|}
+\hline
+\textbf{Scope} & \textbf{Level} & \textbf{Permissions Granted} \\
+\hline
+\texttt{user:me} & User & Read/write own resources (runs, sessions, jobs) \\
+\hline
+\texttt{tools:invoke:basic} & User & Invoke read-only, non-administrative tools \\
+\hline
+\texttt{tools:invoke:all} & Power User & Invoke all tools including write operations \\
+\hline
+\texttt{graph:read} & User & Execute read-only Cypher queries \\
+\hline
+\texttt{graph:write} & Power User & Execute write Cypher queries (CREATE, MERGE, DELETE) \\
+\hline
+\texttt{admin:all} & Admin & Full administrative access (tenant management, model configuration, system operations) \\
+\hline
+\end{tabular}
+\end{table}
+
+%------------------------------------------------------------------------------
+\subsection{Multi-Tenancy Requirements}
+\label{subsec:nfr-multitenancy}
+
+The platform must support multiple organizational tenants with strict data isolation:
+
+\begin{table}[htbp]
+\centering
+\caption{Multi-Tenancy Non-Functional Requirements}
+\label{tab:nfr-multitenancy}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+NFR-MT-01 & The system shall support logical tenant isolation within shared infrastructure (shared-database, shared-schema pattern). & Must \\
+\hline
+NFR-MT-02 & The system shall resolve tenant context from JWT claims or \texttt{X-Tenant-ID} header on every request. & Must \\
+\hline
+NFR-MT-03 & All database queries shall be automatically scoped by \texttt{tenant\_id} to prevent cross-tenant data access. & Must \\
+\hline
+NFR-MT-04 & The system shall support per-tenant configuration including default models, rate limits, and feature flags. & Must \\
+\hline
+NFR-MT-05 & The system shall enforce per-tenant quotas for API requests, token consumption, and storage usage. & Should \\
+\hline
+NFR-MT-06 & The system shall provide tenant-scoped metrics and audit logs for compliance reporting. & Must \\
+\hline
+NFR-MT-07 & The system shall prevent tenant ID spoofing through cryptographic validation of tenant claims. & Must \\
+\hline
+NFR-MT-08 & The system shall support tenant onboarding and offboarding through administrative APIs. & Must \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Tenant Isolation Architecture}
+
+The multi-tenancy architecture implements the following isolation mechanisms:
+
+\begin{enumerate}
+    \item \textbf{Request-Level Isolation:} Tenant context is established at the middleware layer and propagated through the entire request lifecycle via context variables.
+    
+    \item \textbf{Query-Level Isolation:} All repository methods automatically append \texttt{WHERE tenant\_id = :tid} predicates. For Cypher queries, tenant isolation is injected during query rewriting.
+    
+    \item \textbf{Resource-Level Isolation:} All domain entities (Agent Runs, Sessions, Jobs, Tool Invocations) include a \texttt{tenant\_id} foreign key with database-level constraints.
+    
+    \item \textbf{Cache Isolation:} Redis keys are namespaced by tenant ID to prevent cache poisoning across tenants.
+\end{enumerate}
+
+%------------------------------------------------------------------------------
+\subsection{Reliability Requirements}
+\label{subsec:nfr-reliability}
+
+Requirements ensuring system availability and fault tolerance:
+
+\begin{table}[htbp]
+\centering
+\caption{Reliability Non-Functional Requirements}
+\label{tab:nfr-reliability}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+NFR-RE-01 & The system shall implement circuit breakers for all external service calls (LLM providers, databases) with configurable thresholds. & Must \\
+\hline
+NFR-RE-02 & The system shall support graceful degradation when LLM providers are unavailable, falling back to deterministic responses or cached results. & Must \\
+\hline
+NFR-RE-03 & The system shall handle Redis unavailability without complete service failure, degrading non-critical features (caching, rate limiting). & Should \\
+\hline
+NFR-RE-04 & The system shall implement retry logic with exponential backoff for transient failures. & Must \\
+\hline
+NFR-RE-05 & The system shall support graceful shutdown, completing in-flight requests before termination. & Must \\
+\hline
+NFR-RE-06 & The system shall maintain heartbeat signals for long-running operations to detect stale workers. & Should \\
+\hline
+NFR-RE-07 & The system shall achieve 99.5\% availability during normal operations (excluding planned maintenance). & Should \\
+\hline
+NFR-RE-08 & The system shall recover from transient database connection failures within 30 seconds. & Must \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Circuit Breaker Implementation}
+
+The platform implements a three-state circuit breaker pattern for LLM provider resilience:
+
+\begin{description}
+    \item[CLOSED:] Normal operation; requests flow to the provider. Failures are counted.
+    \item[OPEN:] Provider is considered unavailable; requests fail fast without attempting the call. Automatic transition to HALF-OPEN after a configurable timeout.
+    \item[HALF-OPEN:] A limited number of probe requests are allowed. Success transitions to CLOSED; failure returns to OPEN.
+\end{description}
+
+Circuit breaker state is persisted in Redis for cluster-wide consistency, with the following configurable parameters:
+\begin{itemize}
+    \item \texttt{failure\_threshold}: Number of failures before opening (default: 5)
+    \item \texttt{success\_threshold}: Successes in half-open before closing (default: 3)
+    \item \texttt{timeout\_seconds}: Duration of open state before half-open (default: 60)
+\end{itemize}
+
+%------------------------------------------------------------------------------
+\subsection{Performance Requirements}
+\label{subsec:nfr-performance}
+
+Latency and throughput requirements for the platform:
+
+\begin{table}[htbp]
+\centering
+\caption{Performance Non-Functional Requirements}
+\label{tab:nfr-performance}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+NFR-PF-01 & Health probe endpoints (\texttt{/health/live}) shall respond within 10ms (p99). & Must \\
+\hline
+NFR-PF-02 & API endpoints (excluding LLM operations) shall respond within 500ms (p95). & Should \\
+\hline
+NFR-PF-03 & Tool invocations shall complete within their configured timeout (default: 30 seconds). & Must \\
+\hline
+NFR-PF-04 & The system shall support at least 100 concurrent API connections per instance. & Should \\
+\hline
+NFR-PF-05 & Database queries shall complete within 100ms (p95) for indexed operations. & Should \\
+\hline
+NFR-PF-06 & Cache hit latency (Redis) shall be under 5ms (p95). & Should \\
+\hline
+NFR-PF-07 & The system shall implement request-level timeouts to prevent resource exhaustion. & Must \\
+\hline
+NFR-PF-08 & Background job throughput shall support at least 10 jobs per second per worker. & Should \\
+\hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\subsection{Auditability and Compliance Requirements}
+\label{subsec:nfr-audit}
+
+Requirements for audit logging and regulatory compliance:
+
+\begin{table}[htbp]
+\centering
+\caption{Auditability Non-Functional Requirements}
+\label{tab:nfr-audit}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+NFR-AU-01 & The system shall maintain append-only audit logs for all security-relevant events (authentication, authorization, data access). & Must \\
+\hline
+NFR-AU-02 & Audit logs shall include: timestamp, principal, action, resource, tenant, outcome, and correlation ID. & Must \\
+\hline
+NFR-AU-03 & Audit logs shall be retained for a configurable period (default: 90 days) with archival support. & Must \\
+\hline
+NFR-AU-04 & The system shall support audit log export for compliance reporting and external SIEM integration. & Should \\
+\hline
+NFR-AU-05 & All agent runs shall record complete execution traces including prompts, responses, and tool calls. & Must \\
+\hline
+NFR-AU-06 & The system shall track model usage with token counts and estimated costs per tenant. & Should \\
+\hline
+NFR-AU-07 & Administrative actions (tenant creation, model configuration, permission changes) shall generate audit events. & Must \\
+\hline
+NFR-AU-08 & The system shall support data residency requirements through configurable deployment regions. & Could \\
+\hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\subsection{Observability Requirements}
+\label{subsec:nfr-observability}
+
+Requirements for monitoring, logging, and tracing:
+
+\begin{table}[htbp]
+\centering
+\caption{Observability Non-Functional Requirements}
+\label{tab:nfr-observability}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+NFR-OB-01 & The system shall expose Prometheus metrics via \texttt{/metrics} endpoint covering HTTP requests, background jobs, tools, and LLM operations. & Must \\
+\hline
+NFR-OB-02 & The system shall implement structured logging (JSON format) with consistent field schemas. & Must \\
+\hline
+NFR-OB-03 & The system shall propagate distributed trace context (W3C Trace Context) across all service calls. & Should \\
+\hline
+NFR-OB-04 & The system shall correlate logs, metrics, and traces using a common request ID. & Must \\
+\hline
+NFR-OB-05 & Health probes shall check all external dependencies with individual status reporting. & Must \\
+\hline
+NFR-OB-06 & The system shall provide pre-configured Grafana dashboards for operational monitoring. & Should \\
+\hline
+NFR-OB-07 & Log output shall be configurable (JSON for production, human-readable for development). & Should \\
+\hline
+NFR-OB-08 & Metrics shall include latency histograms with configurable bucket boundaries. & Should \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Three Pillars of Observability}
+
+The platform implements comprehensive observability through:
+
+\begin{enumerate}
+    \item \textbf{Metrics (Prometheus):} Counter, histogram, and gauge metrics for all major subsystems:
+    \begin{itemize}
+        \item HTTP request rate, latency, and error rate by endpoint
+        \item Background job execution counts and durations
+        \item Tool invocation statistics by tool name and outcome
+        \item LLM call latency, token consumption, and cost estimates
+        \item Rate limit hit rates and quota utilization
+    \end{itemize}
+    
+    \item \textbf{Logging (Structlog):} Structured JSON logs with:
+    \begin{itemize}
+        \item Consistent field naming across all components
+        \item Request ID correlation for distributed tracing
+        \item Log level filtering with environment-specific defaults
+        \item PII scrubbing before log emission
+    \end{itemize}
+    
+    \item \textbf{Tracing (OpenTelemetry):} Distributed tracing with:
+    \begin{itemize}
+        \item Automatic span creation for HTTP requests and database calls
+        \item Manual instrumentation for LLM calls and tool invocations
+        \item Configurable sampling rates (20\% in production, 100\% in development)
+        \item OTLP export to compatible collectors
+    \end{itemize}
+\end{enumerate}
+
+%------------------------------------------------------------------------------
+\subsection{Scalability Requirements}
+\label{subsec:nfr-scalability}
+
+Requirements for horizontal and vertical scaling:
+
+\begin{table}[htbp]
+\centering
+\caption{Scalability Non-Functional Requirements}
+\label{tab:nfr-scalability}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+NFR-SC-01 & The system shall support horizontal scaling of API servers behind a load balancer. & Must \\
+\hline
+NFR-SC-02 & The system shall support horizontal scaling of background workers with job queue partitioning. & Should \\
+\hline
+NFR-SC-03 & The system shall maintain stateless API servers, storing all session state in external stores (Redis, PostgreSQL). & Must \\
+\hline
+NFR-SC-04 & The system shall support connection pooling for database connections with configurable pool sizes. & Must \\
+\hline
+NFR-SC-05 & The system shall implement request-level rate limiting to prevent resource exhaustion during traffic spikes. & Must \\
+\hline
+NFR-SC-06 & The system architecture shall not preclude deployment on Kubernetes with pod autoscaling. & Should \\
+\hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\subsection{Rate Limiting Requirements}
+\label{subsec:nfr-ratelimit}
+
+Requirements for request throttling and quota management:
+
+\begin{table}[htbp]
+\centering
+\caption{Rate Limiting Non-Functional Requirements}
+\label{tab:nfr-ratelimit}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+NFR-RL-01 & The system shall implement sliding window rate limiting with Redis-backed counters. & Must \\
+\hline
+NFR-RL-02 & Rate limits shall be configurable per endpoint, per user, and per tenant. & Must \\
+\hline
+NFR-RL-03 & Rate limit responses shall include \texttt{Retry-After} headers with backoff guidance. & Must \\
+\hline
+NFR-RL-04 & The system shall support rate limit overrides for privileged users or emergency access. & Should \\
+\hline
+NFR-RL-05 & Rate limit metrics shall be exposed for monitoring and alerting. & Should \\
+\hline
+NFR-RL-06 & Default rate limits shall be: 60 requests/minute for general API, 10 requests/minute for LLM operations. & Should \\
+\hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\subsection{Requirements Summary}
+\label{subsec:nfr-summary}
+
+Table~\ref{tab:nfr-summary} summarizes the non-functional requirements by category:
+
+\begin{table}[htbp]
+\centering
+\caption{Non-Functional Requirements Summary by Category}
+\label{tab:nfr-summary}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Category} & \textbf{Must} & \textbf{Should} & \textbf{Could} & \textbf{Total} \\
+\hline
+Security & 10 & 0 & 0 & 10 \\
+Multi-Tenancy & 6 & 2 & 0 & 8 \\
+Reliability & 5 & 3 & 0 & 8 \\
+Performance & 3 & 5 & 0 & 8 \\
+Auditability & 5 & 2 & 1 & 8 \\
+Observability & 4 & 4 & 0 & 8 \\
+Scalability & 4 & 2 & 0 & 6 \\
+Rate Limiting & 3 & 3 & 0 & 6 \\
+\hline
+\textbf{Total} & \textbf{40} & \textbf{21} & \textbf{1} & \textbf{62} \\
+\hline
+\end{tabular}
+\end{table}
+
+The predominance of \textbf{Must} requirements in the Security category reflects the enterprise context and the sensitive nature of AI agent operations in research environments.

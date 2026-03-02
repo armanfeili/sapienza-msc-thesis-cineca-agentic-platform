@@ -1,0 +1,651 @@
+% TODO checklist:
+% - [x] Read src/utils/pagination.py for pagination implementation
+% - [x] Read src/utils/etag.py for ETag utilities
+% - [x] Read src/utils/idempotency.py for idempotency decorator
+% - [x] Read src/utils/jsonable.py for JSON serialization utilities
+% - [x] Read src/utils/provider_resolver.py for provider resolution
+% - [x] Read src/utils/deprecation.py for deprecation framework
+% - [x] Referenced Q&A.md for cross-cutting concerns
+% - [x] Inspected src/middleware/ for middleware implementations
+
+\section{Platform Engineering Utilities}
+\label{sec:platform-utilities}
+
+The Cineca Agentic Platform provides a comprehensive set of reusable utilities that implement common cross-cutting concerns. These utilities ensure consistent behavior across the codebase and reduce boilerplate in endpoint implementations.
+
+\subsection{Pagination and ETags}
+\label{subsec:pagination}
+
+The platform implements stateless, token-based pagination with ETag support for efficient caching of paginated responses.
+
+\subsubsection{Stateless Pagination}
+
+Pagination uses offset-based tokens encoded as simple strings, enabling stateless operation without server-side cursor storage:
+
+\begin{lstlisting}[language=Python, caption={Pagination implementation from \texttt{src/utils/pagination.py}.}]
+def make_page(
+    items: list[Any], 
+    page_size: int = 50, 
+    page_token: str | None = None
+) -> tuple[list[Any], str | None]:
+    """Simple stateless pagination over a list.
+    
+    Args:
+        items: Full list of items to paginate
+        page_size: Number of items per page (default: 50)
+        page_token: Base-10 offset string (e.g., '0', '50')
+    
+    Returns:
+        Tuple of (page_items, next_page_token)
+        next_page_token is None when no more pages exist
+    """
+    try:
+        offset = int(page_token) if page_token is not None else 0
+    except Exception:
+        offset = 0
+    
+    if page_size <= 0:
+        page_size = 50
+    
+    end = offset + page_size
+    page_items = items[offset:end]
+    next_token = str(end) if end < len(items) else None
+    
+    return page_items, next_token
+\end{lstlisting}
+
+\subsubsection{Usage in API Endpoints}
+
+\begin{lstlisting}[language=Python, caption={Pagination usage in router endpoints.}]
+@router.get("/agent-runs", response_model=PagedResponse[AgentRunSummary])
+async def list_runs(
+    page_size: int = Query(default=50, ge=1, le=100),
+    page_token: str | None = Query(default=None),
+    status: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> PagedResponse[AgentRunSummary]:
+    """List agent runs with pagination."""
+    
+    # Fetch all matching runs (filtered by status if provided)
+    runs = repository.list_runs(db, status=status)
+    
+    # Apply pagination
+    page_items, next_token = make_page(runs, page_size, page_token)
+    
+    return PagedResponse(
+        items=page_items,
+        next_page_token=next_token,
+        total_count=len(runs)
+    )
+\end{lstlisting}
+
+\subsubsection{ETag Generation}
+
+ETags enable efficient HTTP caching through conditional requests:
+
+\begin{lstlisting}[language=Python, caption={ETag utilities from \texttt{src/utils/etag.py}.}]
+import hashlib
+import json
+
+def generate_etag(obj: Any, weak: bool = False) -> str:
+    """Generate ETag from object's JSON representation.
+    
+    Args:
+        obj: Object to generate ETag for (typically dict/list)
+        weak: If True, returns weak ETag (W/"..."), else strong
+    
+    Returns:
+        ETag string in format: "abc123" or W/"abc123"
+    """
+    json_str = json.dumps(obj, sort_keys=True, default=str, separators=(",", ":"))
+    hash_digest = hashlib.sha256(json_str.encode("utf-8")).hexdigest()[:16]
+    
+    if weak:
+        return f'W/"{hash_digest}"'
+    return f'"{hash_digest}"'
+
+
+def validate_etag(if_none_match: str | None, current_etag: str) -> bool:
+    """Check if current ETag matches If-None-Match header.
+    
+    Returns True if ETag matches (caller should return 304).
+    Supports weak matching per RFC 7232.
+    """
+    if not if_none_match:
+        return False
+    
+    if if_none_match.strip() == "*":
+        return True
+    
+    # Parse multiple ETags (comma-separated)
+    candidates = [tag.strip() for tag in if_none_match.split(",")]
+    
+    for candidate in candidates:
+        # Strip quotes and W/ prefix for weak comparison
+        candidate_val = candidate.lower().replace("w/", "").strip('"')
+        current_val = current_etag.lower().replace("w/", "").strip('"')
+        
+        if candidate_val == current_val:
+            return True
+    
+    return False
+\end{lstlisting}
+
+\subsubsection{Context-Aware ETags}
+
+ETags can include route and filter context to ensure proper cache invalidation:
+
+\begin{lstlisting}[language=Python, caption={Context-aware ETag computation.}]
+def compute_etag(obj: Any, context: dict[str, Any] | None = None) -> str:
+    """Compute weak ETag with optional route/filter context.
+    
+    Args:
+        obj: Primary object to hash (response body)
+        context: Route/filter context (ensures ETags vary per route)
+    
+    Example:
+        etag = compute_etag(
+            jobs_list,
+            context={"route": "user_jobs", "status": "running"}
+        )
+    """
+    hash_input = {"data": obj}
+    if context:
+        hash_input["context"] = context
+    
+    raw = json.dumps(hash_input, sort_keys=True, separators=(",", ":"))
+    h = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    return f'W/"{h}"'
+\end{lstlisting}
+
+\subsection{Idempotency}
+\label{subsec:idempotency}
+
+The platform implements idempotency for POST requests to ensure safe retries and prevent duplicate resource creation.
+
+\subsubsection{Idempotency Decorator}
+
+\begin{lstlisting}[language=Python, caption={Idempotency decorator from \texttt{src/utils/idempotency.py}.}]
+from functools import wraps
+from typing import Any, Callable
+
+def idempotent(
+    key_fn: Callable[..., str], 
+    ttl: int = 24 * 3600
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    """Decorator providing idempotency for FastAPI endpoints.
+    
+    Args:
+        key_fn: Function to generate cache key from request params
+        ttl: Time-to-live for cached responses (default: 24 hours)
+    
+    The decorator:
+    1. Extracts Idempotency-Key header from request
+    2. If key exists in cache, replays stored response
+    3. Otherwise, executes handler and caches response
+    """
+    def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
+        sig = inspect.signature(fn)
+        
+        @wraps(fn)
+        async def wrapper(*args, **kwargs):
+            # Bind parameters for key_fn
+            bound = sig.bind_partial(*args, **kwargs)
+            
+            # Extract Idempotency-Key from headers
+            idem_key = _extract_idempotency_key(bound)
+            
+            if not idem_key:
+                # No idempotency requested
+                return await fn(*args, **kwargs)
+            
+            cache_key = key_fn(idem_key, **bound.arguments)
+            
+            # Check cache
+            cached = _get(cache_key)
+            if cached is not None:
+                # Replay cached response
+                return JSONResponse(
+                    status_code=cached.get("status", 200),
+                    content=cached.get("body"),
+                    headers=cached.get("headers", {})
+                )
+            
+            # Execute and cache
+            result = await fn(*args, **kwargs)
+            envelope = _normalize_response(result)
+            _set(cache_key, envelope, ex=ttl)
+            
+            return result
+        
+        wrapper.__signature__ = sig
+        return wrapper
+    
+    return decorator
+\end{lstlisting}
+
+\subsubsection{Idempotency in Job Creation}
+
+\begin{lstlisting}[language=Python, caption={Idempotency usage for job creation.}]
+@router.post("/jobs", response_model=JobCreatedResponse)
+@idempotent(
+    key_fn=lambda idem_key, **kw: f"jobs:idempotency:{idem_key}",
+    ttl=86400  # 24 hours
+)
+async def create_job(
+    request: Request,
+    body: JobCreateRequest,
+) -> JobCreatedResponse:
+    """Create new background job with idempotency support.
+    
+    Clients should include 'Idempotency-Key' header for safe retries.
+    Duplicate requests with the same key return the original response.
+    """
+    job = await job_service.create(body)
+    return JobCreatedResponse(job_id=job.id, status="queued")
+\end{lstlisting}
+
+\subsubsection{Two-Tier Idempotency}
+
+For critical operations, the platform implements two-tier idempotency checking:
+
+\begin{lstlisting}[language=Python, caption={Two-tier idempotency check pattern.}]
+async def check_idempotency_two_tier(
+    key: str,
+    redis: Redis,
+    db: Session
+) -> tuple[bool, dict | None]:
+    """Two-tier idempotency: Redis (fast) -> PostgreSQL (authoritative).
+    
+    Returns:
+        (is_duplicate, cached_response)
+    """
+    # Tier 1: Check Redis cache (fast path)
+    cached = await redis.get(f"idempotency:{key}")
+    if cached:
+        return True, json.loads(cached)
+    
+    # Tier 2: Check PostgreSQL (authoritative)
+    existing = db.query(IdempotencyKey).filter(
+        IdempotencyKey.key == key
+    ).first()
+    
+    if existing:
+        # Populate Redis cache for future requests
+        await redis.set(
+            f"idempotency:{key}",
+            json.dumps(existing.response),
+            ex=86400
+        )
+        return True, existing.response
+    
+    return False, None
+\end{lstlisting}
+
+\subsection{JSON Utilities}
+\label{subsec:json-utils}
+
+The platform provides utilities for safe JSON serialization of complex Python types.
+
+\subsubsection{Type Conversion}
+
+\begin{lstlisting}[language=Python, caption={JSON serialization from \texttt{src/utils/jsonable.py}.}]
+from datetime import datetime, date, timezone
+from decimal import Decimal
+from enum import Enum
+from pathlib import Path
+from uuid import UUID
+
+def to_jsonable(obj: Any) -> Any:
+    """Convert object to JSON-serializable form.
+    
+    Handles common non-serializable types:
+    - datetime/date -> ISO format string (RFC3339 with Z suffix)
+    - UUID -> string
+    - Decimal -> float
+    - Enum -> value
+    - set -> list
+    - Path -> string
+    
+    Recursively processes dicts and lists.
+    """
+    # Primitives pass through
+    if obj is None or isinstance(obj, (bool, int, float, str)):
+        return obj
+    
+    # Handle datetime/date
+    if isinstance(obj, datetime):
+        if obj.tzinfo is None:
+            obj = obj.replace(tzinfo=timezone.utc)
+        utc_dt = obj.astimezone(timezone.utc)
+        return utc_dt.isoformat(timespec='milliseconds').replace('+00:00', 'Z')
+    
+    if isinstance(obj, date):
+        return obj.isoformat()
+    
+    # Handle UUID
+    if isinstance(obj, UUID):
+        return str(obj)
+    
+    # Handle Decimal
+    if isinstance(obj, Decimal):
+        return float(obj)
+    
+    # Handle Enum
+    if isinstance(obj, Enum):
+        return obj.value
+    
+    # Handle Path
+    if isinstance(obj, Path):
+        return str(obj)
+    
+    # Handle set
+    if isinstance(obj, set):
+        return [to_jsonable(item) for item in obj]
+    
+    # Handle dict (recursive)
+    if isinstance(obj, dict):
+        return {key: to_jsonable(value) for key, value in obj.items()}
+    
+    # Handle list/tuple (recursive)
+    if isinstance(obj, (list, tuple)):
+        return [to_jsonable(item) for item in obj]
+    
+    # Handle objects with __dict__
+    if hasattr(obj, "__dict__"):
+        return to_jsonable(obj.__dict__)
+    
+    # Fallback: convert to string
+    return str(obj)
+\end{lstlisting}
+
+\subsubsection{JSONB Column Persistence}
+
+The utility is used when persisting data to PostgreSQL JSONB columns:
+
+\begin{lstlisting}[language=Python, caption={Safe JSONB persistence pattern.}]
+def save_agent_run(session: Session, run_data: dict) -> AgentRun:
+    """Save agent run with safe JSON serialization."""
+    
+    # Ensure all nested objects are JSON-serializable
+    safe_data = {
+        "id": run_data["id"],
+        "prompt": run_data["prompt"],
+        "output": to_jsonable(run_data.get("output")),
+        "steps": to_jsonable(run_data.get("steps", [])),
+        "metrics": to_jsonable(run_data.get("metrics", {})),
+        "created_at": run_data.get("created_at", datetime.utcnow()),
+    }
+    
+    run = AgentRun(**safe_data)
+    session.add(run)
+    session.commit()
+    return run
+\end{lstlisting}
+
+\subsection{Provider Resolution}
+\label{subsec:provider-resolution}
+
+The provider resolution utilities handle LLM provider configuration at runtime.
+
+\subsubsection{Base URL Resolution}
+
+\begin{lstlisting}[language=Python, caption={Provider URL resolution from \texttt{src/utils/provider\_resolver.py}.}]
+def resolve_provider_base_url(provider: Any) -> str | None:
+    """Return effective base URL for provider, applying overrides.
+    
+    Handles Ollama-specific URL resolution:
+    1. Check for explicit OLLAMA_BASE_URL environment override
+    2. Fall back to provider config
+    3. Auto-detect Docker vs host environment
+    """
+    base = _coerce_attr(provider, "base_url")
+    if not base:
+        config = _coerce_attr(provider, "config")
+        if isinstance(config, dict):
+            base = config.get("base_url")
+    
+    if is_ollama_provider(provider):
+        # Check for environment override
+        env_override = getattr(settings, "OLLAMA_BASE_URL", None)
+        if env_override:
+            base = env_override
+        elif not base:
+            # Auto-detect appropriate URL
+            base = settings.resolve_ollama_base_url()
+    
+    if base:
+        return str(base).rstrip("/")
+    return None
+\end{lstlisting}
+
+\subsubsection{Ollama Provider Detection}
+
+\begin{lstlisting}[language=Python, caption={Ollama provider detection heuristics.}]
+def is_ollama_provider(provider: Any) -> bool:
+    """Best-effort detection of Ollama provider."""
+    if provider is None:
+        return False
+    
+    candidates = [
+        _coerce_attr(provider, "id"),
+        _coerce_attr(provider, "name"),
+        _coerce_attr(provider, "type"),
+        _coerce_attr(provider, "base_url"),
+    ]
+    
+    for value in candidates:
+        if value and "ollama" in str(value).lower():
+            return True
+    
+    # Check nested config
+    config = _coerce_attr(provider, "config")
+    if isinstance(config, dict):
+        base = config.get("base_url")
+        if base and "ollama" in str(base).lower():
+            return True
+    
+    return False
+\end{lstlisting}
+
+\subsubsection{Timeout Configuration}
+
+\begin{lstlisting}[language=Python, caption={Provider-aware timeout configuration.}]
+import httpx
+
+DEFAULT_HTTPX_TIMEOUT = httpx.Timeout(
+    connect=2.0,
+    read=60.0,
+    write=10.0,
+    pool=5.0,
+)
+
+def timeout_for_provider(
+    provider: Any, 
+    default: httpx.Timeout | None = None
+) -> httpx.Timeout:
+    """Return appropriate timeout for provider (Ollama-aware).
+    
+    Ollama requires longer timeouts for model loading.
+    """
+    if is_ollama_provider(provider):
+        secs = int(getattr(settings, "OLLAMA_TIMEOUT_SECS", 60))
+        secs = max(secs, 1)
+        return httpx.Timeout(
+            connect=secs, 
+            read=secs, 
+            write=secs, 
+            pool=5.0
+        )
+    return default or DEFAULT_HTTPX_TIMEOUT
+\end{lstlisting}
+
+\subsubsection{Model ID Mapping}
+
+\begin{lstlisting}[language=Python, caption={Upstream model ID resolution for Ollama.}]
+def resolve_upstream_model_id(
+    provider: Any,
+    resolved_model: str | None,
+    requested_model: str | None,
+    instance: dict[str, Any] | None,
+) -> str | None:
+    """Translate logical model IDs to provider-specific IDs.
+    
+    Ollama uses different model naming conventions, so logical
+    IDs like 'phi3-mini-q4' map to Ollama tags like 'phi3:mini'.
+    """
+    candidate = (instance or {}).get("model_id") or resolved_model
+    
+    if is_ollama_provider(provider):
+        mapping = settings.effective_ollama_model_map
+        for key in [candidate, resolved_model, requested_model]:
+            if key and key in mapping:
+                return mapping[key]
+    
+    return candidate
+\end{lstlisting}
+
+\subsection{Deprecation Framework}
+\label{subsec:deprecation}
+
+The platform provides utilities for marking endpoints and features as deprecated.
+
+\subsubsection{Deprecation Headers}
+
+\begin{lstlisting}[language=Python, caption={Deprecation header generation from \texttt{src/utils/deprecation.py}.}]
+from datetime import UTC, datetime, timedelta
+
+def deprecation_headers(
+    replacement: str | None = None, 
+    sunset: str | None = None, 
+    *, 
+    sunset_days: int = 45
+) -> dict[str, str]:
+    """Return standardized Deprecation and Sunset headers.
+    
+    Args:
+        replacement: Optional path for Link header (successor-version)
+        sunset: Optional explicit Sunset date string
+        sunset_days: Days until sunset when sunset not provided
+    
+    Returns:
+        Headers dict including Deprecation, Sunset, and optional Link
+    
+    Standards:
+        - Deprecation header: draft-ietf-httpapi-deprecation-header
+        - Sunset header: RFC 8594
+        - Link rel="successor-version": RFC 8288
+    """
+    headers: dict[str, str] = {"Deprecation": "true"}
+    
+    if sunset:
+        headers["Sunset"] = sunset
+    else:
+        now = datetime.now(UTC)
+        sunset_date = now + timedelta(days=sunset_days)
+        headers["Sunset"] = sunset_date.strftime("%a, %d %b %Y %H:%M:%S GMT")
+    
+    if replacement:
+        headers["Link"] = f'<{replacement}>; rel="successor-version"'
+    
+    return headers
+\end{lstlisting}
+
+\subsubsection{Usage in Deprecated Endpoints}
+
+\begin{lstlisting}[language=Python, caption={Deprecation in endpoint implementation.}]
+from src.utils.deprecation import deprecation_headers
+
+@router.get("/v1/jobs/{job_id}", deprecated=True)
+async def get_job_v1(job_id: str) -> Response:
+    """Get job details (DEPRECATED).
+    
+    This endpoint is deprecated. Use /v2/jobs/{job_id} instead.
+    """
+    # Add deprecation headers to response
+    headers = deprecation_headers(
+        replacement="/v2/jobs/{job_id}",
+        sunset_days=90
+    )
+    
+    job = await job_service.get(job_id)
+    
+    return JSONResponse(
+        content=job.dict(),
+        headers=headers
+    )
+\end{lstlisting}
+
+\subsubsection{OpenAPI Documentation}
+
+Deprecated endpoints are automatically marked in OpenAPI documentation:
+
+\begin{lstlisting}[language=Python, caption={OpenAPI deprecation annotation.}]
+@router.get(
+    "/v1/legacy-endpoint",
+    deprecated=True,  # Shows strike-through in Swagger UI
+    tags=["deprecated"],
+    summary="Legacy endpoint (use v2 instead)",
+    description="""
+    **DEPRECATED**: This endpoint will be removed in v3.0.
+    
+    Use `/v2/new-endpoint` instead.
+    
+    Sunset date: 2025-06-01
+    """
+)
+async def legacy_endpoint():
+    ...
+\end{lstlisting}
+
+\subsection{Middleware Components}
+
+The platform includes several middleware components that leverage these utilities.
+
+\subsubsection{Vary Headers Middleware}
+
+\begin{lstlisting}[language=Python, caption={Vary headers for proper caching.}]
+def add_vary_headers(response: Response) -> Response:
+    """Add Vary headers for proper cache key computation.
+    
+    Ensures CDN/proxy caches differentiate responses by:
+    - Authorization: Different users get different responses
+    - X-Tenant-ID: Multi-tenant isolation
+    - Accept: Content negotiation
+    """
+    vary = response.headers.get("Vary", "")
+    vary_parts = [v.strip() for v in vary.split(",") if v.strip()]
+    
+    for header in ["Authorization", "X-Tenant-ID", "Accept"]:
+        if header not in vary_parts:
+            vary_parts.append(header)
+    
+    response.headers["Vary"] = ", ".join(vary_parts)
+    return response
+\end{lstlisting}
+
+\subsubsection{Security Headers Middleware}
+
+\begin{lstlisting}[language=Python, caption={Security headers middleware.}]
+class SecurityHeadersMiddleware:
+    """Add security headers to all responses."""
+    
+    async def __call__(self, request: Request, call_next):
+        response = await call_next(request)
+        
+        if settings.ENABLE_SECURITY_HEADERS:
+            response.headers["X-Content-Type-Options"] = "nosniff"
+            response.headers["X-Frame-Options"] = "DENY"
+            response.headers["X-XSS-Protection"] = "1; mode=block"
+            
+            if settings.ENABLE_HSTS:
+                response.headers["Strict-Transport-Security"] = (
+                    f"max-age={settings.HSTS_MAX_AGE}; includeSubDomains"
+                )
+            
+            if settings.CSP_POLICY:
+                response.headers["Content-Security-Policy"] = settings.CSP_POLICY
+        
+        return response
+\end{lstlisting}
+

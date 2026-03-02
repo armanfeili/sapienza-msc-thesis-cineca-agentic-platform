@@ -1,0 +1,380 @@
+% TODO checklist: Inspected files:
+% - src/config.py
+% - docs/guides/environment-variables.md
+% - docs/guides/configuration.md
+% - docker-compose.yml
+% - README.md (Configuration section)
+
+\chapter{Configuration Reference}
+\label{app:config-reference}
+
+This appendix provides a comprehensive reference of all configuration settings for the Cineca Agentic Platform. Settings are loaded from environment variables using Pydantic Settings, with sensible defaults for local development.
+
+%------------------------------------------------------------------------------
+\section{Configuration Loading}
+\label{app:config:loading}
+
+Configuration is loaded in the following order of precedence (highest first):
+\begin{enumerate}
+    \item Environment variables
+    \item \texttt{.env} file in project root
+    \item Default values in \texttt{src/config.py}
+\end{enumerate}
+
+\begin{lstlisting}[language=Python]
+from src.config import settings
+
+# Access settings
+print(settings.APP_ENV)         # "dev"
+print(settings.database_url)    # Property: PostgreSQL URL
+\end{lstlisting}
+
+%------------------------------------------------------------------------------
+\section{Application Settings}
+\label{app:config:app}
+
+\begin{table}[ht]
+\centering
+\caption{Application Settings}
+\label{tab:config-app}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Variable} & \textbf{Default} & \textbf{Description} \\
+    \hline
+    \texttt{APP\_ENV} & \texttt{dev} & Environment name (dev/stage/prod) \\
+    \texttt{APP\_HOST} & \texttt{0.0.0.0} & HTTP bind address \\
+    \texttt{APP\_PORT} & \texttt{8000} & HTTP port \\
+    \texttt{LOG\_LEVEL} & \texttt{INFO} & Logging level (DEBUG/INFO/WARNING/ERROR) \\
+    \texttt{ENABLE\_DOCS} & \texttt{true} & Enable Swagger/ReDoc in non-prod \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Database Settings}
+\label{app:config:database}
+
+\subsection{PostgreSQL}
+
+\begin{table}[ht]
+\centering
+\caption{PostgreSQL Settings}
+\label{tab:config-postgres}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Variable} & \textbf{Default} & \textbf{Description} \\
+    \hline
+    \texttt{DB\_HOST} & \texttt{postgres} & PostgreSQL host \\
+    \texttt{DB\_PORT} & \texttt{5432} & PostgreSQL port \\
+    \texttt{DB\_NAME} & \texttt{cineca\_platform} & Database name \\
+    \texttt{DB\_USER} & \texttt{cineca\_user} & Database user \\
+    \texttt{DB\_PASSWORD} & \texttt{change\_me\_now} & Database password (change in prod!) \\
+    \texttt{DB\_SSLMODE} & \texttt{disable} & SSL mode (require in prod) \\
+    \texttt{DB\_POOL\_SIZE} & \texttt{10} & Connection pool size \\
+    \texttt{DB\_POOL\_TIMEOUT} & \texttt{30} & Pool timeout (seconds) \\
+    \texttt{DB\_POOL\_RECYCLE} & \texttt{3600} & Connection recycle (seconds) \\
+    \texttt{DB\_POOL\_PRE\_PING} & \texttt{true} & Test connections before use \\
+    \texttt{DB\_ECHO} & \texttt{false} & Echo SQL statements (debug) \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Memgraph}
+
+\begin{table}[ht]
+\centering
+\caption{Memgraph Settings}
+\label{tab:config-memgraph}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Variable} & \textbf{Default} & \textbf{Description} \\
+    \hline
+    \texttt{MG\_HOST} & \texttt{memgraph} & Memgraph host \\
+    \texttt{MG\_PORT} & \texttt{7687} & Memgraph Bolt port \\
+    \texttt{MG\_USER} & (empty) & Memgraph username \\
+    \texttt{MG\_PASSWORD} & (empty) & Memgraph password \\
+    \texttt{MG\_TLS} & \texttt{false} & Enable TLS connection \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Redis}
+
+\begin{table}[ht]
+\centering
+\caption{Redis Settings}
+\label{tab:config-redis}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Variable} & \textbf{Default} & \textbf{Description} \\
+    \hline
+    \texttt{REDIS\_URL} & \texttt{redis://redis:6379/0} & Redis connection URL \\
+    \texttt{RATE\_LIMIT\_BACKEND} & \texttt{redis} & Rate limit backend (memory/redis) \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Security Settings}
+\label{app:config:security}
+
+\subsection{OIDC/JWT Authentication}
+
+\begin{table}[ht]
+\centering
+\caption{OIDC Authentication Settings}
+\label{tab:config-oidc}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Variable} & \textbf{Default} & \textbf{Description} \\
+    \hline
+    \texttt{OIDC\_ISSUER} & (none) & OIDC issuer URL to validate \\
+    \texttt{OIDC\_AUDIENCE} & (none) & API audience to validate \\
+    \texttt{OIDC\_JWKS\_URL} & (none) & JWKS endpoint URL \\
+    \texttt{OIDC\_TIMEOUT\_S} & \texttt{5} & OIDC HTTP call timeout \\
+    \texttt{JWT\_SECRET} & \texttt{REPLACE\_ME} & Legacy JWT secret (replace!) \\
+    \texttt{JWT\_ALGORITHM} & \texttt{HS256} & JWT algorithm \\
+    \texttt{ACCESS\_TOKEN\_EXPIRE\_MINUTES} & \texttt{60} & Token expiration \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Authorization}
+
+\begin{table}[ht]
+\centering
+\caption{Authorization Settings}
+\label{tab:config-authz}
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Variable} & \textbf{Description} \\
+    \hline
+    \texttt{SAFE\_TOOLS} & Comma-separated list of tools allowed with \texttt{tools:basic} scope \\
+    \texttt{ADMIN\_DEFAULT\_TENANT\_ID} & Default tenant for admin context \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Security Features}
+
+\begin{table}[ht]
+\centering
+\caption{Security Feature Toggles}
+\label{tab:config-security-features}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Variable} & \textbf{Default} & \textbf{Description} \\
+    \hline
+    \texttt{INTENT\_FILTER\_ENABLED} & \texttt{true} & Enable intent classification filter \\
+    \texttt{OUTPUT\_GUARD\_ENABLED} & \texttt{true} & Enable output guard checks \\
+    \texttt{PII\_SCRUBBING\_ENABLED} & \texttt{true} & Enable PII detection/redaction \\
+    \texttt{ENABLE\_SECURITY\_HEADERS} & \texttt{true} & Enable security headers middleware \\
+    \texttt{ENABLE\_HSTS} & \texttt{true} & Enable HSTS header \\
+    \texttt{HSTS\_MAX\_AGE} & \texttt{31536000} & HSTS max-age (1 year) \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{LLM Settings}
+\label{app:config:llm}
+
+\subsection{Provider Configuration}
+
+\begin{table}[ht]
+\centering
+\caption{LLM Provider Settings}
+\label{tab:config-llm-provider}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Variable} & \textbf{Default} & \textbf{Description} \\
+    \hline
+    \texttt{LLM\_PROVIDER} & (none) & Default provider type \\
+    \texttt{LLM\_MODEL} & (none) & Default model name \\
+    \texttt{OPENAI\_API\_KEY} & (none) & OpenAI API key \\
+    \texttt{DEMO\_MODE} & \texttt{false} & Enable demo fallback \\
+    \texttt{DEFAULT\_MODEL\_NAME} & \texttt{phi3:mini} & Emergency fallback model \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Ollama Settings}
+
+\begin{table}[ht]
+\centering
+\caption{Ollama Integration Settings}
+\label{tab:config-ollama}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Variable} & \textbf{Default} & \textbf{Description} \\
+    \hline
+    \texttt{OLLAMA\_BASE\_URL} & (auto) & Ollama API base URL \\
+    \texttt{OLLAMA\_TIMEOUT\_SECS} & \texttt{180} & Ollama call timeout \\
+    \texttt{OLLAMA\_MODEL\_MAP} & (none) & JSON mapping of model IDs \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Execution Limits}
+
+\begin{table}[ht]
+\centering
+\caption{LLM Execution Limits}
+\label{tab:config-llm-limits}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Variable} & \textbf{Default} & \textbf{Description} \\
+    \hline
+    \texttt{LLM\_DEVICE} & \texttt{cpu} & Device for execution (cpu/gpu) \\
+    \texttt{LLM\_MAX\_TOKENS} & \texttt{2048} & Maximum tokens per request \\
+    \texttt{LLM\_MAX\_STEPS} & \texttt{10} & Maximum orchestration steps \\
+    \texttt{LLM\_WARMUP\_TIMEOUT} & \texttt{300} & Warmup timeout (seconds) \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Rate Limiting}
+\label{app:config:ratelimit}
+
+\begin{table}[ht]
+\centering
+\caption{Rate Limiting Settings}
+\label{tab:config-ratelimit}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Variable} & \textbf{Default} & \textbf{Description} \\
+    \hline
+    \texttt{RATE\_LIMIT\_ENABLED} & \texttt{true} & Enable rate limiting \\
+    \texttt{RATE\_LIMIT\_DEFAULT\_LIMIT} & \texttt{60} & Requests per window \\
+    \texttt{RATE\_LIMIT\_DEFAULT\_WINDOW} & \texttt{60} & Window length (seconds) \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Jobs Settings}
+\label{app:config:jobs}
+
+\begin{table}[ht]
+\centering
+\caption{Background Jobs Settings}
+\label{tab:config-jobs}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Variable} & \textbf{Default} & \textbf{Description} \\
+    \hline
+    \texttt{JOB\_STORE\_BACKEND} & \texttt{memory} & Job storage (memory/redis) \\
+    \texttt{USE\_POSTGRES\_JOBS} & \texttt{false} & Enable PostgreSQL jobs \\
+    \texttt{JOB\_TTL\_DAYS} & \texttt{10} & Job retention (days) \\
+    \texttt{SSE\_RING\_SIZE} & \texttt{100} & Events per job for SSE \\
+    \texttt{IDEMPOTENCY\_TTL\_HOURS} & \texttt{24} & Idempotency key expiry \\
+    \texttt{ALLOWED\_JOB\_TYPES} & \texttt{demo} & Allowed job types \\
+    \texttt{JOB\_SSE\_HEARTBEAT\_SECS} & \texttt{15} & SSE heartbeat interval \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Observability Settings}
+\label{app:config:observability}
+
+\begin{table}[ht]
+\centering
+\caption{Observability Settings}
+\label{tab:config-observability}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Variable} & \textbf{Default} & \textbf{Description} \\
+    \hline
+    \texttt{PROMETHEUS\_METRICS\_ENABLED} & \texttt{true} & Enable Prometheus metrics \\
+    \texttt{OTEL\_SERVICE\_NAME} & \texttt{cineca-agentic-platform} & OpenTelemetry service name \\
+    \texttt{OTEL\_EXPORTER\_OTLP\_ENDPOINT} & (none) & OTLP exporter endpoint \\
+    \texttt{OTEL\_TRACES\_SAMPLER} & \texttt{parentbased\_always\_on} & Trace sampler \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Background Scheduler}
+\label{app:config:scheduler}
+
+\begin{table}[ht]
+\centering
+\caption{Scheduler Settings}
+\label{tab:config-scheduler}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Variable} & \textbf{Default} & \textbf{Description} \\
+    \hline
+    \texttt{SCHEDULER\_ENABLED} & \texttt{true} & Enable background scheduler \\
+    \texttt{SCHEDULED\_HEALTHCHECK\_INTERVAL\_SECONDS} & \texttt{60} & Health check interval \\
+    \texttt{SCHEDULED\_CLEANUP\_INTERVAL\_SECONDS} & \texttt{3600} & Cleanup interval \\
+    \texttt{PROVIDER\_HEALTH\_REFRESH\_INTERVAL} & \texttt{3600} & Provider health refresh \\
+    \texttt{PROVIDER\_HEALTH\_TTL} & \texttt{7200} & Provider health cache TTL \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Service Limits}
+\label{app:config:limits}
+
+\begin{table}[ht]
+\centering
+\caption{Service Limit Settings}
+\label{tab:config-limits}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Variable} & \textbf{Default} & \textbf{Description} \\
+    \hline
+    \texttt{MAX\_GRAPH\_RESULT\_NODES} & \texttt{1000} & Maximum nodes in graph result \\
+    \texttt{MAX\_GRAPH\_RESULT\_EDGES} & \texttt{2000} & Maximum edges in graph result \\
+    \texttt{MAX\_QUERY\_COST} & \texttt{10000} & Maximum query cost units \\
+    \texttt{RETENTION\_DAYS} & \texttt{30} & Data retention period \\
+    \texttt{IDEMPOTENCY\_TTL\_SECONDS} & \texttt{86400} & Idempotency window (24h) \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Memgraph Response Builder}
+\label{app:config:memgraph-response}
+
+\begin{table}[ht]
+\centering
+\caption{Memgraph Response Builder Settings}
+\label{tab:config-memgraph-response}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Variable} & \textbf{Default} & \textbf{Description} \\
+    \hline
+    \texttt{MEMGRAPH\_RESPONSE\_MODE} & \texttt{llm-best-effort} & Response mode (fallback-only, llm-best-effort, llm-required) \\
+    \texttt{MEMGRAPH\_BUILDER\_LLM\_TIMEOUT\_MS} & \texttt{180000} & LLM timeout for response builder (3 min) \\
+    \hline
+\end{tabularx}
+\end{table}
+
+Response modes:
+\begin{itemize}
+    \item \textbf{fallback-only}: Never call LLM, use deterministic summarizer
+    \item \textbf{llm-best-effort}: Try LLM, fall back on timeout (default)
+    \item \textbf{llm-required}: LLM required; timeout causes failure
+\end{itemize}
+

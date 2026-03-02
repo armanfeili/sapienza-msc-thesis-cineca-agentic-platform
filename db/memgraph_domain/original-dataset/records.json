@@ -1,0 +1,1388 @@
+﻿[
+  {
+    "value": {
+      "User": {
+        "count": 5,
+        "labels": [],
+        "properties": {
+          "lastName": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "user_name": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "email": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "user_id": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "firstName": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          }
+        },
+        "type": "node",
+        "relationships": {
+          "WORKS_AT": {
+            "count": 0,
+            "direction": "out",
+            "labels": [
+              "Institution"
+            ],
+            "properties": {
+
+            }
+          },
+          "RUNS": {
+            "count": 0,
+            "direction": "out",
+            "labels": [
+              "SearchbyTaxon",
+              "Bold",
+              "Command",
+              "Blast",
+              "BlastSeq",
+              "CreateDb"
+            ],
+            "properties": {
+
+            }
+          }
+        }
+      },
+      "Command": {
+        "count": 20,
+        "labels": [],
+        "properties": {
+          "input_files": {
+            "unique": false,
+            "indexed": false,
+            "type": "LIST",
+            "existence": false
+          },
+          "output_nto": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "dbtype": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "tool": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_filename": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "task_id": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_ntf": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "blasttype": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_nin": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_csv": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_fasta": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "taxon": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "tags": {
+            "unique": false,
+            "indexed": false,
+            "type": "LIST",
+            "existence": false
+          },
+          "output_ndb": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "status": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_nsq": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_not": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "blast_version": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "retrived_task_id": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "start": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "container": {
+            "unique": false,
+            "indexed": false,
+            "type": "BOOLEAN",
+            "existence": false
+          },
+          "output_xml": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "dbname": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_njs": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_result": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_nhr": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          }
+        },
+        "type": "node",
+        "relationships": {
+          "INPUT": {
+            "count": 5,
+            "direction": "in",
+            "labels": [
+              "Fasta",
+              "File",
+              "BlastDb"
+            ],
+            "properties": {
+
+            }
+          },
+          "RUNS": {
+            "count": 20,
+            "direction": "in",
+            "labels": [
+              "User"
+            ],
+            "properties": {
+
+            }
+          },
+          "OUTPUT": {
+            "count": 0,
+            "direction": "out",
+            "labels": [
+              "File",
+              "BlastedSeq",
+              "Fasta",
+              "Xml",
+              "BlastDb"
+            ],
+            "properties": {
+
+            }
+          }
+        }
+      },
+      "WORKS_AT": {
+        "count": 5,
+        "properties": {
+
+        },
+        "type": "relationship"
+      },
+      "File": {
+        "count": 39,
+        "labels": [],
+        "properties": {
+          "extension": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "bucket_name": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "etag": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "user_filename": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "dbname": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "file_id": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "uploaded": {
+            "unique": false,
+            "indexed": false,
+            "type": "BOOLEAN",
+            "existence": false
+          },
+          "format": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "date": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "size": {
+            "unique": false,
+            "indexed": false,
+            "type": "INTEGER",
+            "existence": false
+          }
+        },
+        "type": "node",
+        "relationships": {
+          "INPUT": {
+            "count": 0,
+            "direction": "out",
+            "labels": [
+              "Command",
+              "CreateDb",
+              "Blast",
+              "BlastSeq"
+            ],
+            "properties": {
+
+            }
+          },
+          "OUTPUT": {
+            "count": 8,
+            "direction": "in",
+            "labels": [
+              "SearchbyTaxon",
+              "Bold",
+              "Command",
+              "CreateDb",
+              "Blast",
+              "BlastSeq"
+            ],
+            "properties": {
+
+            }
+          }
+        }
+      },
+      "PhyloTree": {
+        "count": 1,
+        "labels": [],
+        "properties": {
+          "bucket_name": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "etag": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "user_filename": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "file_id": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "uploaded": {
+            "unique": false,
+            "indexed": false,
+            "type": "BOOLEAN",
+            "existence": false
+          },
+          "format": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "date": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "size": {
+            "unique": false,
+            "indexed": false,
+            "type": "INTEGER",
+            "existence": false
+          }
+        },
+        "type": "node",
+        "relationships": {
+
+        }
+      },
+      "RUNS": {
+        "count": 20,
+        "properties": {
+
+        },
+        "type": "relationship"
+      },
+      "BlastDb": {
+        "count": 16,
+        "labels": [],
+        "properties": {
+          "extension": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "bucket_name": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "etag": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "user_filename": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "dbname": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "file_id": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "uploaded": {
+            "unique": false,
+            "indexed": false,
+            "type": "BOOLEAN",
+            "existence": false
+          },
+          "date": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "size": {
+            "unique": false,
+            "indexed": false,
+            "type": "INTEGER",
+            "existence": false
+          }
+        },
+        "type": "node",
+        "relationships": {
+          "INPUT": {
+            "count": 0,
+            "direction": "out",
+            "labels": [
+              "Command",
+              "Blast",
+              "BlastSeq"
+            ],
+            "properties": {
+
+            }
+          },
+          "OUTPUT": {
+            "count": 28,
+            "direction": "in",
+            "labels": [
+              "Command",
+              "CreateDb",
+              "Blast"
+            ],
+            "properties": {
+
+            }
+          }
+        }
+      },
+      "Institution": {
+        "count": 2,
+        "labels": [],
+        "properties": {
+          "name": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          }
+        },
+        "type": "node",
+        "relationships": {
+          "WORKS_AT": {
+            "count": 5,
+            "direction": "in",
+            "labels": [
+              "User"
+            ],
+            "properties": {
+
+            }
+          }
+        }
+      },
+      "INPUT": {
+        "count": 38,
+        "properties": {
+
+        },
+        "type": "relationship"
+      },
+      "BlastSeq": {
+        "count": 6,
+        "labels": [],
+        "properties": {
+          "tags": {
+            "unique": false,
+            "indexed": false,
+            "type": "LIST",
+            "existence": false
+          },
+          "input_files": {
+            "unique": false,
+            "indexed": false,
+            "type": "LIST",
+            "existence": false
+          },
+          "blast_version": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "blasttype": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "retrived_task_id": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "start": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "status": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "dbname": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_csv": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "task_id": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_result": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          }
+        },
+        "type": "node",
+        "relationships": {
+          "INPUT": {
+            "count": 5,
+            "direction": "in",
+            "labels": [
+              "Fasta",
+              "File",
+              "BlastDb"
+            ],
+            "properties": {
+
+            }
+          },
+          "RUNS": {
+            "count": 20,
+            "direction": "in",
+            "labels": [
+              "User"
+            ],
+            "properties": {
+
+            }
+          },
+          "OUTPUT": {
+            "count": 0,
+            "direction": "out",
+            "labels": [
+              "File",
+              "BlastedSeq"
+            ],
+            "properties": {
+
+            }
+          }
+        }
+      },
+      "Xml": {
+        "count": 2,
+        "labels": [],
+        "properties": {
+          "extension": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "bucket_name": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "etag": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "user_filename": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "file_id": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "uploaded": {
+            "unique": false,
+            "indexed": false,
+            "type": "BOOLEAN",
+            "existence": false
+          },
+          "date": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "size": {
+            "unique": false,
+            "indexed": false,
+            "type": "INTEGER",
+            "existence": false
+          }
+        },
+        "type": "node",
+        "relationships": {
+          "OUTPUT": {
+            "count": 8,
+            "direction": "in",
+            "labels": [
+              "SearchbyTaxon",
+              "Bold",
+              "Command"
+            ],
+            "properties": {
+
+            }
+          }
+        }
+      },
+      "SearchbyTaxon": {
+        "count": 11,
+        "labels": [],
+        "properties": {
+          "tags": {
+            "unique": false,
+            "indexed": false,
+            "type": "LIST",
+            "existence": false
+          },
+          "start": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "status": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "container": {
+            "unique": false,
+            "indexed": false,
+            "type": "BOOLEAN",
+            "existence": false
+          },
+          "tool": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_xml": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "task_id": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_result": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_fasta": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "taxon": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          }
+        },
+        "type": "node",
+        "relationships": {
+          "RUNS": {
+            "count": 20,
+            "direction": "in",
+            "labels": [
+              "User"
+            ],
+            "properties": {
+
+            }
+          },
+          "OUTPUT": {
+            "count": 0,
+            "direction": "out",
+            "labels": [
+              "Fasta",
+              "File",
+              "Xml"
+            ],
+            "properties": {
+
+            }
+          }
+        }
+      },
+      "Bold": {
+        "count": 11,
+        "labels": [],
+        "properties": {
+          "tags": {
+            "unique": false,
+            "indexed": false,
+            "type": "LIST",
+            "existence": false
+          },
+          "start": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "status": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "container": {
+            "unique": false,
+            "indexed": false,
+            "type": "BOOLEAN",
+            "existence": false
+          },
+          "tool": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_xml": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "task_id": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_result": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_fasta": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "taxon": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          }
+        },
+        "type": "node",
+        "relationships": {
+          "RUNS": {
+            "count": 20,
+            "direction": "in",
+            "labels": [
+              "User"
+            ],
+            "properties": {
+
+            }
+          },
+          "OUTPUT": {
+            "count": 0,
+            "direction": "out",
+            "labels": [
+              "Fasta",
+              "File",
+              "Xml"
+            ],
+            "properties": {
+
+            }
+          }
+        }
+      },
+      "OUTPUT": {
+        "count": 28,
+        "properties": {
+
+        },
+        "type": "relationship"
+      },
+      "CreateDb": {
+        "count": 3,
+        "labels": [],
+        "properties": {
+          "tags": {
+            "unique": false,
+            "indexed": false,
+            "type": "LIST",
+            "existence": false
+          },
+          "output_ndb": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "input_files": {
+            "unique": false,
+            "indexed": false,
+            "type": "LIST",
+            "existence": false
+          },
+          "output_nto": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "dbtype": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "status": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_nsq": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_not": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_filename": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "task_id": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_ntf": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "blast_version": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_nin": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "start": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "dbname": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_njs": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_nhr": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          }
+        },
+        "type": "node",
+        "relationships": {
+          "INPUT": {
+            "count": 5,
+            "direction": "in",
+            "labels": [
+              "Fasta",
+              "File"
+            ],
+            "properties": {
+
+            }
+          },
+          "RUNS": {
+            "count": 20,
+            "direction": "in",
+            "labels": [
+              "User"
+            ],
+            "properties": {
+
+            }
+          },
+          "OUTPUT": {
+            "count": 0,
+            "direction": "out",
+            "labels": [
+              "File",
+              "BlastDb"
+            ],
+            "properties": {
+
+            }
+          }
+        }
+      },
+      "Blast": {
+        "count": 9,
+        "labels": [],
+        "properties": {
+          "tags": {
+            "unique": false,
+            "indexed": false,
+            "type": "LIST",
+            "existence": false
+          },
+          "output_ndb": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "input_files": {
+            "unique": false,
+            "indexed": false,
+            "type": "LIST",
+            "existence": false
+          },
+          "output_nto": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "dbtype": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "status": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_nsq": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_not": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_filename": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "task_id": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_ntf": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "blast_version": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "blasttype": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "retrived_task_id": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_nin": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "start": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "dbname": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_csv": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_njs": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_nhr": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "output_result": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          }
+        },
+        "type": "node",
+        "relationships": {
+          "INPUT": {
+            "count": 5,
+            "direction": "in",
+            "labels": [
+              "Fasta",
+              "File",
+              "BlastDb"
+            ],
+            "properties": {
+
+            }
+          },
+          "RUNS": {
+            "count": 20,
+            "direction": "in",
+            "labels": [
+              "User"
+            ],
+            "properties": {
+
+            }
+          },
+          "OUTPUT": {
+            "count": 0,
+            "direction": "out",
+            "labels": [
+              "File",
+              "BlastedSeq",
+              "BlastDb"
+            ],
+            "properties": {
+
+            }
+          }
+        }
+      },
+      "Fasta": {
+        "count": 8,
+        "labels": [],
+        "properties": {
+          "extension": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "bucket_name": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "etag": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "user_filename": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "file_id": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "uploaded": {
+            "unique": false,
+            "indexed": false,
+            "type": "BOOLEAN",
+            "existence": false
+          },
+          "date": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "size": {
+            "unique": false,
+            "indexed": false,
+            "type": "INTEGER",
+            "existence": false
+          }
+        },
+        "type": "node",
+        "relationships": {
+          "INPUT": {
+            "count": 0,
+            "direction": "out",
+            "labels": [
+              "Command",
+              "CreateDb",
+              "Blast",
+              "BlastSeq"
+            ],
+            "properties": {
+
+            }
+          },
+          "OUTPUT": {
+            "count": 8,
+            "direction": "in",
+            "labels": [
+              "SearchbyTaxon",
+              "Bold",
+              "Command"
+            ],
+            "properties": {
+
+            }
+          }
+        }
+      },
+      "BlastedSeq": {
+        "count": 4,
+        "labels": [],
+        "properties": {
+          "extension": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "bucket_name": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "etag": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "user_filename": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "file_id": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "uploaded": {
+            "unique": false,
+            "indexed": false,
+            "type": "BOOLEAN",
+            "existence": false
+          },
+          "date": {
+            "unique": false,
+            "indexed": false,
+            "type": "STRING",
+            "existence": false
+          },
+          "size": {
+            "unique": false,
+            "indexed": false,
+            "type": "INTEGER",
+            "existence": false
+          }
+        },
+        "type": "node",
+        "relationships": {
+          "OUTPUT": {
+            "count": 28,
+            "direction": "in",
+            "labels": [
+              "Command",
+              "Blast",
+              "BlastSeq"
+            ],
+            "properties": {
+
+            }
+          }
+        }
+      }
+    }
+  }
+]

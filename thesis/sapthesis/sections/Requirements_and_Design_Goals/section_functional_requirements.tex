@@ -1,0 +1,358 @@
+% TODO checklist - Files inspected for this section:
+% - README.md (lines 1-2050): Project map, features, API endpoints (76 total), use cases
+% - Q&A.md (lines 1-7907): Questions 1-7 (high-level overview), Q9 (router modules), Q36-41 (agents/tools/jobs)
+% - src/routers/ directory structure: 23 router modules
+% - src/schemas/ directory: Pydantic request/response models
+% - docs/api/README_api.md: API documentation
+% - api/openapi.json: OpenAPI specification
+
+\section{Functional Requirements}
+\label{sec:functional-requirements}
+
+This section formalizes the functional requirements of the Cineca Agentic Platform, derived from stakeholder analysis, use case modeling, and the technical specifications documented in the project repository. Each requirement is assigned a unique identifier for traceability to the evaluation chapter.
+
+%------------------------------------------------------------------------------
+\subsection{Stakeholder Analysis}
+\label{subsec:stakeholders}
+
+The platform serves four primary stakeholder categories, each with distinct functional needs:
+
+\begin{description}
+    \item[End Users (Researchers, Scientists):] Individuals who interact with AI agents through conversational interfaces to execute computational workflows, query knowledge graphs, and obtain assistance with bioinformatics tasks. Their primary concern is ease of use and accurate, timely responses.
+    
+    \item[Platform Administrators:] Technical staff responsible for system configuration, tenant management, model deployment, and operational oversight. They require comprehensive administrative capabilities and monitoring dashboards.
+    
+    \item[Security and Compliance Officers:] Personnel ensuring the platform adheres to institutional policies, data protection regulations, and audit requirements. They need robust access controls, audit trails, and compliance reporting.
+    
+    \item[Developers and Integrators:] Engineers who extend the platform with custom tools, integrate external systems, or build applications consuming the API. They require well-documented APIs, extensibility mechanisms, and clear contracts.
+\end{description}
+
+%------------------------------------------------------------------------------
+\subsection{Use Case Categories}
+\label{subsec:use-case-categories}
+
+The functional requirements are organized around five core use case categories that emerged from stakeholder analysis and the platform's stated objectives:
+
+\begin{enumerate}
+    \item \textbf{Agent Execution and Orchestration:} Conversational AI interactions, multi-step reasoning, and workflow automation.
+    \item \textbf{Knowledge Graph Query:} Natural language interfaces to graph databases for structured data retrieval.
+    \item \textbf{Background Job Processing:} Long-running computational tasks with progress tracking and lifecycle management.
+    \item \textbf{Tool Discovery and Invocation:} Dynamic tool ecosystem with capability-based access control.
+    \item \textbf{Administrative Operations:} Platform configuration, tenant management, and operational control.
+\end{enumerate}
+
+%------------------------------------------------------------------------------
+\subsection{Agent Execution Requirements}
+\label{subsec:fr-agent-execution}
+
+The following requirements govern the core agent orchestration functionality:
+
+\begin{table}[htbp]
+\centering
+\caption{Agent Execution Functional Requirements}
+\label{tab:fr-agent-execution}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+FR-AE-01 & The system shall accept natural language prompts and execute multi-step agent runs to fulfill user requests. & Must \\
+\hline
+FR-AE-02 & The system shall support configurable execution parameters including maximum steps, temperature, and timeout limits. & Must \\
+\hline
+FR-AE-03 & The system shall maintain session context across multiple agent runs, enabling conversational continuity. & Must \\
+\hline
+FR-AE-04 & The system shall record all execution steps with timestamps, tool calls, and intermediate outputs for auditability. & Must \\
+\hline
+FR-AE-05 & The system shall support intent classification to route requests appropriately (deterministic vs. agentic vs. graph-based). & Should \\
+\hline
+FR-AE-06 & The system shall generate structured TODO lists for complex multi-step tasks and track their completion status. & Should \\
+\hline
+FR-AE-07 & The system shall provide execution metrics including latency, token consumption, and tool call counts per run. & Must \\
+\hline
+FR-AE-08 & The system shall support graceful degradation when LLM providers are unavailable, with fallback to deterministic responses. & Should \\
+\hline
+FR-AE-09 & The system shall allow cancellation of in-progress agent runs with proper cleanup of resources. & Must \\
+\hline
+FR-AE-10 & The system shall expose run status through polling endpoints with terminal states (succeeded, failed, cancelled). & Must \\
+\hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\subsection{Model Management Requirements}
+\label{subsec:fr-model-management}
+
+Requirements governing LLM provider and model instance management:
+
+\begin{table}[htbp]
+\centering
+\caption{Model Management Functional Requirements}
+\label{tab:fr-model-management}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+FR-MM-01 & The system shall support multiple LLM providers (OpenAI, Ollama, Azure OpenAI, Hugging Face) through a unified adapter interface. & Must \\
+\hline
+FR-MM-02 & The system shall maintain a registry of model instances with configurable parameters (context window, temperature defaults, cost per token). & Must \\
+\hline
+FR-MM-03 & The system shall implement a Default Model Resolver (DMR) with hierarchical precedence: user preference $\rightarrow$ tenant default $\rightarrow$ global default. & Must \\
+\hline
+FR-MM-04 & The system shall track model usage metrics including token consumption, request counts, and estimated costs per tenant. & Should \\
+\hline
+FR-MM-05 & The system shall support hot-swapping of default models without service restart. & Should \\
+\hline
+FR-MM-06 & The system shall validate model availability before accepting requests, returning appropriate errors for unavailable models. & Must \\
+\hline
+FR-MM-07 & The system shall support model warmup to reduce cold-start latency for frequently used models. & Could \\
+\hline
+FR-MM-08 & The system shall provide model capability metadata (supports tools, supports vision, context length) for client-side filtering. & Should \\
+\hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\subsection{Tool Ecosystem Requirements}
+\label{subsec:fr-tools}
+
+Requirements for the Model Context Protocol (MCP) tool system:
+
+\begin{table}[htbp]
+\centering
+\caption{Tool Ecosystem Functional Requirements}
+\label{tab:fr-tools}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+FR-TL-01 & The system shall provide a tool discovery endpoint returning available tools with their schemas, capabilities, and access requirements. & Must \\
+\hline
+FR-TL-02 & The system shall invoke tools by dotted name (e.g., \texttt{graph.query}) with schema-validated payloads. & Must \\
+\hline
+FR-TL-03 & The system shall enforce capability-based access control, restricting tools based on principal scopes. & Must \\
+\hline
+FR-TL-04 & The system shall support at least 34 tools across 17 categories including graph, cache, security, data, and administrative operations. & Must \\
+\hline
+FR-TL-05 & The system shall record all tool invocations with inputs, outputs, latency, and error status for audit purposes. & Must \\
+\hline
+FR-TL-06 & The system shall enforce per-tool timeouts with configurable limits (default: 30 seconds). & Must \\
+\hline
+FR-TL-07 & The system shall support tool-level rate limiting independent of API-level rate limits. & Should \\
+\hline
+FR-TL-08 & The system shall provide safe mode for tools, preventing write operations during read-only requests. & Must \\
+\hline
+FR-TL-09 & The system shall expose tool metrics (invocation count, latency histogram, error rate) via Prometheus. & Should \\
+\hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\subsection{Graph Query Requirements}
+\label{subsec:fr-graph}
+
+Requirements for the natural language to Cypher (NL$\rightarrow$Cypher) pipeline:
+
+\begin{table}[htbp]
+\centering
+\caption{Graph Query Functional Requirements}
+\label{tab:fr-graph}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+FR-GQ-01 & The system shall accept natural language questions and translate them to valid Cypher queries against the Memgraph database. & Must \\
+\hline
+FR-GQ-02 & The system shall provide schema introspection exposing node types, relationship types, and property definitions. & Must \\
+\hline
+FR-GQ-03 & The system shall validate generated Cypher queries for safety, detecting and rejecting write operations in read-only contexts. & Must \\
+\hline
+FR-GQ-04 & The system shall support parameterized queries to prevent Cypher injection attacks. & Must \\
+\hline
+FR-GQ-05 & The system shall maintain an allowlist of permitted CALL procedures for security purposes. & Must \\
+\hline
+FR-GQ-06 & The system shall automatically inject tenant isolation predicates (\texttt{WHERE tenant\_id = \$tid}) into generated queries. & Must \\
+\hline
+FR-GQ-07 & The system shall provide query explain functionality for debugging and optimization. & Should \\
+\hline
+FR-GQ-08 & The system shall cache frequently executed queries with configurable TTL. & Could \\
+\hline
+FR-GQ-09 & The system shall support bulk graph operations (batch create, batch update) for data ingestion workflows. & Should \\
+\hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\subsection{Background Job Requirements}
+\label{subsec:fr-jobs}
+
+Requirements for asynchronous task processing:
+
+\begin{table}[htbp]
+\centering
+\caption{Background Job Functional Requirements}
+\label{tab:fr-jobs}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+FR-JB-01 & The system shall support creation of asynchronous jobs with typed payloads and priority levels. & Must \\
+\hline
+FR-JB-02 & The system shall persist jobs in PostgreSQL with full lifecycle tracking (queued $\rightarrow$ running $\rightarrow$ finished/failed/cancelled). & Must \\
+\hline
+FR-JB-03 & The system shall provide idempotency key support to prevent duplicate job creation on retries. & Must \\
+\hline
+FR-JB-04 & The system shall stream job progress events via Server-Sent Events (SSE) with Last-Event-ID support for reconnection. & Must \\
+\hline
+FR-JB-05 & The system shall support job cancellation with graceful handling of in-progress work. & Must \\
+\hline
+FR-JB-06 & The system shall maintain heartbeat updates for running jobs to detect stale workers. & Should \\
+\hline
+FR-JB-07 & The system shall provide job result retrieval with configurable retention periods. & Must \\
+\hline
+FR-JB-08 & The system shall expose queue depth and backlog metrics for capacity planning. & Should \\
+\hline
+FR-JB-09 & The system shall support configurable job types with per-type worker allocation. & Should \\
+\hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\subsection{Administrative and Operational Requirements}
+\label{subsec:fr-admin}
+
+Requirements for platform administration and operations:
+
+\begin{table}[htbp]
+\centering
+\caption{Administrative Functional Requirements}
+\label{tab:fr-admin}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+FR-AD-01 & The system shall provide tenant CRUD operations with configuration management (quotas, defaults, feature flags). & Must \\
+\hline
+FR-AD-02 & The system shall support database administration endpoints for schema inspection and connection testing. & Should \\
+\hline
+FR-AD-03 & The system shall provide configuration export/import for backup and environment migration. & Should \\
+\hline
+FR-AD-04 & The system shall expose comprehensive health probes (liveness, readiness, startup) for container orchestration. & Must \\
+\hline
+FR-AD-05 & The system shall provide component-level health checks for all external dependencies (PostgreSQL, Redis, Memgraph, LLM providers). & Must \\
+\hline
+FR-AD-06 & The system shall support graceful shutdown with in-flight request completion. & Must \\
+\hline
+FR-AD-07 & The system shall provide rate limit configuration and override capabilities per tenant or user. & Should \\
+\hline
+FR-AD-08 & The system shall expose OpenAPI specifications for API documentation and client generation. & Must \\
+\hline
+FR-AD-09 & The system shall support batch operations for efficient bulk data manipulation. & Should \\
+\hline
+FR-AD-10 & The system shall provide process management for long-running administrative operations. & Could \\
+\hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\subsection{API Design Requirements}
+\label{subsec:fr-api}
+
+Cross-cutting requirements for the REST API:
+
+\begin{table}[htbp]
+\centering
+\caption{API Design Functional Requirements}
+\label{tab:fr-api}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+FR-AP-01 & The system shall expose a RESTful API with versioned endpoints (\texttt{/v1/*}, \texttt{/v2/*}). & Must \\
+\hline
+FR-AP-02 & The system shall validate all request bodies against Pydantic schemas with detailed error messages. & Must \\
+\hline
+FR-AP-03 & The system shall implement cursor-based pagination for collection endpoints with configurable page sizes. & Must \\
+\hline
+FR-AP-04 & The system shall support conditional requests via ETags for cache validation. & Should \\
+\hline
+FR-AP-05 & The system shall return RFC 7807 Problem Details for all error responses. & Must \\
+\hline
+FR-AP-06 & The system shall include request correlation IDs in all responses via \texttt{X-Request-ID} header. & Must \\
+\hline
+FR-AP-07 & The system shall provide deprecation headers for sunset endpoints with migration guidance. & Should \\
+\hline
+FR-AP-08 & The system shall support 76+ endpoints across 16 functional categories. & Must \\
+\hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\subsection{User Interface Requirements}
+\label{subsec:fr-ui}
+
+Requirements for the presentation layer:
+
+\begin{table}[htbp]
+\centering
+\caption{User Interface Functional Requirements}
+\label{tab:fr-ui}
+\small
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+FR-UI-01 & The system shall provide a conversational chat interface for end-user agent interactions. & Must \\
+\hline
+FR-UI-02 & The system shall provide an administrative control panel for operators and administrators. & Must \\
+\hline
+FR-UI-03 & The chat interface shall display agent execution steps with expandable details. & Should \\
+\hline
+FR-UI-04 & The control panel shall provide health monitoring dashboards with auto-refresh. & Should \\
+\hline
+FR-UI-05 & Both interfaces shall support role-based access with appropriate feature visibility. & Must \\
+\hline
+FR-UI-06 & The chat interface shall support dynamic model selection from available instances. & Should \\
+\hline
+FR-UI-07 & The control panel shall provide NL$\rightarrow$Cypher testing capabilities with result visualization. & Should \\
+\hline
+FR-UI-08 & Both interfaces shall implement responsive layouts for desktop and tablet form factors. & Should \\
+\hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\subsection{Requirements Summary}
+\label{subsec:fr-summary}
+
+Table~\ref{tab:fr-summary} summarizes the functional requirements by category:
+
+\begin{table}[htbp]
+\centering
+\caption{Functional Requirements Summary by Category}
+\label{tab:fr-summary}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Category} & \textbf{Must} & \textbf{Should} & \textbf{Could} & \textbf{Total} \\
+\hline
+Agent Execution & 7 & 3 & 0 & 10 \\
+Model Management & 4 & 3 & 1 & 8 \\
+Tool Ecosystem & 6 & 3 & 0 & 9 \\
+Graph Query & 6 & 2 & 1 & 9 \\
+Background Jobs & 5 & 4 & 0 & 9 \\
+Administrative & 5 & 4 & 1 & 10 \\
+API Design & 5 & 3 & 0 & 8 \\
+User Interface & 3 & 5 & 0 & 8 \\
+\hline
+\textbf{Total} & \textbf{41} & \textbf{27} & \textbf{3} & \textbf{71} \\
+\hline
+\end{tabular}
+\end{table}
+
+The prioritization follows the MoSCoW methodology: \textbf{Must} requirements are essential for minimum viable functionality, \textbf{Should} requirements enhance usability and operational excellence, and \textbf{Could} requirements provide additional value if resources permit.

@@ -1,0 +1,273 @@
+% =============================================================================
+% SECTION: Retrieval-Augmented Generation and Knowledge Graphs
+% Chapter: Background and Related Work
+% =============================================================================
+%
+% TODO Checklist (verified in codebase/docs):
+% [x] Reviewed Q&A.md Q33-Q34 for RAG vs graph integration discussion
+% [x] Reviewed Q&A.md Q50 for comparison noting RAG as a gap
+% [x] Reviewed README.md for current platform capabilities (no RAG implemented)
+% [x] Cross-referenced academic literature on RAG approaches
+% [x] Analyzed platform's graph-native approach vs typical RAG patterns
+%
+% =============================================================================
+
+\section{Retrieval-Augmented Generation and Knowledge Graphs}
+\label{sec:rag-kg}
+
+Retrieval-Augmented Generation (RAG) has emerged as a dominant paradigm for grounding LLM outputs in external knowledge. This section introduces RAG concepts, compares document-based retrieval with knowledge graph approaches, and explains why the Cineca Agentic Platform focuses on graph-native knowledge access.
+
+\subsection{Retrieval-Augmented Generation Overview}
+
+RAG~% TODO: add bibitem for Lewis2020RAG
+addresses a fundamental limitation of LLMs: their knowledge is frozen at training time and may become outdated, incomplete, or inaccurate. By retrieving relevant information from external sources and incorporating it into the generation context, RAG enables:
+
+\begin{itemize}
+    \item \textbf{Knowledge currency}: Access to up-to-date information beyond the training cutoff.
+    \item \textbf{Factual grounding}: Reduced hallucination by anchoring responses in retrieved evidence.
+    \item \textbf{Domain adaptation}: Specialization to specific domains without fine-tuning.
+    \item \textbf{Source attribution}: Ability to cite sources for generated claims.
+\end{itemize}
+
+\paragraph{Standard RAG Architecture}
+
+The canonical RAG pipeline consists of:
+
+\begin{enumerate}
+    \item \textbf{Document ingestion}: Loading documents from various sources (files, databases, web pages).
+    
+    \item \textbf{Chunking}: Splitting documents into smaller segments suitable for embedding and retrieval.
+    
+    \item \textbf{Embedding}: Converting chunks into dense vector representations using embedding models.
+    
+    \item \textbf{Indexing}: Storing embeddings in a vector database for efficient similarity search.
+    
+    \item \textbf{Query embedding}: Converting the user's question into the same embedding space.
+    
+    \item \textbf{Retrieval}: Finding the most similar chunks to the query embedding.
+    
+    \item \textbf{Context construction}: Assembling retrieved chunks into a prompt context.
+    
+    \item \textbf{Generation}: Invoking the LLM with the augmented context to produce a response.
+\end{enumerate}
+
+\paragraph{RAG Variants}
+
+Several variants of RAG have been developed to address different requirements:
+
+\begin{itemize}
+    \item \textbf{Naive RAG}: The basic pipeline described above, with simple top-$k$ retrieval.
+    
+    \item \textbf{Advanced RAG}: Incorporates pre-retrieval query rewriting, post-retrieval reranking, and iterative retrieval.
+    
+    \item \textbf{Modular RAG}: Decomposes the pipeline into interchangeable modules that can be customized for specific use cases.
+    
+    \item \textbf{Self-RAG}: The model decides when retrieval is needed and evaluates retrieval quality.
+    
+    \item \textbf{Graph RAG}: Combines document retrieval with knowledge graph traversal for enhanced context.
+\end{itemize}
+
+\subsection{Knowledge Graphs in AI Systems}
+
+Knowledge graphs provide an alternative paradigm for organizing and accessing knowledge. Rather than storing unstructured text, knowledge graphs represent information as structured entities and relationships.
+
+\paragraph{Knowledge Graph Characteristics}
+
+\begin{itemize}
+    \item \textbf{Explicit relationships}: Connections between entities are first-class citizens, not implicit in text.
+    
+    \item \textbf{Semantic types}: Entities are categorized with types (ontology classes), enabling type-based reasoning.
+    
+    \item \textbf{Multi-hop queries}: Questions requiring traversal across multiple relationships can be answered directly.
+    
+    \item \textbf{Logical consistency}: Constraints can enforce consistency across the knowledge base.
+    
+    \item \textbf{Incremental updates}: New knowledge can be added without reprocessing existing content.
+\end{itemize}
+
+\paragraph{Knowledge Graph Construction}
+
+Building knowledge graphs involves:
+
+\begin{itemize}
+    \item \textbf{Schema design}: Defining the ontology of entity types and relationship types.
+    
+    \item \textbf{Entity extraction}: Identifying entities in source documents or data.
+    
+    \item \textbf{Relationship extraction}: Identifying relationships between extracted entities.
+    
+    \item \textbf{Entity resolution}: Merging references to the same real-world entity.
+    
+    \item \textbf{Knowledge validation}: Checking extracted knowledge for accuracy and consistency.
+\end{itemize}
+
+These processes can be manual, automated (using NLP and machine learning), or LLM-assisted.
+
+\subsection{Comparison: RAG over Documents vs.\ NL-to-Cypher over Graphs}
+
+The Cineca Agentic Platform implements NL-to-Cypher for graph-based knowledge access rather than traditional document-based RAG. This section analyzes the trade-offs between these approaches.
+
+\paragraph{Document-Based RAG}
+
+\textbf{Advantages:}
+\begin{itemize}
+    \item \textbf{Low barrier to entry}: Documents can be ingested directly without schema design.
+    \item \textbf{Broad coverage}: Can incorporate any text-based knowledge source.
+    \item \textbf{Semantic matching}: Embedding-based retrieval handles synonyms and paraphrases naturally.
+    \item \textbf{Mature tooling}: Extensive ecosystem of embedding models, vector databases, and frameworks.
+\end{itemize}
+
+\textbf{Disadvantages:}
+\begin{itemize}
+    \item \textbf{Lost structure}: Relationships between entities may be scattered across chunks.
+    \item \textbf{Retrieval noise}: Semantic similarity may retrieve tangentially related content.
+    \item \textbf{Multi-hop difficulty}: Questions requiring reasoning across multiple documents are challenging.
+    \item \textbf{Update overhead}: Adding new documents requires embedding and re-indexing.
+\end{itemize}
+
+\paragraph{Graph-Based NL-to-Cypher}
+
+\textbf{Advantages:}
+\begin{itemize}
+    \item \textbf{Explicit relationships}: Queries can directly traverse and filter on relationships.
+    \item \textbf{Precise answers}: Structured queries return exact matches, not probabilistic retrievals.
+    \item \textbf{Complex queries}: Aggregations, path queries, and multi-hop traversals are natural.
+    \item \textbf{Explainability}: Query results can be traced to specific graph paths.
+    \item \textbf{Incremental updates}: New nodes and edges can be added without reprocessing.
+\end{itemize}
+
+\textbf{Disadvantages:}
+\begin{itemize}
+    \item \textbf{Schema requirement}: Requires upfront domain modeling and schema design.
+    \item \textbf{Ingestion complexity}: Data must be transformed into graph structure.
+    \item \textbf{Query correctness}: Generated Cypher may be syntactically or semantically incorrect.
+    \item \textbf{Coverage limitations}: Only knowledge in the graph is accessible.
+\end{itemize}
+
+\paragraph{Comparative Summary}
+
+Table~\ref{tab:rag-vs-graph-detailed} provides a detailed comparison across key dimensions:
+
+\begin{table}[ht]
+\centering
+\caption{Detailed comparison of document-based RAG vs.\ graph-based NL-to-Cypher.}
+\label{tab:rag-vs-graph-detailed}
+\small
+\begin{tabular}{lcc}
+\hline
+\textbf{Dimension} & \textbf{Document RAG} & \textbf{NL-to-Cypher} \\
+\hline
+Setup complexity & Low & Medium-High \\
+Knowledge structure & Implicit & Explicit \\
+Relationship queries & Difficult & Native \\
+Aggregation queries & Difficult & Native \\
+Semantic flexibility & High & Low \\
+Answer precision & Variable & High \\
+Hallucination risk & Moderate & Low (with validation) \\
+Explainability & Moderate & High \\
+Update model & Re-embed chunks & Add nodes/edges \\
+Tooling maturity & High & Growing \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Platform Design Choice: Graph-Native Approach}
+
+The Cineca Agentic Platform adopts a graph-native approach for knowledge access rather than implementing traditional document-based RAG. This design choice is motivated by several factors:
+
+\paragraph{Domain Characteristics}
+
+The platform's primary domain---bioinformatics workflows and HPC resource management---is inherently structured:
+
+\begin{itemize}
+    \item Workflows have explicit dependencies and execution orders.
+    \item Resources are connected to nodes, queues, and allocations.
+    \item Data lineage forms natural graph structures.
+    \item Users, projects, and organizations have hierarchical relationships.
+\end{itemize}
+
+This structured domain is well-suited to graph representation, where relationships are as important as entities.
+
+\paragraph{Query Requirements}
+
+Typical queries in this domain require capabilities that graph databases excel at:
+
+\begin{itemize}
+    \item ``What workflows depend on this input dataset?'' (relationship traversal)
+    \item ``Which GPU nodes have run more than 100 jobs this month?'' (aggregation with filtering)
+    \item ``Show the data lineage path from raw sequencing data to the final publication.'' (path queries)
+    \item ``Which workflows would be affected if we upgrade the BLAST tool?'' (impact analysis)
+\end{itemize}
+
+These queries would be difficult to answer reliably with document retrieval but are natural to express in Cypher.
+
+\paragraph{Precision Requirements}
+
+In scientific and operational contexts, answer precision is critical:
+
+\begin{itemize}
+    \item Incorrect dependency information could lead to workflow failures.
+    \item Inaccurate resource utilization data could affect scheduling decisions.
+    \item Wrong data lineage could compromise reproducibility.
+\end{itemize}
+
+The deterministic nature of graph queries, combined with validation and safety checks, provides higher confidence than probabilistic document retrieval.
+
+\paragraph{Future Extension: Hybrid Approach}
+
+The platform architecture does not preclude adding document-based RAG in the future. A hybrid approach could:
+
+\begin{itemize}
+    \item Use graph queries for structured operational data.
+    \item Use document RAG for unstructured content (publications, documentation, user notes).
+    \item Combine results through a unified response synthesis layer.
+\end{itemize}
+
+This is noted as a potential enhancement in the platform's roadmap, allowing it to handle both structured and unstructured knowledge access.
+
+\subsection{Graph RAG: Emerging Hybrid Approaches}
+
+Recent research has explored combining graph and document-based approaches in various ways:
+
+\paragraph{Document Graphs}
+
+Some approaches build graphs from document collections:
+\begin{itemize}
+    \item Nodes represent documents, paragraphs, or entities.
+    \item Edges represent citations, semantic similarity, or extracted relationships.
+    \item Traversal enhances retrieval by following relevant connections.
+\end{itemize}
+
+\paragraph{Knowledge-Enhanced RAG}
+
+Other approaches use knowledge graphs to enhance document retrieval:
+\begin{itemize}
+    \item Entity linking connects document chunks to knowledge graph entities.
+    \item Graph context provides additional information about retrieved entities.
+    \item Relationship paths guide multi-hop reasoning across documents.
+\end{itemize}
+
+\paragraph{LLM-Constructed Graphs}
+
+LLMs can construct knowledge graphs from documents:
+\begin{itemize}
+    \item Entity and relationship extraction using LLM prompting.
+    \item Iterative graph construction as documents are processed.
+    \item Dynamic updates as new information becomes available.
+\end{itemize}
+
+These hybrid approaches represent an active area of research that may inform future platform enhancements. The current platform architecture, with its separation of concerns between the orchestrator, tool layer, and data layer, would accommodate such extensions without fundamental redesign.
+
+\subsection{Implications for Thesis Scope}
+
+This thesis focuses on the graph-native NL-to-Cypher pipeline implemented in the Cineca Agentic Platform. The pipeline includes:
+
+\begin{enumerate}
+    \item Intent classification to identify graph-related queries.
+    \item Schema-aware prompt construction for Cypher generation.
+    \item Multi-layer safety validation for generated queries.
+    \item Query execution with tenant isolation and resource limits.
+    \item Result summarization for natural language responses.
+\end{enumerate}
+
+This pipeline is detailed in Chapter~\ref{ch:nl-cypher}, with evaluation results in Chapter~\ref{ch:evaluation}. Document-based RAG is explicitly out of scope for this thesis but is acknowledged as a complementary capability for future work.

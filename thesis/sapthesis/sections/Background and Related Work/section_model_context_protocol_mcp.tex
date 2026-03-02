@@ -1,0 +1,263 @@
+% =============================================================================
+% SECTION: Model Context Protocol (MCP)
+% Chapter: Background and Related Work
+% =============================================================================
+%
+% TODO Checklist (verified in codebase/docs):
+% [x] Reviewed Q&A.md Q37 for MCP tool ecosystem (17 categories, 34 tools)
+% [x] Reviewed README.md for MCP tool listing and categories
+% [x] Reviewed src/mcp/ directory structure for implementation patterns
+% [x] Reviewed docs/mcp/ for MCP-related documentation
+% [x] Reviewed src/mcp/runtime.py for tool invocation and context
+% [x] Cross-referenced official MCP specification from Anthropic
+%
+% =============================================================================
+
+\section{Model Context Protocol (MCP)}
+\label{sec:mcp-background}
+
+The Model Context Protocol (MCP) represents a significant advancement in standardizing how AI systems interact with external tools and data sources. This section provides background on the MCP specification and its relevance to enterprise agent platforms.
+
+\subsection{Origins and Motivation}
+
+The proliferation of LLM-based applications has led to a fragmented landscape of tool integration approaches. Each framework (LangChain, LlamaIndex, Semantic Kernel, etc.) defines its own abstractions for tools, leading to:
+
+\begin{itemize}
+    \item \textbf{Vendor lock-in}: Tools implemented for one framework cannot easily be used with another.
+    \item \textbf{Duplicated effort}: Tool authors must implement the same capability multiple times for different frameworks.
+    \item \textbf{Inconsistent semantics}: Similar tools behave differently across frameworks due to varying conventions.
+    \item \textbf{Integration complexity}: Organizations using multiple AI systems must maintain parallel tool implementations.
+\end{itemize}
+
+The Model Context Protocol, introduced by Anthropic in late 2024~% TODO: add bibitem for MCP2024
+, addresses these challenges by providing a standardized specification for tool discovery, invocation, and result handling. MCP defines a common language that any AI client can use to interact with any MCP-compliant tool server.
+
+\subsection{Protocol Architecture}
+
+MCP follows a client-server architecture where AI applications (clients) communicate with tool providers (servers) using a standardized protocol.
+
+\paragraph{Core Components}
+
+The MCP architecture consists of:
+
+\begin{itemize}
+    \item \textbf{MCP Client}: The AI application that discovers and invokes tools. This is typically an LLM-based agent or assistant application.
+    
+    \item \textbf{MCP Server}: A service that exposes one or more tools following the MCP specification. Servers can provide domain-specific capabilities (file systems, databases, APIs, etc.).
+    
+    \item \textbf{Transport Layer}: The communication mechanism between clients and servers. MCP supports multiple transports including stdio (for local processes) and HTTP with Server-Sent Events (for remote services).
+    
+    \item \textbf{Protocol Messages}: Standardized JSON-RPC 2.0 messages for initialization, capability discovery, tool invocation, and result handling.
+\end{itemize}
+
+\paragraph{Communication Flow}
+
+A typical MCP interaction follows this sequence:
+
+\begin{enumerate}
+    \item \textbf{Initialization}: The client connects to the server and exchanges capability information.
+    \item \textbf{Tool Discovery}: The client requests the list of available tools via the \texttt{tools/list} method.
+    \item \textbf{Schema Retrieval}: For each tool, the client receives a JSON Schema describing the tool's parameters and expected behavior.
+    \item \textbf{Tool Invocation}: When the AI determines a tool should be called, the client sends a \texttt{tools/call} request with the tool name and arguments.
+    \item \textbf{Result Handling}: The server executes the tool and returns results, which the client incorporates into the AI's context.
+\end{enumerate}
+
+\subsection{Tool Definitions}
+
+MCP tools are defined using JSON Schema, providing a machine-readable description that enables:
+
+\begin{itemize}
+    \item \textbf{Parameter validation}: Inputs can be validated against the schema before invocation.
+    \item \textbf{Documentation generation}: Schema annotations provide human-readable descriptions.
+    \item \textbf{Type safety}: Strongly typed parameters reduce runtime errors.
+    \item \textbf{Discovery automation}: AI systems can understand tool capabilities without hardcoded knowledge.
+\end{itemize}
+
+\paragraph{Tool Schema Structure}
+
+A typical MCP tool definition includes:
+
+\begin{lstlisting}[language=Python,caption={Example MCP tool schema structure}]
+{
+    "name": "graph.query",
+    "description": "Execute a Cypher query against the graph database",
+    "inputSchema": {
+        "type": "object",
+        "properties": {
+            "cypher": {
+                "type": "string",
+                "description": "The Cypher query to execute"
+            },
+            "params": {
+                "type": "object",
+                "description": "Query parameters",
+                "additionalProperties": true
+            },
+            "timeout_ms": {
+                "type": "integer",
+                "description": "Query timeout in milliseconds",
+                "default": 30000
+            }
+        },
+        "required": ["cypher"]
+    }
+}
+\end{lstlisting}
+
+\paragraph{Capability Annotations}
+
+Beyond basic schemas, MCP supports capability annotations that describe tool behavior:
+
+\begin{itemize}
+    \item \textbf{Read-only vs.\ mutating}: Whether the tool modifies state.
+    \item \textbf{Idempotency}: Whether repeated invocations produce the same result.
+    \item \textbf{Required permissions}: What access rights are needed.
+    \item \textbf{Rate limits}: Recommended invocation frequency limits.
+\end{itemize}
+
+\subsection{MCP Servers and Ecosystem}
+
+The MCP ecosystem includes both reference implementations and community-contributed servers:
+
+\paragraph{Reference Servers}
+
+Anthropic provides reference server implementations for common capabilities:
+\begin{itemize}
+    \item \textbf{Filesystem server}: Reading and writing files in specified directories.
+    \item \textbf{GitHub server}: Interacting with GitHub repositories, issues, and pull requests.
+    \item \textbf{PostgreSQL server}: Executing queries against PostgreSQL databases.
+    \item \textbf{Brave Search server}: Web search using the Brave Search API.
+\end{itemize}
+
+\paragraph{Community Servers}
+
+The growing MCP community has contributed servers for diverse domains:
+\begin{itemize}
+    \item \textbf{neo4j-contrib/mcp-neo4j}: Neo4j graph database integration with Cypher query support.
+    \item \textbf{Slack server}: Workspace communication and channel management.
+    \item \textbf{Google Drive server}: Document access and management.
+    \item \textbf{Various API integrations}: Weather, finance, productivity tools, and more.
+\end{itemize}
+
+\paragraph{Server Implementation Patterns}
+
+MCP servers can be implemented in various ways:
+
+\begin{itemize}
+    \item \textbf{Standalone processes}: Long-running services that communicate over stdio or HTTP.
+    \item \textbf{Embedded servers}: Libraries that can be embedded in applications to expose local capabilities.
+    \item \textbf{Gateway servers}: Proxies that aggregate multiple backend services behind a unified MCP interface.
+\end{itemize}
+
+\subsection{Advantages for Enterprise Integration}
+
+MCP offers several advantages specifically relevant to enterprise AI deployments:
+
+\paragraph{Standardization}
+
+A common protocol enables:
+\begin{itemize}
+    \item \textbf{Tool reuse}: Tools implemented once can be used across multiple AI applications.
+    \item \textbf{Vendor independence}: Organizations can switch AI platforms without rewriting tool integrations.
+    \item \textbf{Ecosystem leverage}: Access to a growing catalog of community-contributed tools.
+\end{itemize}
+
+\paragraph{Security Boundaries}
+
+MCP's client-server architecture supports:
+\begin{itemize}
+    \item \textbf{Process isolation}: Tool execution in separate processes limits blast radius.
+    \item \textbf{Network segmentation}: Remote servers can run in isolated network zones.
+    \item \textbf{Authentication integration}: Transport layer can be secured with existing auth mechanisms.
+    \item \textbf{Audit logging}: All tool invocations pass through defined interfaces that can be logged.
+\end{itemize}
+
+\paragraph{Incremental Adoption}
+
+Organizations can adopt MCP incrementally:
+\begin{itemize}
+    \item Start with pre-built servers for common capabilities.
+    \item Gradually implement custom servers for domain-specific tools.
+    \item Migrate existing tool implementations to MCP as needed.
+\end{itemize}
+
+\subsection{Relationship to the Cineca Agentic Platform}
+
+The Cineca Agentic Platform adopts MCP-style patterns for its tool ecosystem while extending them with enterprise-specific features:
+
+\paragraph{MCP-Aligned Design}
+
+The platform's tool system follows MCP conventions:
+\begin{itemize}
+    \item \textbf{Schema-driven tools}: All 34 platform tools are defined with JSON Schema specifications.
+    \item \textbf{Standard invocation patterns}: Tools follow consistent request/response structures.
+    \item \textbf{Discovery mechanisms}: Tools can be listed and queried for their capabilities.
+    \item \textbf{Categorical organization}: Tools are organized into 17 categories following MCP conventions.
+\end{itemize}
+
+\paragraph{Enterprise Extensions}
+
+Beyond MCP basics, the platform adds:
+\begin{itemize}
+    \item \textbf{RBAC integration}: Tool access is controlled by role-based permissions with scope requirements.
+    \item \textbf{Tenant isolation}: Tools operate within tenant boundaries, preventing cross-tenant data access.
+    \item \textbf{Audit logging}: All tool invocations are recorded with full context for compliance.
+    \item \textbf{Rate limiting}: Per-user and per-tenant rate limits prevent abuse.
+    \item \textbf{Metrics and tracing}: Tool invocations are instrumented for observability.
+\end{itemize}
+
+\paragraph{Interoperability Considerations}
+
+While the platform uses MCP-style patterns internally, full MCP interoperability (allowing external MCP clients to connect) requires additional work:
+\begin{itemize}
+    \item Implementing the MCP JSON-RPC transport layer.
+    \item Exposing platform tools through MCP-compliant endpoints.
+    \item Bridging platform authentication with MCP client authentication.
+\end{itemize}
+
+This is noted as a potential future extension, allowing the platform to serve as an MCP server for external AI applications while maintaining its enterprise governance features.
+
+\subsection{MCP Tool Categories in the Platform}
+
+The Cineca Agentic Platform implements 34 MCP-style tools organized into 17 categories. Table~\ref{tab:mcp-categories} summarizes these categories and their purposes.
+
+\begin{table}[ht]
+\centering
+\caption{MCP tool categories in the Cineca Agentic Platform.}
+\label{tab:mcp-categories}
+\small
+\begin{tabular}{lp{8cm}}
+\hline
+\textbf{Category} & \textbf{Description} \\
+\hline
+graph & Cypher query execution, schema introspection, NL-to-Cypher \\
+cache & Redis cache operations (get, set, delete, pattern matching) \\
+data & Data transformation, format conversion, validation \\
+nlp & Natural language processing utilities \\
+security & Token validation, permission checks, PII detection \\
+admin & Administrative operations (tenant management, configuration) \\
+models & Model listing, default resolution, provider status \\
+jobs & Job creation, status, cancellation, result retrieval \\
+sessions & Session management, context storage \\
+audit & Audit log queries, compliance reporting \\
+health & Component health checks, readiness status \\
+metrics & Prometheus metric access, usage statistics \\
+backup & Snapshot creation, restoration, retention management \\
+manifest & Model manifest operations, built-in configurations \\
+ratelimit & Rate limit status, quota management \\
+export & Configuration export and import \\
+batch & Bulk operations for efficiency \\
+\hline
+\end{tabular}
+\end{table}
+
+Each tool within these categories follows consistent patterns for:
+\begin{itemize}
+    \item Schema definition with JSON Schema
+    \item Capability declaration (read-only, mutating, admin-required)
+    \item Scope requirements for RBAC enforcement
+    \item Timeout configuration for execution limits
+    \item Error handling with structured error responses
+\end{itemize}
+
+This comprehensive tool ecosystem, combined with MCP-style invocation patterns and enterprise governance features, enables the platform to support sophisticated agent workflows while maintaining security and compliance requirements.

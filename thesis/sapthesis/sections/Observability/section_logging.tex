@@ -1,0 +1,271 @@
+% TODO checklist:
+% - [x] Inspected src/logging_setup.py (structlog configuration)
+% - [x] Inspected src/observability/middleware.py (request context binding)
+% - [x] Reviewed Q&A.md sections on logging and structured logging
+% - [x] Reviewed README.md for logging overview
+% - [x] Examined AccessPathFilter implementation for noise reduction
+
+\section{Logging}
+\label{sec:logging}
+
+The Cineca Agentic Platform implements a sophisticated structured logging framework built on \texttt{structlog}, providing machine-parseable JSON logs for production environments and human-readable console output for development. The logging subsystem is designed to support distributed tracing, request correlation, and efficient log aggregation.
+
+\subsection{Logging Architecture Overview}
+
+The logging architecture follows a unified pipeline pattern that bridges Python's standard \texttt{logging} module, FastAPI/Uvicorn loggers, and \texttt{structlog} processors into a single coherent output stream. This design ensures that all log entries---regardless of their origin---pass through the same processing chain and emit consistent, structured output.
+
+\begin{lstlisting}[language=Python, caption={Logging pipeline initialization (src/logging\_setup.py)}]
+def setup_logging(level: str | int = "INFO") -> None:
+    """
+    Initialize structlog + stdlib logging with a single StreamHandler.
+    Idempotent: calling again replaces handlers with current configuration.
+    """
+    log_level = _coerce_level(level)
+    use_json = _wants_json()
+
+    # Base processors for timestamp and context
+    timestamper = structlog.processors.TimeStamper(fmt="iso", utc=True)
+    pre_chain = [
+        structlog.contextvars.merge_contextvars,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.add_logger_name,
+        timestamper,
+    ]
+
+    # Renderer selection based on environment
+    if use_json:
+        renderer = structlog.processors.JSONRenderer(sort_keys=True)
+    else:
+        renderer = structlog.dev.ConsoleRenderer()
+\end{lstlisting}
+
+\subsection{Environment-Aware Log Formatting}
+
+The logging system automatically selects the appropriate output format based on the deployment environment:
+
+\begin{itemize}
+    \item \textbf{Development Mode}: Uses \texttt{structlog.dev.ConsoleRenderer()} which produces colorized, human-readable output with key-value pairs aligned for easy scanning.
+    
+    \item \textbf{Production Mode}: Uses \texttt{structlog.processors.JSONRenderer()} which emits single-line JSON objects suitable for ingestion by log aggregation systems like Elasticsearch, Splunk, or CloudWatch.
+\end{itemize}
+
+The format selection is determined by the \texttt{LOG\_FORMAT} environment variable or derived from \texttt{APP\_ENV}:
+
+\begin{lstlisting}[language=Python, caption={Log format selection logic}]
+def _wants_json() -> bool:
+    fmt = os.getenv("LOG_FORMAT", "").strip().lower()
+    if fmt in {"json", "console"}:
+        return fmt == "json"
+    env = os.getenv("APP_ENV", "dev").strip().lower()
+    return env in {"prod", "production"}
+\end{lstlisting}
+
+\subsection{Structured Log Schema}
+
+Production JSON logs follow a consistent schema that supports efficient querying and correlation:
+
+\begin{lstlisting}[language=json, caption={Example structured log entry}]
+{
+  "timestamp": "2025-01-15T10:30:45.123456Z",
+  "level": "info",
+  "logger": "src.routers.agents",
+  "event": "http.request",
+  "request_id": "a1b2c3d4e5f6",
+  "trace_id": "00000000000000001234567890abcdef",
+  "method": "POST",
+  "path": "/v1/agent-runs",
+  "status": 200,
+  "duration_s": 0.342156,
+  "user_agent": "Mozilla/5.0...",
+  "client_ip": "10.0.0.1"
+}
+\end{lstlisting}
+
+Key fields in the log schema include:
+
+\begin{table}[ht]
+\centering
+\caption{Standard structured log fields.}
+\label{tab:log-fields}
+\begin{tabularx}{\textwidth}{llX}
+\hline
+\textbf{Field} & \textbf{Type} & \textbf{Description} \\
+\hline
+\texttt{timestamp} & ISO 8601 & UTC timestamp in ISO format with microsecond precision \\
+\texttt{level} & string & Log level (debug, info, warning, error, critical) \\
+\texttt{logger} & string & Fully-qualified logger name \\
+\texttt{event} & string & Semantic event identifier (e.g., ``http.request'', ``agent.run.complete'') \\
+\texttt{request\_id} & string & Correlation ID for request tracing \\
+\texttt{trace\_id} & string & OpenTelemetry trace ID (when tracing is enabled) \\
+\texttt{tenant\_id} & string & Multi-tenant isolation identifier \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Request Context Correlation}
+
+The \texttt{ObservabilityMiddleware} binds request-specific context to all log entries generated during request processing:
+
+\begin{lstlisting}[language=Python, caption={Request context binding in middleware}]
+async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    # Correlation id (prefer incoming header)
+    request_id = request.headers.get("x-request-id") or uuid.uuid4().hex
+    request.state.request_id = request_id
+
+    # Bind logging context
+    bind_contextvars(
+        request_id=request_id,
+        method=request.method,
+        path=_get_route_template(request),
+        client_ip=request.client.host if request.client else None,
+    )
+
+    # Optionally bind OpenTelemetry trace ID
+    trace_id = _current_trace_id()
+    if trace_id:
+        bind_contextvars(trace_id=trace_id)
+
+    try:
+        response = await call_next(request)
+        # ... log completion ...
+    finally:
+        # Clean up per-request context
+        unbind_contextvars("request_id", "method", "path", 
+                          "client_ip", "trace_id")
+
+    return response
+\end{lstlisting}
+
+This pattern ensures that all log entries generated during a request---whether from the router, service layer, repository, or external adapters---include the same correlation context for efficient debugging and tracing.
+
+\subsection{Log Level Configuration}
+
+The platform supports standard Python log levels with sensible defaults:
+
+\begin{table}[ht]
+\centering
+\caption{Log level configuration and use cases.}
+\label{tab:log-levels}
+\begin{tabular}{llp{7cm}}
+\hline
+\textbf{Level} & \textbf{Default Use} & \textbf{Description} \\
+\hline
+\texttt{DEBUG} & Development & Detailed diagnostic information for debugging \\
+\texttt{INFO} & Production & Normal operational events (request completion, job status) \\
+\texttt{WARNING} & Production & Recoverable issues (rate limits, fallback activation) \\
+\texttt{ERROR} & Production & Errors requiring attention (failed requests, exceptions) \\
+\texttt{CRITICAL} & Production & System-level failures (database unavailable, security breach) \\
+\hline
+\end{tabular}
+\end{table}
+
+Log levels are configured through the \texttt{LOG\_LEVEL} environment variable or programmatically during application startup.
+
+\subsection{High-Frequency Log Filtering}
+
+To prevent log noise from overwhelming production systems, the platform implements an \texttt{AccessPathFilter} that suppresses high-frequency access logs for health and metrics endpoints:
+
+\begin{lstlisting}[language=Python, caption={Access log noise filtering}]
+class AccessPathFilter(logging.Filter):
+    """Filter that drops records containing suppressed path fragments."""
+
+    def __init__(self, *paths: str) -> None:
+        super().__init__(name="access-path-filter")
+        self._paths = tuple(p.lower() for p in paths if p)
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if not self._paths:
+            return True
+        targets = [record.getMessage().lower()]
+        # ... extract additional targets from args ...
+        return not any(
+            path in target for target in targets for path in self._paths
+        )
+
+# Applied to uvicorn.access logger
+noise_paths = ["/metrics", "/health", "get /v1/agent-runs/", 
+               "options /v1/"]
+access_filter = AccessPathFilter(*noise_paths)
+logging.getLogger("uvicorn.access").addFilter(access_filter)
+\end{lstlisting}
+
+Additional paths can be configured via the \texttt{UVICORN\_ACCESS\_FILTER\_PATHS} environment variable (comma-separated).
+
+\subsection{Library Noise Reduction}
+
+The platform reduces log noise from third-party libraries by elevating their minimum log level:
+
+\begin{lstlisting}[language=Python, caption={Library log level adjustment}]
+# Reduce noise from common libraries
+for noisy in ("asyncio", "httpx", "urllib3"):
+    logging.getLogger(noisy).setLevel(
+        min(log_level, logging.WARNING)
+    )
+\end{lstlisting}
+
+This ensures that library debug and info messages don't pollute application logs while still capturing warnings and errors that may indicate underlying issues.
+
+\subsection{Logger Unification}
+
+The platform unifies log output from multiple sources by configuring all relevant loggers to use the same handler and formatter:
+
+\begin{lstlisting}[language=Python, caption={Logger unification}]
+# Build ProcessorFormatter for stdlib handlers
+formatter = structlog.stdlib.ProcessorFormatter(
+    processor=renderer,
+    foreign_pre_chain=pre_chain,
+)
+
+# Create single stream handler
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(formatter)
+handler.setLevel(log_level)
+
+# Apply to root and framework loggers
+root = logging.getLogger()
+root.handlers[:] = [handler]
+root.setLevel(log_level)
+
+for name in ("uvicorn", "uvicorn.error", "uvicorn.access", "fastapi"):
+    lg = logging.getLogger(name)
+    lg.handlers[:] = [handler]
+    lg.setLevel(log_level)
+    lg.propagate = False  # Prevent duplicate entries
+\end{lstlisting}
+
+\subsection{Structured Logging Best Practices}
+
+The platform's logging implementation follows several best practices for enterprise observability:
+
+\begin{enumerate}
+    \item \textbf{Semantic Event Names}: Log events use hierarchical, dot-separated names (e.g., \texttt{http.request}, \texttt{agent.run.complete}, \texttt{health.probe.failed}) that enable efficient filtering and aggregation.
+    
+    \item \textbf{Consistent Key Names}: All log entries use snake\_case keys consistently, avoiding abbreviations that may cause confusion.
+    
+    \item \textbf{Bounded Value Sizes}: Large values (request bodies, LLM responses) are truncated or summarized to prevent log storage bloat.
+    
+    \item \textbf{Sensitive Data Exclusion}: Passwords, tokens, and PII are never logged; the PII scrubbing subsystem (covered in Chapter~\ref{ch:security}) operates at a separate layer but complements logging hygiene.
+    
+    \item \textbf{Contextual Enrichment}: Logs include tenant ID, user ID, and request ID where available, enabling multi-dimensional analysis.
+\end{enumerate}
+
+\subsection{Integration with Log Aggregation Systems}
+
+The JSON log format is designed for direct ingestion by modern log aggregation platforms:
+
+\begin{itemize}
+    \item \textbf{Elasticsearch/OpenSearch}: JSON logs can be indexed directly with automatic field type detection.
+    
+    \item \textbf{Grafana Loki}: Labels extracted from JSON fields enable efficient log querying via LogQL.
+    
+    \item \textbf{CloudWatch Logs}: AWS CloudWatch natively parses JSON logs for Insights queries.
+    
+    \item \textbf{Splunk}: JSON logs can be parsed with minimal configuration using Splunk's automatic field extraction.
+\end{itemize}
+
+For containerized deployments, logs are written to stdout and captured by the container runtime (Docker, Kubernetes) for forwarding to the aggregation backend.
+
+\subsection{Audit-Specific Logging}
+
+Beyond operational logging, the platform maintains a separate audit logging channel (covered in Section~\ref{sec:audit-logging}) for security-sensitive events that require immutable, long-term retention. The operational logging system described in this section focuses on diagnostic and performance-related events.
+

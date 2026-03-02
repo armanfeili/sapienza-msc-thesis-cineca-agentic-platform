@@ -1,0 +1,256 @@
+% TODO checklist:
+% - [x] README.md: Use case descriptions, stakeholder roles
+% - [x] Q&A.md: Q2 (Primary use cases), Q3-Q4 (Stakeholders and personas)
+% - [x] ui_agent/ and ui_control_panel/: User interface targeting
+
+\section{Primary Use Cases and Stakeholders}
+\label{sec:use-cases-stakeholders}
+
+The Cineca Agentic Platform is designed to serve diverse user communities with varying technical expertise and operational responsibilities. This section identifies the primary stakeholders and articulates the core use cases that drive the platform's design.
+
+\subsection{Stakeholder Analysis}
+
+The platform addresses the needs of four primary stakeholder groups, each with distinct requirements and interaction patterns.
+
+\subsubsection{End Users (Researchers and Analysts)}
+
+End users represent the primary consumers of the platform's AI agent capabilities. This stakeholder group includes:
+
+\begin{itemize}
+    \item \textbf{Researchers} who need to query complex datasets and knowledge graphs without deep technical expertise in query languages
+    \item \textbf{Data analysts} seeking to synthesize information across multiple sources and generate insights
+    \item \textbf{Domain experts} who require natural language interfaces to interact with computational systems
+    \item \textbf{Students and trainees} learning to navigate research infrastructure
+\end{itemize}
+
+\paragraph{Key Requirements:}
+\begin{itemize}
+    \item Intuitive, conversational interfaces for complex queries
+    \item Clear explanations of how answers were derived
+    \item Reliable, accurate responses grounded in authoritative data sources
+    \item Reasonable response times for interactive use
+    \item Access controls that respect data sensitivity and user authorization
+\end{itemize}
+
+\subsubsection{Administrators and Operators}
+
+Platform administrators and operators are responsible for the day-to-day management and oversight of the system. This group includes:
+
+\begin{itemize}
+    \item \textbf{System administrators} managing infrastructure, deployments, and configurations
+    \item \textbf{Tenant administrators} responsible for their organization's users and resources
+    \item \textbf{Operations engineers} monitoring system health and responding to incidents
+    \item \textbf{Support staff} assisting end users and troubleshooting issues
+\end{itemize}
+
+\paragraph{Key Requirements:}
+\begin{itemize}
+    \item Comprehensive dashboards for monitoring system health and performance
+    \item Tools for managing users, tenants, and access permissions
+    \item Ability to configure LLM providers and model defaults
+    \item Access to audit logs for compliance and troubleshooting
+    \item Mechanisms for controlling resource consumption and enforcing quotas
+\end{itemize}
+
+\subsubsection{Security and Compliance Officers}
+
+Security and compliance stakeholders ensure that the platform meets organizational and regulatory requirements. This group includes:
+
+\begin{itemize}
+    \item \textbf{Security officers} responsible for threat assessment and security policy
+    \item \textbf{Compliance managers} ensuring adherence to data protection regulations
+    \item \textbf{Auditors} requiring evidence of proper access control and data handling
+    \item \textbf{Privacy officers} concerned with personally identifiable information (PII) protection
+\end{itemize}
+
+\paragraph{Key Requirements:}
+\begin{itemize}
+    \item Robust authentication using industry-standard protocols (OIDC/JWT)
+    \item Fine-grained authorization with role-based access control (RBAC)
+    \item Complete audit trails for all significant operations
+    \item PII detection and redaction capabilities
+    \item Multi-tenant isolation guaranteeing data segregation
+    \item Rate limiting to prevent abuse and ensure fair resource allocation
+\end{itemize}
+
+\subsubsection{Developers and Integrators}
+
+Developers and integrators extend the platform's capabilities and integrate it with other systems. This group includes:
+
+\begin{itemize}
+    \item \textbf{Platform developers} building new features and tools
+    \item \textbf{Integration engineers} connecting the platform to external services
+    \item \textbf{Tool authors} creating domain-specific capabilities
+    \item \textbf{DevOps engineers} managing deployment pipelines and infrastructure
+\end{itemize}
+
+\paragraph{Key Requirements:}
+\begin{itemize}
+    \item Well-documented APIs with comprehensive OpenAPI specifications
+    \item Extensible tool framework with clear integration patterns
+    \item Comprehensive test suites and development fixtures
+    \item Support for multiple LLM providers with consistent interfaces
+    \item Deployment flexibility across different infrastructure configurations
+\end{itemize}
+
+\subsection{Core Use Cases}
+
+Based on stakeholder analysis and requirements gathering, the platform addresses five primary use cases.
+
+\subsubsection{UC1: Conversational Agent Interaction (Chat)}
+
+\paragraph{Description:} End users engage in natural language conversations with AI agents to obtain information, perform tasks, or receive guidance. The agent maintains conversational context across multiple turns and can invoke tools as needed.
+
+\paragraph{Actors:} End Users
+
+\paragraph{Flow:}
+\begin{enumerate}
+    \item User authenticates and accesses the chat interface
+    \item User enters a natural language prompt or question
+    \item System classifies intent and routes to appropriate processing pipeline
+    \item Agent reasons about the query, potentially invoking tools or querying data sources
+    \item Agent generates a response with supporting evidence
+    \item User reviews response and may continue the conversation
+    \item All interactions are logged for audit purposes
+\end{enumerate}
+
+\paragraph{Success Criteria:}
+\begin{itemize}
+    \item Response accuracy meets domain-specific quality thresholds
+    \item Response latency remains within acceptable bounds (typically under 30 seconds for complex queries)
+    \item Conversational context is maintained across session turns
+\end{itemize}
+
+\subsubsection{UC2: Knowledge Graph Question Answering (Graph Q\&A)}
+
+\paragraph{Description:} Users query structured knowledge graphs using natural language, with the system automatically translating queries into Cypher and executing them against the graph database.
+
+\paragraph{Actors:} End Users, Researchers
+
+\paragraph{Flow:}
+\begin{enumerate}
+    \item User submits a natural language question about entities or relationships
+    \item System normalizes the query and extracts key entities
+    \item Natural Language to Cypher (NL-to-Cypher) pipeline generates a Cypher query
+    \item Safety validation ensures query compliance (read-only, tenant-scoped, bounded)
+    \item Query executes against Memgraph graph database
+    \item Results are summarized into a natural language response
+    \item Query, results, and summary are logged for audit
+\end{enumerate}
+
+\paragraph{Success Criteria:}
+\begin{itemize}
+    \item Generated Cypher queries are syntactically correct and semantically appropriate
+    \item Safety validation rejects all unauthorized or potentially harmful queries
+    \item Results accurately reflect the underlying graph data
+    \item Response includes appropriate citations to source entities
+\end{itemize}
+
+\subsubsection{UC3: Long-Running Background Jobs}
+
+\paragraph{Description:} Users and systems submit tasks that require extended processing times, receiving real-time progress updates through event streaming.
+
+\paragraph{Actors:} End Users, Administrators, Automated Systems
+
+\paragraph{Flow:}
+\begin{enumerate}
+    \item Client submits a job request with type and parameters
+    \item System validates request and creates job record with unique identifier
+    \item Job enters queue for worker processing
+    \item Worker picks up job and begins execution
+    \item Progress events are streamed via Server-Sent Events (SSE)
+    \item On completion, final results are persisted and client notified
+    \item Job lifecycle events are recorded for audit
+\end{enumerate}
+
+\paragraph{Success Criteria:}
+\begin{itemize}
+    \item Jobs execute reliably without data loss
+    \item Progress updates reflect actual execution state
+    \item Cancellation requests are honored promptly
+    \item Failed jobs provide actionable error information
+\end{itemize}
+
+\subsubsection{UC4: System Monitoring and Administration}
+
+\paragraph{Description:} Administrators monitor system health, manage configurations, and perform operational tasks through dedicated management interfaces.
+
+\paragraph{Actors:} Administrators, Operators
+
+\paragraph{Flow:}
+\begin{enumerate}
+    \item Administrator authenticates with elevated privileges
+    \item Dashboard displays real-time health metrics and KPIs
+    \item Administrator reviews component status (databases, LLM providers, workers)
+    \item Administrator performs management actions (tenant configuration, model updates, etc.)
+    \item Changes are validated and applied with appropriate logging
+    \item System confirms successful configuration changes
+\end{enumerate}
+
+\paragraph{Success Criteria:}
+\begin{itemize}
+    \item Health information is accurate and current
+    \item Configuration changes take effect without system restart where possible
+    \item Administrative actions are fully audited
+    \item Role-based permissions prevent unauthorized operations
+\end{itemize}
+
+\subsubsection{UC5: Tool Discovery and Invocation}
+
+\paragraph{Description:} Users and agents discover available tools, understand their capabilities, and invoke them with appropriate parameters.
+
+\paragraph{Actors:} End Users, Agents, Developers
+
+\paragraph{Flow:}
+\begin{enumerate}
+    \item Client requests list of available tools
+    \item System returns tool metadata filtered by caller's permissions
+    \item Client retrieves detailed schema for specific tool
+    \item Client constructs invocation request with validated parameters
+    \item System authorizes invocation based on RBAC and tool-specific policies
+    \item Tool executes and returns structured results
+    \item Invocation details are logged for audit
+\end{enumerate}
+
+\paragraph{Success Criteria:}
+\begin{itemize}
+    \item Tool discovery returns only authorized tools
+    \item Schema validation prevents invalid invocations
+    \item Tool execution respects resource limits and timeouts
+    \item Results conform to documented output schemas
+\end{itemize}
+
+\subsection{Use Case Prioritization}
+
+Table~\ref{tab:use-case-priority} summarizes the relative priority and frequency of each use case, informing architectural decisions throughout the platform design.
+
+\begin{table}[ht]
+\centering
+\caption{Use case prioritization matrix.}
+\label{tab:use-case-priority}
+\small
+\begin{tabular}{llcc}
+\hline
+\textbf{Use Case} & \textbf{Primary Stakeholder} & \textbf{Priority} & \textbf{Frequency} \\
+\hline
+UC1: Chat & End Users & High & Very High \\
+UC2: Graph Q\&A & End Users, Researchers & High & High \\
+UC3: Background Jobs & All & Medium & Medium \\
+UC4: Monitoring/Admin & Administrators & High & Medium \\
+UC5: Tool Invocation & Agents, Developers & High & Very High \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{User Interface Mapping}
+
+The platform provides two distinct user interfaces to address the diverse needs identified in stakeholder analysis:
+
+\begin{description}
+    \item[Agent Chat UI (Next.js)] A modern, responsive web application targeting end users for conversational interactions. Built with Next.js, React, and TypeScript, this interface provides real-time message display, step-by-step execution visualization, and model selection capabilities.
+    
+    \item[Control Panel UI (Streamlit)] A comprehensive administrative dashboard targeting operators and administrators. Built with Streamlit for rapid development and Python integration, this interface provides system monitoring, job management, tool exploration, and configuration capabilities.
+\end{description}
+
+This dual-interface strategy ensures that each stakeholder group receives an experience optimized for their specific workflows and technical expectations.
+

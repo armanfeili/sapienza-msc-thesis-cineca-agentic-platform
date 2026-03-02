@@ -1,0 +1,167 @@
+% TODO checklist:
+% - [x] README.md: Challenges addressed, gap identification
+% - [x] Q&A.md: Q41 (Strengths/weaknesses), Q46 (Technical debt), Q50 (SOTA gaps)
+% - [x] sapthesis-doc.tex: Abstract problem framing
+
+\section{Problem Statement}
+\label{sec:problem-statement}
+
+The development of production-ready AI agent systems for enterprise environments presents a complex set of interrelated challenges. This section formally articulates the problem space that the Cineca Agentic Platform addresses.
+
+\subsection{The Production Deployment Gap}
+
+\begin{quote}
+\textbf{Problem Statement:} \emph{Existing AI agent frameworks, while demonstrating impressive capabilities in research and prototyping contexts, lack the comprehensive security, governance, observability, and operational features required for deployment in enterprise and research institution environments.}
+\end{quote}
+
+This gap manifests across multiple dimensions, each presenting distinct technical challenges.
+
+\subsection{Challenge 1: Security and Access Control}
+
+Enterprise environments require sophisticated security controls that extend far beyond simple authentication. Specific challenges include:
+
+\paragraph{Multi-Layer Authentication:}
+Organizations typically employ federated identity systems with multiple identity providers. AI agent platforms must integrate seamlessly with these systems using standards like OpenID Connect (OIDC) while maintaining security across different trust domains.
+
+\paragraph{Fine-Grained Authorization:}
+Different users require different levels of access to data, tools, and operations. Role-Based Access Control (RBAC) must be comprehensive enough to express complex permission models while remaining manageable. The challenge intensifies when AI agents invoke tools on behalf of users---the agent's actions must respect the invoking user's permissions.
+
+\paragraph{Tool-Level Security:}
+MCP tools that access databases, invoke external services, or modify system state present security risks if not properly controlled. Each tool invocation must be authorized based on the caller's identity, the tool's sensitivity, and the specific operation being performed.
+
+\paragraph{Audit and Compliance:}
+Regulatory frameworks (GDPR, HIPAA, institutional policies) require complete audit trails of data access and system operations. Every agent interaction, tool invocation, and data query must be logged in tamper-evident fashion with sufficient context for compliance verification.
+
+\subsection{Challenge 2: Multi-Tenancy Requirements}
+
+Research institutions and enterprises typically serve multiple distinct user communities that must be isolated from one another:
+
+\paragraph{Data Isolation:}
+Each tenant's data must be invisible and inaccessible to other tenants. This isolation must be enforced at the database level, not merely at the application level, to prevent accidental or malicious data leakage.
+
+\paragraph{Configuration Isolation:}
+Different tenants may require different default configurations---preferred LLM models, rate limits, tool access policies, and operational parameters. The platform must support per-tenant customization while maintaining system-wide defaults.
+
+\paragraph{Resource Isolation:}
+Tenants should not be able to monopolize shared resources (API rate limits, LLM quotas, database connections) to the detriment of other tenants. Fair resource allocation requires explicit quota management.
+
+\paragraph{Administrative Delegation:}
+Organizations often delegate tenant administration to designated administrators within each tenant. The platform must support this administrative hierarchy without compromising cross-tenant isolation.
+
+\subsection{Challenge 3: Knowledge Graph Integration}
+
+While many AI agent frameworks support document retrieval through Retrieval-Augmented Generation (RAG), structured knowledge stored in graph databases presents different integration challenges:
+
+\paragraph{Natural Language to Query Translation:}
+Users expect to query knowledge graphs using natural language, yet graph databases require structured query languages (Cypher for property graphs). Translating natural language to correct, efficient, and safe graph queries is non-trivial.
+
+\paragraph{Query Safety:}
+Unlike read-only document retrieval, graph databases support mutations. AI-generated queries must be validated to ensure they:
+\begin{itemize}
+    \item Contain only read operations (no writes or deletes)
+    \item Respect tenant boundaries (queries cannot access other tenants' data)
+    \item Have bounded execution time and result size (preventing denial of service)
+    \item Use valid syntax and semantics
+\end{itemize}
+
+\paragraph{Result Synthesis:}
+Graph query results are often complex structures (paths, aggregations, multiple related entities). These results must be synthesized into coherent natural language responses that accurately represent the underlying data.
+
+\subsection{Challenge 4: Operational Reliability}
+
+Production deployments require operational excellence that research prototypes rarely address:
+
+\paragraph{Health Monitoring:}
+Systems must expose comprehensive health information through Kubernetes-compatible probes (liveness, readiness, startup) and detailed component health endpoints. This information drives automated recovery and load balancing decisions.
+
+\paragraph{Observability:}
+The three pillars of observability---metrics, logs, and traces---must be implemented comprehensively:
+\begin{itemize}
+    \item \textbf{Metrics:} Prometheus-compatible metrics for request rates, latencies, error rates, resource utilization, and domain-specific indicators
+    \item \textbf{Logs:} Structured logging with correlation IDs enabling request tracing across service boundaries
+    \item \textbf{Traces:} Distributed tracing with OpenTelemetry for end-to-end request visualization
+\end{itemize}
+
+\paragraph{Graceful Degradation:}
+Component failures (database unavailability, LLM provider outages, network partitions) should not cause complete system failure. Circuit breakers, fallback strategies, and graceful degradation paths must be designed into the architecture.
+
+\paragraph{Long-Running Operations:}
+AI agent tasks may run for extended periods. The system must support:
+\begin{itemize}
+    \item Asynchronous job submission with unique identifiers
+    \item Real-time progress streaming
+    \item Cooperative cancellation
+    \item Worker heartbeats and failure recovery
+\end{itemize}
+
+\subsection{Challenge 5: LLM Provider Management}
+
+Depending on a single LLM provider creates operational risk and limits flexibility:
+
+\paragraph{Provider Abstraction:}
+Applications should not be tightly coupled to specific LLM providers. A consistent interface must abstract provider-specific details while supporting diverse providers (OpenAI, Azure OpenAI, Ollama, HuggingFace, etc.).
+
+\paragraph{Resilience:}
+LLM providers experience outages, rate limiting, and performance degradation. The platform must implement:
+\begin{itemize}
+    \item Circuit breakers to prevent cascade failures
+    \item Provider fallback chains for automatic failover
+    \item Retry strategies with exponential backoff
+    \item Health monitoring per provider
+\end{itemize}
+
+\paragraph{Cost Management:}
+LLM API calls incur costs that can accumulate rapidly. The platform should:
+\begin{itemize}
+    \item Track token consumption and estimated costs
+    \item Support budget limits and alerts
+    \item Enable cost allocation to tenants and projects
+    \item Optimize by caching responses where appropriate
+\end{itemize}
+
+\paragraph{Model Selection:}
+Different tasks may require different models (faster models for simple tasks, more capable models for complex reasoning). The platform should support:
+\begin{itemize}
+    \item Dynamic model selection based on task characteristics
+    \item Per-tenant default model configuration
+    \item Model capability matching (context length, function calling support)
+\end{itemize}
+
+\subsection{Challenge 6: Tool Ecosystem Extensibility}
+
+A valuable AI agent platform must be extensible with domain-specific tools:
+
+\paragraph{Standardized Tool Protocol:}
+Tools should follow a consistent protocol (MCP) enabling discovery, schema validation, invocation, and result handling. This consistency reduces integration friction and improves maintainability.
+
+\paragraph{Tool Authorization:}
+Different tools have different sensitivity levels. The platform must support per-tool authorization policies that integrate with the overall RBAC system.
+
+\paragraph{Tool Lifecycle:}
+Tools must be discoverable, describable (via schemas), invokable, and auditable. The tool framework should support this complete lifecycle without requiring modifications to core platform code.
+
+\subsection{Problem Summary}
+
+The challenges described above are not merely technical inconveniences---they represent fundamental barriers to deploying AI agents in production enterprise environments. Existing frameworks typically address one or two of these challenges while leaving others unaddressed or delegated to implementers.
+
+\begin{table}[ht]
+\centering
+\caption{Challenge coverage in existing frameworks versus requirements.}
+\label{tab:challenge-coverage}
+\small
+\begin{tabular}{lccccc}
+\hline
+\textbf{Challenge} & \textbf{LangChain} & \textbf{LlamaIndex} & \textbf{AutoGen} & \textbf{Semantic Kernel} & \textbf{Required} \\
+\hline
+Security/RBAC & Partial & Partial & No & Partial & Full \\
+Multi-Tenancy & No & No & No & No & Full \\
+Graph Integration & Plugin & Plugin & No & No & Native \\
+Observability & Plugin & Plugin & No & Partial & Native \\
+Job System & No & No & No & No & Native \\
+Provider Resilience & No & No & No & Partial & Native \\
+\hline
+\end{tabular}
+\end{table}
+
+This thesis addresses the problem of providing a comprehensive, integrated solution that addresses all six challenge areas while remaining extensible and maintainable. The solution must be production-ready---not a proof-of-concept---capable of supporting real workloads in the CINECA environment.
+

@@ -1,0 +1,413 @@
+% =============================================================================
+% SECTION: Agent Orchestration Frameworks
+% Chapter: Background and Related Work
+% =============================================================================
+%
+% TODO Checklist (verified in codebase/docs):
+% [x] Reviewed Q&A.md Q35 for comprehensive SOTA comparison matrix
+% [x] Reviewed Q&A.md Q50 for consolidated advantages/disadvantages vs frameworks
+% [x] Reviewed README.md for platform positioning and feature summary
+% [x] Reviewed existing comparison table in sapthesis-doc.tex (preserved and extended)
+% [x] Cross-referenced LangChain, LlamaIndex, AutoGen, CrewAI, Semantic Kernel docs
+% [x] Reviewed src/services/orchestrator.py for orchestration design patterns
+%
+% =============================================================================
+
+\section{Agent Orchestration Frameworks}
+\label{sec:orchestration-frameworks}
+
+The proliferation of LLM-based agents has spawned a diverse ecosystem of frameworks, libraries, and platforms designed to simplify agent development. This section surveys the major orchestration frameworks, analyzes their architectural approaches, and positions the Cineca Agentic Platform within this landscape.
+
+\subsection{Overview of the Framework Landscape}
+
+Agent orchestration frameworks can be categorized along several dimensions:
+
+\paragraph{Abstraction Level}
+Frameworks vary in the level of abstraction they provide:
+\begin{itemize}
+    \item \textbf{Low-level libraries}: Provide composable primitives (chains, retrievers, prompt templates) that developers assemble into applications.
+    \item \textbf{Agent runtimes}: Provide execution environments for agent loops with built-in reasoning patterns.
+    \item \textbf{Full-stack platforms}: Provide end-to-end infrastructure including APIs, persistence, security, and observability.
+\end{itemize}
+
+\paragraph{Deployment Model}
+Frameworks differ in their deployment assumptions:
+\begin{itemize}
+    \item \textbf{In-process libraries}: Run within the application's process, suitable for embedding in existing systems.
+    \item \textbf{Standalone services}: Run as separate processes or containers, providing API-based access.
+    \item \textbf{Cloud services}: Run as managed services, abstracting infrastructure entirely.
+\end{itemize}
+
+\paragraph{Scope of Concerns}
+Frameworks address different subsets of the concerns in agent development:
+\begin{itemize}
+    \item Prompting and chain composition
+    \item Tool definition and invocation
+    \item Memory and state management
+    \item Multi-agent collaboration
+    \item Production operations (auth, logging, monitoring)
+\end{itemize}
+
+Understanding these dimensions is essential for selecting appropriate technologies and for appreciating where the Cineca Agentic Platform fits in the ecosystem.
+
+\subsection{LangChain}
+
+LangChain~% TODO: add bibitem for LangChain
+is arguably the most widely adopted framework for building LLM-powered applications. Launched in late 2022, it has grown into a comprehensive ecosystem covering the full lifecycle of LLM application development.
+
+\paragraph{Architecture}
+LangChain is structured around several core abstractions:
+\begin{itemize}
+    \item \textbf{Models}: Wrappers around LLMs (chat models, completion models, embeddings) from various providers.
+    \item \textbf{Prompts}: Templates for constructing prompts with variable substitution and formatting.
+    \item \textbf{Chains}: Compositions of multiple processing steps, from simple sequential chains to complex directed acyclic graphs.
+    \item \textbf{Agents}: Autonomous entities that use LLMs to decide which actions to take, implemented via various agent types (ReAct, OpenAI functions, structured chat, etc.).
+    \item \textbf{Memory}: Systems for maintaining conversational context across interactions.
+    \item \textbf{Retrievers}: Components for fetching relevant documents from various sources (vector stores, databases, web search).
+    \item \textbf{Tools}: Interfaces to external capabilities that agents can invoke.
+\end{itemize}
+
+\paragraph{Strengths}
+LangChain's primary strengths include:
+\begin{itemize}
+    \item \textbf{Extensive integrations}: Over 100 integrations with LLM providers, vector stores, document loaders, and external services.
+    \item \textbf{Flexible composition}: The chain abstraction allows building complex pipelines through composition.
+    \item \textbf{Active community}: Large community contributing examples, integrations, and improvements.
+    \item \textbf{Multiple agent types}: Support for various agent architectures including ReAct, Plan-and-Execute, and OpenAI function-based agents.
+    \item \textbf{LangSmith}: A companion product for monitoring, debugging, and evaluating LLM applications (though proprietary and paid).
+\end{itemize}
+
+\paragraph{Limitations for Enterprise Use}
+Despite its popularity, LangChain presents challenges for enterprise deployments:
+\begin{itemize}
+    \item \textbf{No built-in multi-tenancy}: Tenant isolation must be implemented by the application developer.
+    \item \textbf{Limited production infrastructure}: Authentication, authorization, rate limiting, and audit logging are not provided.
+    \item \textbf{In-process execution}: LangChain is designed as a library, requiring additional infrastructure for standalone service deployment.
+    \item \textbf{Abstraction overhead}: The many layers of abstraction can make debugging difficult and introduce performance overhead.
+    \item \textbf{Rapid API changes}: The framework has undergone significant API changes, creating upgrade challenges.
+\end{itemize}
+
+\paragraph{LangGraph Extension}
+LangGraph~% TODO: add bibitem for LangGraph
+is a newer addition to the LangChain ecosystem, providing a graph-based orchestration layer for building stateful, multi-actor applications. It addresses some limitations of basic LangChain agents by providing:
+\begin{itemize}
+    \item Explicit state machines for agent control flow
+    \item Support for long-running workflows with persistence
+    \item Human-in-the-loop interaction patterns
+    \item Streaming of intermediate results
+\end{itemize}
+
+LangGraph represents a step toward production-ready agent infrastructure, though it still relies on external systems for authentication, multi-tenancy, and operational concerns.
+
+\subsection{LlamaIndex}
+
+LlamaIndex~% TODO: add bibitem for LlamaIndex
+(formerly GPT Index) focuses on the data aspects of LLM applications, providing sophisticated tools for ingesting, indexing, and querying data with LLMs.
+
+\paragraph{Core Concepts}
+LlamaIndex is built around:
+\begin{itemize}
+    \item \textbf{Data connectors}: Loaders for 160+ data sources including files, databases, APIs, and web pages.
+    \item \textbf{Indexes}: Structures for organizing data for efficient retrieval (vector indexes, tree indexes, keyword indexes, knowledge graphs).
+    \item \textbf{Query engines}: Components that combine retrieval with LLM-based synthesis to answer questions.
+    \item \textbf{Agents}: LLM-powered agents that can use tools including query engines over indexes.
+    \item \textbf{Observability}: Integration with monitoring tools for debugging and optimization.
+\end{itemize}
+
+\paragraph{Strengths}
+LlamaIndex excels at:
+\begin{itemize}
+    \item \textbf{Data ingestion}: Comprehensive support for extracting and processing data from diverse sources.
+    \item \textbf{Retrieval strategies}: Sophisticated retrieval mechanisms including recursive retrieval, auto-merging, and query transformation.
+    \item \textbf{Response synthesis}: Multiple strategies for combining retrieved context with LLM generation.
+    \item \textbf{Knowledge graphs}: Support for building and querying knowledge graph indexes.
+\end{itemize}
+
+\paragraph{Limitations}
+For enterprise agent platforms, LlamaIndex has limitations:
+\begin{itemize}
+    \item \textbf{RAG-centric}: Primary focus is on retrieval-augmented generation rather than general agent orchestration.
+    \item \textbf{No production infrastructure}: Like LangChain, it is a library without built-in authentication, multi-tenancy, or operational features.
+    \item \textbf{Limited agent capabilities}: Agent support is less mature than in agent-focused frameworks.
+\end{itemize}
+
+\subsection{Microsoft Semantic Kernel}
+
+Semantic Kernel~% TODO: add bibitem for SemanticKernel
+is Microsoft's framework for integrating LLMs into applications, with a focus on enterprise scenarios and Azure ecosystem integration.
+
+\paragraph{Design Philosophy}
+Semantic Kernel takes a plugin-oriented approach:
+\begin{itemize}
+    \item \textbf{Skills/Plugins}: Reusable units of functionality, either semantic (prompt-based) or native (code-based).
+    \item \textbf{Planners}: Components that create execution plans from high-level goals using available skills.
+    \item \textbf{Memory}: Semantic memory for storing and retrieving information using embeddings.
+    \item \textbf{Connectors}: Integrations with LLM providers, vector databases, and Azure services.
+\end{itemize}
+
+\paragraph{Strengths}
+Semantic Kernel offers:
+\begin{itemize}
+    \item \textbf{Multi-language support}: SDKs for C\#, Python, and Java, enabling use in diverse technology stacks.
+    \item \textbf{Enterprise focus}: Designed with enterprise integration in mind, including Azure AD authentication.
+    \item \textbf{Planner abstractions}: Sophisticated planners (Sequential, Stepwise, Action) for agent behavior.
+    \item \textbf{Microsoft ecosystem}: Deep integration with Azure OpenAI, Microsoft 365, and other Microsoft services.
+\end{itemize}
+
+\paragraph{Limitations}
+Potential limitations include:
+\begin{itemize}
+    \item \textbf{Azure affinity}: Strongest when used with Azure services; less mature for other cloud providers.
+    \item \textbf{Smaller community}: Less community momentum compared to LangChain.
+    \item \textbf{No built-in multi-tenancy}: Multi-tenant isolation must be implemented by the application.
+\end{itemize}
+
+\subsection{OpenAI Assistants API}
+
+OpenAI's Assistants API~% TODO: add bibitem for OpenAIAssistants
+provides a managed agent service with built-in capabilities for tool use, file handling, and code execution.
+
+\paragraph{Capabilities}
+The Assistants API offers:
+\begin{itemize}
+    \item \textbf{Function calling}: Native support for invoking developer-defined functions.
+    \item \textbf{Code interpreter}: Sandboxed Python execution environment for data analysis and computation.
+    \item \textbf{File search}: Vector-based retrieval over uploaded documents.
+    \item \textbf{Threads}: Managed conversation history with automatic context management.
+    \item \textbf{Streaming}: Real-time streaming of assistant responses.
+\end{itemize}
+
+\paragraph{Strengths}
+As a managed service, the Assistants API provides:
+\begin{itemize}
+    \item \textbf{Zero infrastructure}: No need to deploy or manage agent infrastructure.
+    \item \textbf{Native capabilities}: Code execution and file search are built-in, not requiring custom implementation.
+    \item \textbf{Optimized performance}: OpenAI optimizes the underlying infrastructure for their models.
+\end{itemize}
+
+\paragraph{Limitations}
+However, the managed approach has significant limitations for enterprise use:
+\begin{itemize}
+    \item \textbf{Vendor lock-in}: Only OpenAI models can be used; no support for open-weight or on-premises models.
+    \item \textbf{Data sovereignty}: All data is processed on OpenAI's infrastructure in the US, which may violate data residency requirements.
+    \item \textbf{Limited customization}: The agent behavior is controlled by OpenAI's implementation, limiting customization.
+    \item \textbf{Usage-based pricing}: Costs can be unpredictable for high-volume deployments.
+    \item \textbf{No multi-tenancy}: Organization-level isolation only; tenant-level isolation requires separate accounts.
+\end{itemize}
+
+\subsection{AutoGen}
+
+AutoGen~% TODO: add bibitem for AutoGen
+is Microsoft Research's framework for building multi-agent systems where multiple AI agents collaborate to solve complex tasks.
+
+\paragraph{Multi-Agent Paradigm}
+AutoGen is built around the concept of conversable agents that can communicate with each other:
+\begin{itemize}
+    \item \textbf{AssistantAgent}: An AI agent backed by an LLM.
+    \item \textbf{UserProxyAgent}: An agent that can execute code and represent human users.
+    \item \textbf{GroupChat}: A coordination mechanism for multi-agent conversations.
+    \item \textbf{Agent compositions}: Patterns for hierarchical, sequential, and parallel agent collaboration.
+\end{itemize}
+
+\paragraph{Strengths}
+AutoGen excels at:
+\begin{itemize}
+    \item \textbf{Multi-agent workflows}: Native support for agent-to-agent communication and collaboration.
+    \item \textbf{Code execution}: Docker-based sandboxed code execution for safety.
+    \item \textbf{Human-in-the-loop}: Built-in patterns for human approval and intervention.
+    \item \textbf{Research flexibility}: Designed for exploring novel multi-agent architectures.
+\end{itemize}
+
+\paragraph{Limitations}
+AutoGen's limitations include:
+\begin{itemize}
+    \item \textbf{Research-oriented}: Designed for research and experimentation rather than production deployment.
+    \item \textbf{No production infrastructure}: Lacks authentication, authorization, persistence, and operational tooling.
+    \item \textbf{In-memory state}: Agent state is not persisted, limiting use for long-running workflows.
+\end{itemize}
+
+\subsection{CrewAI}
+
+CrewAI~% TODO: add bibitem for CrewAI
+is a framework specifically designed for orchestrating teams of AI agents with defined roles and collaborative processes.
+
+\paragraph{Core Abstractions}
+CrewAI introduces:
+\begin{itemize}
+    \item \textbf{Agents}: Autonomous entities with defined roles, goals, and backstories.
+    \item \textbf{Tasks}: Specific assignments given to agents with expected outputs.
+    \item \textbf{Crews}: Teams of agents working together on related tasks.
+    \item \textbf{Processes}: Coordination patterns (sequential, hierarchical) for task execution.
+    \item \textbf{Tools}: Capabilities that agents can use to accomplish tasks.
+\end{itemize}
+
+\paragraph{Strengths}
+CrewAI provides:
+\begin{itemize}
+    \item \textbf{Role-based agents}: Intuitive model for defining specialized agent personas.
+    \item \textbf{Task delegation}: Built-in support for agents delegating work to other agents.
+    \item \textbf{Process management}: Explicit control over how agents coordinate.
+    \item \textbf{Simplicity}: Relatively simple API compared to more complex frameworks.
+\end{itemize}
+
+\paragraph{Limitations}
+Like other multi-agent frameworks:
+\begin{itemize}
+    \item \textbf{Limited production readiness}: No built-in authentication, persistence, or operational features.
+    \item \textbf{No multi-tenancy}: All executions run in a shared context.
+    \item \textbf{Basic observability}: Limited metrics and logging capabilities.
+\end{itemize}
+
+% =============================================================================
+% State-of-the-Art Comparison Matrix (from sapthesis-doc.tex)
+% =============================================================================
+
+\subsection{State-of-the-Art Comparison Matrix}
+
+This thesis focuses on the design and implementation of an enterprise-grade agent platform.
+To position the Cineca Agentic Platform within the current ecosystem, it is important to
+distinguish between (i) \,\textbf{protocol specifications}, (ii) \,\textbf{tool servers},
+and (iii) \,\textbf{agent/orchestration libraries}.
+
+\paragraph{Framing: platform vs. protocol vs. library}
+\begin{itemize}
+    \item \textbf{Model Context Protocol (MCP)} is a \emph{standard} describing how an AI client discovers and calls tools (e.g., \texttt{tools/list}, \texttt{tools/call}). MCP is not an agent runtime by itself.
+    \item \textbf{GitHub MCP Server} and \textbf{neo4j-contrib/mcp-neo4j} are \emph{MCP servers}: they expose domain-specific capabilities as MCP tools.
+    \item \textbf{LangChain} and \textbf{LlamaIndex} primarily provide \emph{in-process components} (chains, retrievers, indices) that can be composed into applications.
+    \item \textbf{LangGraph} is a low-level \emph{orchestration runtime} for long-running, stateful agent workflows.
+    \item The \textbf{Cineca Agentic Platform} is a \emph{full-stack backend platform} that integrates orchestration, tools, persistence, governance (auth/RBAC/tenancy), background jobs, and observability.
+\end{itemize}
+
+\paragraph{Decision summary}
+The Cineca Agentic Platform is strongest when the requirements include enterprise concerns
+such as multi-tenancy, centralized RBAC, audit logging, rate limiting, operational monitoring,
+and long-running background jobs with streaming progress. In contrast, MCP servers excel when
+the primary requirement is \emph{standardized tool interoperability} with MCP-capable clients,
+and libraries such as LangChain/LlamaIndex excel for rapid prototyping inside a single application.
+
+\begin{table}[ht]
+\centering
+\caption{High-level comparison of Cineca Agentic Platform vs.\ representative protocol/server/library alternatives.}
+\label{tab:sota-comparison}
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccccc}
+    \hline
+    Capability & Cineca & MCP & GitHub MCP & mcp-neo4j & GraphCypherQA & KG Index & LangGraph (+Neo4j)\\
+    \hline
+Category & Platform & Protocol & Tool server & Tool server & Library chain & Library index & Orchestration \\
+End-to-end backend API & Y & N & N & N & N & N & P \\
+Multi-tenancy & Y & N & N & N & N & N & P \\
+Central RBAC/governance & Y & P & P & P & N & N & P \\
+Audit trail (runs/tools) & Y & P & P & P & N & N & P \\
+Rate limiting built-in & Y & P & P & P & N & N & P \\
+Background jobs/workers & Y & N & N & N & N & N & P \\
+Streaming progress (SSE/streaming) & Y & P & P & Y & N & N & P \\
+Graph DB integration & Y (Memgraph) & N & N & Y (Neo4j) & Y (Neo4j) & P & Y (Neo4j) \\
+NL$\rightarrow$Cypher workflow & Y (pipeline) & N & N & Y (tools) & Y (chain) & N & P \\
+MCP interoperability (JSON-RPC) & P & Y & Y & Y & N & N & N \\
+Observability (metrics/traces/health) & Y & N & P & P & P & P & P \\
+    \hline
+\end{tabular}%
+}
+\vspace{2mm}
+\caption*{Legend: Y = yes (built-in), P = partial/depends on integration, N = not in scope.}
+\end{table}
+
+\paragraph{Strengths of Cineca relative to common frameworks}
+Compared to typical agent/RAG frameworks, Cineca provides a larger fraction of production requirements
+\emph{as first-class features}: tenant isolation, centralized permissions, auditability, rate limiting,
+and operational observability. This is especially relevant for deployments in research or enterprise environments
+where compliance, traceability, and controlled tool execution are required.
+
+\paragraph{Trade-offs}
+The main trade-off is scope: a full platform is heavier than embedding a single chain/index in a Python application.
+Moreover, Cineca's tooling surface is ``MCP-style'' (tool discovery and invocation), but strict MCP interoperability
+requires implementing the MCP JSON-RPC transport and contracts; similarly, Cineca's graph subsystem targets Memgraph,
+whereas Neo4j-centered ecosystems (e.g., Aura, Neo4j-specific tooling) may be better served by Neo4j-native components.
+
+\subsection{Extended Framework Comparison}
+
+To provide a more comprehensive comparison, Table~\ref{tab:extended-comparison} presents additional dimensions of comparison across the major frameworks discussed in this section.
+
+\begin{table}[ht]
+\centering
+\caption{Extended comparison of agent orchestration frameworks across production readiness dimensions.}
+\label{tab:extended-comparison}
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccc}
+    \hline
+    Capability & Cineca & LangChain & LlamaIndex & Semantic Kernel & OpenAI Assistants & AutoGen & CrewAI \\
+    \hline
+Multi-Agent Support & N & P & P & P & N & Y & Y \\
+RAG Pipeline & N & Y & Y & P & Y & N & N \\
+Memory Systems & P & Y & Y & Y & Y & P & P \\
+Real-time Streaming & P & Y & Y & Y & Y & P & P \\
+Multi-Tenancy & Y & N & N & P & P & N & N \\
+Enterprise Auth (OIDC/RBAC) & Y & N & N & Y & P & N & N \\
+Observability Stack & Y & P & P & P & N & N & N \\
+Graph Integration & Y & P & P & N & N & N & N \\
+Self-Hosted Deployment & Y & Y & Y & P & N & Y & Y \\
+Production Ready & Y & P & P & Y & Y & N & N \\
+    \hline
+\end{tabular}%
+}
+\vspace{2mm}
+\caption*{Legend: Y = yes (built-in/strong), P = partial/community support, N = not available.}
+\end{table}
+
+\paragraph{Key Observations}
+
+Several patterns emerge from this comparison:
+
+\begin{enumerate}
+    \item \textbf{Library vs.\ Platform Trade-off}: Frameworks like LangChain and LlamaIndex offer flexibility and extensive integrations but require significant additional work to deploy in production. Platforms like the Cineca Agentic Platform provide more out-of-the-box but are more opinionated.
+    
+    \item \textbf{Multi-Agent Gap}: While AutoGen and CrewAI specialize in multi-agent collaboration, they lack production infrastructure. The Cineca Agentic Platform focuses on single-agent orchestration with robust production features, leaving multi-agent as a future extension.
+    
+    \item \textbf{Enterprise Features}: Authentication, authorization, multi-tenancy, and audit logging are consistently missing from research-oriented frameworks. These features require significant implementation effort and are often overlooked in academic settings.
+    
+    \item \textbf{Observability Deficit}: Most frameworks provide basic logging but lack integrated metrics, tracing, and health checking. Production deployments typically require adding third-party observability solutions.
+    
+    \item \textbf{Graph Database Niche}: Native graph database integration with natural language interfaces remains relatively rare. The Cineca Agentic Platform's Memgraph integration and NL-to-Cypher pipeline address a gap in the ecosystem.
+\end{enumerate}
+
+\subsection{Positioning of the Cineca Agentic Platform}
+
+Based on this analysis, the Cineca Agentic Platform occupies a distinct position in the framework landscape:
+
+\paragraph{Target Audience}
+The platform is designed for:
+\begin{itemize}
+    \item Enterprise organizations requiring production-grade agent infrastructure
+    \item Research institutions needing multi-tenant access to AI capabilities
+    \item HPC centers offering AI services to diverse user communities
+    \item Organizations with data sovereignty requirements necessitating self-hosted deployment
+\end{itemize}
+
+\paragraph{Differentiation}
+The platform differentiates itself through:
+\begin{itemize}
+    \item \textbf{First-class multi-tenancy}: Tenant isolation is built into every layer, from authentication through data storage.
+    \item \textbf{Comprehensive RBAC}: Fine-grained permissions for tools, models, and administrative functions.
+    \item \textbf{Production observability}: Integrated Prometheus metrics, OpenTelemetry tracing, and structured logging.
+    \item \textbf{Graph-native knowledge}: Native Memgraph integration with a sophisticated NL-to-Cypher pipeline.
+    \item \textbf{MCP-style tooling}: 34 tools across 17 categories with consistent schema-driven invocation.
+    \item \textbf{Async job infrastructure}: PostgreSQL-backed job queue with SSE progress streaming.
+\end{itemize}
+
+\paragraph{Complementary Use}
+The platform is not intended to replace libraries like LangChain or LlamaIndex but to provide the production infrastructure around them. Organizations might:
+\begin{itemize}
+    \item Use the Cineca Agentic Platform as the deployment and governance layer
+    \item Implement specific agent behaviors using LangChain chains or LlamaIndex retrievers
+    \item Leverage the platform's MCP tools for standardized capability access
+    \item Rely on the platform's observability for production monitoring
+\end{itemize}
+
+This complementary positioning allows organizations to benefit from both the flexibility of library-based development and the robustness of platform-based deployment.

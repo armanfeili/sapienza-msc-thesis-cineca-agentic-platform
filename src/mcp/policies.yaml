@@ -1,0 +1,270 @@
+# Cineca Agentic Platform — Default Security Policy (MCP)
+# This file defines default roles/scopes and operational guardrails used across the platform.
+# It is safe to edit and extend; unknown keys are ignored by loaders that don't need them.
+
+version: 1
+metadata:
+  name: cineca-agentic-platform-default-policy
+  description: Default roles, scopes, and guardrails for development & demos
+  updated: "2025-08-08"
+
+# ---------------------------------------------------------------------------
+# Role → Scopes mapping
+# Notes:
+# - Scopes are simple strings; wildcard "*" grants full access.
+# - Keep names consistent with API/MCP surfaces (e.g., tools.invoke, agent.run).
+# - MCP tool scopes: tools:basic (read-only), tools:all (writes), admin:all (admin)
+# ---------------------------------------------------------------------------
+roles:
+  user:
+    - read
+    - system.health
+    - system.status
+    - tools.invoke
+    - tools:basic           # MCP: read-only tools
+    - models.complete
+    - models.list
+    - agent.run
+  analyst:
+    - read
+    - tools.invoke
+    - tools:basic           # MCP: read-only tools
+    - models.complete
+    - models.list
+    - agent.run
+    - graph.query
+    - graph.search
+    - graph.schema.read
+    - graph.analytics
+  operator:
+    - read
+    - tools.invoke
+    - tools:basic           # MCP: read-only tools
+    - tools:all             # MCP: write-enabled tools
+    - models.complete
+    - models.list
+    - agent.run
+    - system.health
+    - system.status
+    - system.metrics
+    - system.backup
+    - cache.manage
+    - ratelimit.manage
+    - tenancy.select
+    - db.switch
+  admin:
+    - "*"                   # full access
+    - admin:all             # MCP: admin-only tools
+
+# ---------------------------------------------------------------------------
+# Guardrails (intent/output)
+# These mirror settings used by the app; loaders read them under guards.*
+# ---------------------------------------------------------------------------
+guards:
+  intent:
+    enabled: true
+    mode: monitor          # "enforce" | "monitor"
+  output:
+    mode: monitor          # "enforce" | "monitor" | "off"
+    enforce_limit: true
+    default_limit: 100
+    allow_writes: false
+    block_drop_graph: true
+
+# ---------------------------------------------------------------------------
+# Rate limiting defaults (can be overridden in code via settings/env)
+# Keys below are advisory; routers/services may choose to consult them.
+# ---------------------------------------------------------------------------
+ratelimit:
+  enabled: true
+  backend: redis           # "redis" | "memory"
+  default_limit: 60        # requests per window
+  default_window: 60       # seconds
+  keys:
+    agent.run:
+      limit: 30
+      window: 60
+    tools.invoke:
+      limit: 60
+      window: 60
+    models.complete:
+      limit: 120
+      window: 60
+
+# ---------------------------------------------------------------------------
+# Tenancy defaults
+# ---------------------------------------------------------------------------
+tenancy:
+  enabled: false
+  default: null
+  header: X-Tenant-Id
+  query_param: tenant
+  allowed: ["*"]           # ["acme","contoso"] or "*" for any
+
+# ---------------------------------------------------------------------------
+# Security knobs
+# ---------------------------------------------------------------------------
+security:
+  pii_scrubber:
+    mode: mask             # "mask" | "hash" | "remove" | "off"
+    sensitive_keys:
+      - password
+      - token
+      - email
+      - phone
+      - ssn
+      - iban
+      - credit_card
+  validators:
+    max_query_cost: 500000
+    max_graph_result_nodes: 5000
+    max_graph_result_edges: 10000
+
+# ---------------------------------------------------------------------------
+# Permissions hints for MCP/routers (advisory mapping)
+# ---------------------------------------------------------------------------
+permissions:
+  tools:
+    graph.query: graph.query
+    graph.schema.read: graph.schema.read
+    graph.schema.write: graph.schema.write
+    graph.analytics: graph.analytics
+    graph.bulk: graph.bulk
+    system.health: system.health
+    system.metrics: system.metrics
+    system.backup: system.backup
+    db.switch: db.switch
+    cache.manage: cache.manage
+    ratelimit.manage: ratelimit.manage
+  models:
+    complete: models.complete
+    list: models.list
+    manage: models.manage
+
+# ---------------------------------------------------------------------------
+# Catalog / Discovery hints (optional, used by MCP catalog tools)
+# ---------------------------------------------------------------------------
+catalog:
+  tags:
+    - graph
+    - system
+    - security
+    - model
+    - tools
+  visibility:
+    default: public
+    overrides:
+      security.audit: restricted
+
+# ---------------------------------------------------------------------------
+# Tool Policy Configuration (P1.3: Agent Policy & Tool Selection)
+# This section defines role-based tool allowlists, tool rankings, and fallbacks.
+# ---------------------------------------------------------------------------
+tool_policies:
+  # Role → Tool allowlist mapping
+  # Format: role_name -> {allow: [patterns], deny: [patterns]}
+  # Deny rules override allow rules. Patterns support wildcards (*)
+  roles:
+    analyst:
+      allow:
+        - "graph.query"
+        - "graph.search"
+        - "graph.analytics"
+        - "graph.schema"
+        - "output.*"
+        - "catalog.*"
+        - "agent.context"
+      deny:
+        - "graph.crud"
+        - "graph.bulk"
+        - "security.audit"
+        - "security.permissions"
+        - "tenancy.*"
+        - "system.backup"
+    
+    operator:
+      allow:
+        - "graph.*"
+        - "cache.*"
+        - "session.*"
+        - "system.health"
+        - "system.metrics"
+        - "system.status"
+        - "ratelimit.*"
+        - "db.*"
+        - "output.*"
+      deny:
+        - "security.audit"
+        - "tenancy.manage"
+    
+    admin:
+      allow:
+        - "*"  # all tools
+      deny: []
+    
+    user:
+      allow:
+        - "graph.query"
+        - "graph.search"
+        - "output.*"
+        - "catalog.discover"
+        - "agent.context"
+        - "user.profile"
+      deny:
+        - "graph.crud"
+        - "graph.bulk"
+        - "security.*"
+        - "tenancy.*"
+        - "system.backup"
+  
+  # Tool rankings (task keywords → tool preferences)
+  # Format: "regex_pattern" -> [[tool_name, weight], ...]
+  # Weight range: [0.0, 1.0] where 1.0 = highest priority
+  rankings:
+    "query|search|find|lookup|get|read":
+      - ["graph.query", 1.0]
+      - ["graph.search", 0.9]
+      - ["graph.analytics", 0.7]
+      - ["catalog.discover", 0.5]
+    
+    "create|insert|add|new|write":
+      - ["graph.crud", 1.0]
+      - ["graph.bulk", 0.8]
+    
+    "update|modify|change|edit|patch":
+      - ["graph.crud", 1.0]
+      - ["graph.query", 0.5]
+    
+    "delete|remove|drop":
+      - ["graph.crud", 1.0]
+    
+    "analyze|aggregate|count|stats|metrics":
+      - ["graph.analytics", 1.0]
+      - ["system.metrics", 0.8]
+    
+    "format|render|display|visualize":
+      - ["output.format", 1.0]
+      - ["output.summarize", 0.8]
+      - ["viz.render", 0.7]
+    
+    "health|status|check":
+      - ["system.health", 1.0]
+      - ["system.status", 0.9]
+    
+    "cache|redis":
+      - ["cache.manage", 1.0]
+    
+    "security|audit|permission|access":
+      - ["security.audit", 1.0]
+      - ["security.permissions", 0.9]
+      - ["security.check", 0.8]
+  
+  # Fallback mappings (blocked_tool → fallback_tool)
+  # If a tool is blocked by policy, try fallback instead
+  # Use null/None to indicate no fallback (deny operation)
+  fallbacks:
+    "graph.crud": "graph.query"       # if write blocked, use read
+    "graph.bulk": "graph.crud"        # if bulk blocked, use single CRUD
+    "security.audit": null            # no fallback (deny)
+    "tenancy.manage": null            # no fallback (deny)
+    "system.backup": "system.status"  # if backup blocked, show status

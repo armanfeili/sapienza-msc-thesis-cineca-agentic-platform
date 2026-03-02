@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "id": "cineca-agentic-platform",
+  "name": "Cineca Agentic Platform — MCP",
+  "version": "0.1.0",
+  "description": "Model Context Protocol manifest for the Cineca Agentic Platform. Exposes graph, system, security, model, and utility tools.",
+  "homepage": "https://example.org/cineca-agentic-platform",
+  "license": "Apache-2.0",
+  "policy_file": "src/mcp/policies.yaml",
+  "categories": [
+    "agent",
+    "cache",
+    "catalog",
+    "data",
+    "db",
+    "errors",
+    "graph",
+    "model",
+    "output",
+    "privacy",
+    "ratelimit",
+    "security",
+    "session",
+    "system",
+    "tenancy",
+    "user",
+    "viz"
+  ],
+  "tools": []
+}

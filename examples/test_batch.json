@@ -1,0 +1,13 @@
+{
+  "operations": [
+    {
+      "operation": "create",
+      "resourceType": "model",
+      "data": {
+        "instanceId": "test-model-1",
+        "modelName": "gpt-4",
+        "providerId": "test-provider"
+      }
+    }
+  ]
+}

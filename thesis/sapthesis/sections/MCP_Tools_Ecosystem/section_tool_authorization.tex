@@ -1,0 +1,486 @@
+% TODO checklist:
+% - [x] Inspected src/mcp/runtime.py (check_permissions function, RBAC integration)
+% - [x] Inspected src/security/perm.py (has_perms function, scope checking)
+% - [x] Inspected Q&A.md Q17-Q22 for security and RBAC details
+% - [x] Inspected src/mcp/tools/security/permissions.py for policy-aware checking
+% - [x] Inspected tests/mcp/tools/test_security_permissions.py for authorization tests
+
+\section{Tool Authorization}
+\label{sec:tool-authorization}
+
+Tool authorization in the Cineca Agentic Platform implements a defense-in-depth strategy that combines scope-based RBAC, tenant isolation, and policy-aware access control. Every tool invocation passes through multiple authorization checkpoints before execution, ensuring that only authorized principals can perform permitted actions.
+
+\subsection{Authorization Model}
+\label{subsec:authorization-model}
+
+The tool authorization model is built on three foundational concepts:
+
+\begin{enumerate}
+    \item \textbf{Scopes}: Fine-grained permission tokens (e.g., \texttt{graph:read}, \texttt{admin:all}) that represent specific capabilities.
+    \item \textbf{Principals}: Authenticated entities (users, services, machines) with associated scopes and tenant membership.
+    \item \textbf{Resources}: The tools and their actions that principals attempt to access.
+\end{enumerate}
+
+\subsubsection{Scope Hierarchy}
+
+Scopes follow a hierarchical naming convention that enables both fine-grained and broad permissions:
+
+\begin{lstlisting}[language=Python, caption={Scope hierarchy examples}, label={lst:scope-hierarchy}]
+# Fine-grained scopes
+"graph:read"        # Read from graph only
+"graph:write"       # Write to graph only
+"tools:basic"       # Invoke safe tools only
+
+# Broad scopes
+"graph:*"           # All graph operations
+"tools:all"         # Invoke any tool
+"admin:all"         # Full administrative access
+
+# Implied scopes
+# "admin:all" implies "tools:all", "graph:*", "security:*", etc.
+\end{lstlisting}
+
+Table~\ref{tab:scope-definitions} defines the primary scopes used for tool authorization.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Primary authorization scopes for MCP tools}
+    \label{tab:scope-definitions}
+    \begin{tabularx}{\textwidth}{lX}
+        \toprule
+        \textbf{Scope} & \textbf{Grants Access To} \\
+        \midrule
+        \texttt{tools:basic} & Safe, read-only tools (catalog, health, status) \\
+        \texttt{tools:read} & All read-only tools \\
+        \texttt{tools:write} & Tools that modify data \\
+        \texttt{tools:all} & All tools except admin \\
+        \texttt{tools:admin} & Administrative tools (tenancy, rate limits) \\
+        \midrule
+        \texttt{graph:read} & Graph query and schema tools \\
+        \texttt{graph:write} & Graph CRUD and bulk tools \\
+        \texttt{graph:*} & All graph tools \\
+        \midrule
+        \texttt{security:read} & Permission introspection \\
+        \texttt{security:audit} & Audit log access \\
+        \texttt{security:admin} & Security configuration \\
+        \texttt{security:*} & All security tools \\
+        \midrule
+        \texttt{model:read} & Model status and testing \\
+        \texttt{model:admin} & Model configuration and switching \\
+        \midrule
+        \texttt{data:read} & Data quality checks \\
+        \texttt{data:admin} & Data archival and restoration \\
+        \midrule
+        \texttt{admin:all} & Full administrative access (implies all scopes) \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\subsubsection{Principal Extraction}
+
+Principals are extracted from JWT tokens validated by the Auth0 integration. The token payload contains the subject identifier (\texttt{sub}), granted scopes, and tenant membership.
+
+\begin{lstlisting}[language=Python, caption={Principal extraction from JWT payload}, label={lst:principal-extraction}]
+# Example JWT payload (decoded)
+{
+    "sub": "auth0|user_12345",
+    "iss": "https://cineca.eu.auth0.com/",
+    "aud": ["cineca-agentic-platform"],
+    "scope": "openid profile graph:read tools:basic user:me",
+    "permissions": ["graph:read", "tools:basic", "user:me"],
+    "https://cineca.eu/tenant_id": "tenant_abc",
+    "https://cineca.eu/roles": ["researcher"],
+    "exp": 1705312800,
+    "iat": 1705309200
+}
+\end{lstlisting}
+
+The MCP runtime normalizes this payload into a principal object:
+
+\begin{lstlisting}[language=Python, caption={Principal normalization in MCP runtime}, label={lst:principal-normalization}]
+def _extract_principal_object(principal: Any) -> Any:
+    """Normalize principal payloads for permission helpers."""
+    if hasattr(principal, "raw"):
+        return principal  # Already normalized
+    if isinstance(principal, dict):
+        return _dict_principal_adapter(principal)
+    return principal
+
+class _PrincipalProxy(SimpleNamespace):
+    def __init__(self, payload: dict[str, Any]):
+        raw_payload = dict(payload)
+        sub = raw_payload.get("sub") or raw_payload.get("id")
+        scopes = raw_payload.get("scopes") or raw_payload.get("permissions") or []
+        super().__init__(
+            raw=raw_payload,
+            sub=sub,
+            scopes=tuple(scopes),
+        )
+\end{lstlisting}
+
+\subsection{Per-Tool RBAC}
+\label{subsec:per-tool-rbac}
+
+Each tool declares its required scope through the \texttt{@mcp\_tool} decorator. The MCP runtime enforces this requirement at invocation time.
+
+\subsubsection{Scope Declaration}
+
+Tools declare their required scope as part of the decorator:
+
+\begin{lstlisting}[language=Python, caption={Tool scope declaration via decorator}, label={lst:tool-scope-declaration}]
+@mcp_tool(
+    tool_name="graph.query",
+    required_scope="graph:read",  # Required scope for this tool
+    rate_limit=60,                 # Rate limit per minute
+    rate_window=60,                # Rate limit window in seconds
+)
+async def invoke(ctx: ToolContext, payload: GraphQueryPayload) -> dict:
+    """Execute Cypher query against Memgraph."""
+    # Implementation...
+\end{lstlisting}
+
+\subsubsection{Permission Check Implementation}
+
+The \texttt{check\_permissions} function in \texttt{src/mcp/runtime.py} performs the authorization check:
+
+\begin{lstlisting}[language=Python, caption={Permission checking implementation}, label={lst:check-permissions}]
+def check_permissions(
+    ctx: ToolContext,
+    required_scope: str,
+    resource: str | None = None,
+    attributes: dict[str, Any] | None = None,
+) -> None:
+    """
+    Check if principal has required permission.
+    
+    Raises:
+        PermissionError_: If permission denied
+    """
+    from src.security.perm import has_perms
+    
+    normalized_principal = _extract_principal_object(ctx.principal)
+    
+    # 1. Verify principal exists
+    if not normalized_principal:
+        raise PermissionError_(
+            "Principal required for this operation",
+            details={"required_scope": required_scope}
+        )
+    
+    # 2. Verify tenant match
+    if ctx.tenant and hasattr(normalized_principal, "raw"):
+        principal_tenant = normalized_principal.raw.get("tenant_id")
+        if principal_tenant and principal_tenant != ctx.tenant:
+            raise PermissionError_(
+                "Tenant mismatch: principal not authorized for this tenant",
+                details={"principal_tenant": principal_tenant, "context_tenant": ctx.tenant}
+            )
+    
+    # 3. Check scope using security.permissions module
+    if not has_perms(normalized_principal, required_scope):
+        raise PermissionError_(
+            f"Missing required permission: {required_scope}",
+            details={"required_scope": required_scope, "resource": resource}
+        )
+\end{lstlisting}
+
+\subsubsection{Scope Checking Logic}
+
+The \texttt{has\_perms} function in \texttt{src/security/perm.py} implements the scope matching logic with support for wildcards and implied scopes:
+
+\begin{lstlisting}[language=Python, caption={Scope checking with wildcard support}, label={lst:has-perms}]
+def has_perms(principal: Any, required_scope: str) -> bool:
+    """
+    Check if principal has the required scope.
+    
+    Supports:
+    - Exact match: "graph:read" matches "graph:read"
+    - Wildcard: "graph:*" matches "graph:read", "graph:write"
+    - Admin override: "admin:all" matches any scope
+    """
+    if not principal:
+        return False
+    
+    scopes = getattr(principal, "scopes", ()) or ()
+    
+    # Admin override
+    if "admin:all" in scopes:
+        return True
+    
+    # Exact match
+    if required_scope in scopes:
+        return True
+    
+    # Wildcard match (e.g., "graph:*" matches "graph:read")
+    required_parts = required_scope.split(":")
+    for scope in scopes:
+        scope_parts = scope.split(":")
+        if len(scope_parts) >= 1 and scope_parts[-1] == "*":
+            prefix = ":".join(scope_parts[:-1])
+            if required_scope.startswith(prefix + ":"):
+                return True
+    
+    return False
+\end{lstlisting}
+
+\subsection{Tenant Isolation}
+\label{subsec:tenant-isolation}
+
+Multi-tenant isolation is enforced at the tool level to prevent cross-tenant data access.
+
+\subsubsection{Tenant Context Propagation}
+
+The tenant context is propagated through the request lifecycle:
+
+\begin{enumerate}
+    \item Client includes \texttt{X-Tenant-ID} header in the request.
+    \item The header is validated against the principal's authorized tenants.
+    \item The tenant ID is stored in \texttt{ToolContext.tenant}.
+    \item Tools use this tenant ID to scope all data operations.
+\end{enumerate}
+
+\begin{lstlisting}[language=Python, caption={Tenant validation in authorization flow}, label={lst:tenant-validation}]
+# In MCP runtime check_permissions
+if ctx.tenant and hasattr(normalized_principal, "raw"):
+    principal_tenant = normalized_principal.raw.get("tenant_id")
+    
+    # Principal must belong to the requested tenant
+    if principal_tenant and principal_tenant != ctx.tenant:
+        logger.warning(
+            "Permission check failed: tenant mismatch",
+            extra={
+                **ctx.log_context(),
+                "principal_tenant": principal_tenant,
+                "context_tenant": ctx.tenant,
+            }
+        )
+        raise PermissionError_(
+            "Tenant mismatch: principal not authorized for this tenant"
+        )
+\end{lstlisting}
+
+\subsubsection{Tool-Level Tenant Scoping}
+
+Tools that access data automatically scope queries by tenant:
+
+\begin{lstlisting}[language=Python, caption={Tenant-scoped data access in tools}, label={lst:tenant-scoped-access}]
+# In graph.query tool
+def _act_run(db: MemgraphAdapter, payload: dict, ctx: ToolContext) -> dict:
+    cypher = payload.get("cypher")
+    
+    # Inject tenant filter for queries that access tenant-scoped data
+    if ctx.tenant and not _is_global_query(cypher):
+        cypher = _inject_tenant_filter(cypher, ctx.tenant)
+    
+    results = db.execute(cypher, payload.get("params", {}))
+    return {"ok": True, "rows": list(results)}
+
+def _inject_tenant_filter(cypher: str, tenant_id: str) -> str:
+    """Add tenant filter to WHERE clause."""
+    # Implementation adds WHERE n.tenant_id = $tenant_id
+    ...
+\end{lstlisting}
+
+\subsection{Policy Files}
+\label{subsec:policy-files}
+
+For complex authorization scenarios, the platform supports external policy definitions that can be managed separately from tool code.
+
+\subsubsection{Policy Structure}
+
+Policies are defined in YAML files under \texttt{src/security/policies/}:
+
+\begin{lstlisting}[language=Python, caption={Example policy definition}, label={lst:policy-definition}]
+# src/security/policies/tool_access.yaml
+policies:
+  - name: "graph_researcher_access"
+    description: "Researchers can read graph, not write"
+    effect: "allow"
+    principals:
+      roles: ["researcher"]
+    actions:
+      - "graph:read"
+      - "tools:basic"
+    resources:
+      - "mcp.tools.graph.query"
+      - "mcp.tools.graph.schema"
+      - "mcp.tools.graph.search"
+    conditions:
+      tenant_match: true
+  
+  - name: "admin_full_access"
+    description: "Admins have full access"
+    effect: "allow"
+    principals:
+      roles: ["admin"]
+    actions:
+      - "*"
+    resources:
+      - "mcp.tools.*"
+\end{lstlisting}
+
+\subsubsection{Policy Evaluation}
+
+The \texttt{security.permissions} tool provides runtime policy evaluation:
+
+\begin{lstlisting}[language=Python, caption={Policy evaluation via security.permissions tool}, label={lst:policy-evaluation}]
+result = invoke("security.permissions", {
+    "action": "evaluate",
+    "resource": "mcp.tools.graph.crud",
+    "action_type": "write",
+    "context": {
+        "tenant": "tenant_abc",
+        "node_type": "Person"
+    }
+})
+# Response:
+{
+    "ok": true,
+    "allowed": false,
+    "policies_applied": ["graph_researcher_access"],
+    "denied_by": "graph_researcher_access",
+    "reason": "Researchers cannot write to graph"
+}
+\end{lstlisting}
+
+\subsection{Authorization Decision Flow}
+\label{subsec:auth-decision-flow}
+
+Figure~\ref{fig:auth-decision-flow} illustrates the complete authorization decision flow for tool invocations.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        node distance=0.6cm and 2cm,
+        box/.style={rectangle, draw, rounded corners, minimum width=3cm, minimum height=0.7cm, text centered, font=\small},
+        decision/.style={diamond, draw, aspect=2.5, minimum width=2cm, font=\small},
+        arrow/.style={->, thick},
+        label/.style={font=\scriptsize}
+    ]
+        % Nodes
+        \node[box] (request) {Tool Invocation Request};
+        \node[decision, below=of request] (jwt) {JWT Valid?};
+        \node[decision, below=of jwt] (principal) {Principal Exists?};
+        \node[decision, below=of principal] (tenant) {Tenant Matches?};
+        \node[decision, below=of tenant] (scope) {Scope Granted?};
+        \node[decision, below=of scope] (policy) {Policy Allows?};
+        \node[box, below=of policy] (execute) {Execute Tool};
+        
+        % Error nodes
+        \node[box, right=of jwt] (e401) {401 Unauthorized};
+        \node[box, right=of principal] (e403a) {403 No Principal};
+        \node[box, right=of tenant] (e403b) {403 Tenant Mismatch};
+        \node[box, right=of scope] (e403c) {403 Missing Scope};
+        \node[box, right=of policy] (e403d) {403 Policy Denied};
+        
+        % Arrows
+        \draw[arrow] (request) -- (jwt);
+        \draw[arrow] (jwt) -- node[left, label] {yes} (principal);
+        \draw[arrow] (jwt) -- node[above, label] {no} (e401);
+        \draw[arrow] (principal) -- node[left, label] {yes} (tenant);
+        \draw[arrow] (principal) -- node[above, label] {no} (e403a);
+        \draw[arrow] (tenant) -- node[left, label] {yes} (scope);
+        \draw[arrow] (tenant) -- node[above, label] {no} (e403b);
+        \draw[arrow] (scope) -- node[left, label] {yes} (policy);
+        \draw[arrow] (scope) -- node[above, label] {no} (e403c);
+        \draw[arrow] (policy) -- node[left, label] {yes} (execute);
+        \draw[arrow] (policy) -- node[above, label] {no} (e403d);
+    \end{tikzpicture}
+    \caption{Complete authorization decision flow for MCP tool invocations.}
+    \label{fig:auth-decision-flow}
+\end{figure}
+
+\subsection{Authorization Audit Trail}
+\label{subsec:auth-audit}
+
+All authorization decisions are logged for security auditing and debugging.
+
+\paragraph{Successful Authorization.}
+\begin{lstlisting}[language=Python, caption={Audit log for successful authorization}, label={lst:auth-success-log}]
+logger.debug(
+    "Permission check passed",
+    extra={
+        "tool": "graph.query",
+        "action": "run",
+        "principal": "auth0|user_12345",
+        "tenant": "tenant_abc",
+        "trace_id": "trace_xyz",
+        "required_scope": "graph:read",
+        "granted_scopes": ["graph:read", "tools:basic", "user:me"],
+    }
+)
+\end{lstlisting}
+
+\paragraph{Failed Authorization.}
+\begin{lstlisting}[language=Python, caption={Audit log for failed authorization}, label={lst:auth-failure-log}]
+logger.warning(
+    "Permission check failed: insufficient permissions",
+    extra={
+        "tool": "graph.crud",
+        "action": "create_node",
+        "principal": "auth0|user_12345",
+        "tenant": "tenant_abc",
+        "trace_id": "trace_xyz",
+        "required_scope": "graph:write",
+        "granted_scopes": ["graph:read", "tools:basic"],
+        "error_code": "E_PERMISSION",
+    }
+)
+\end{lstlisting}
+
+\subsection{Testing Authorization}
+\label{subsec:testing-auth}
+
+The platform includes comprehensive tests for authorization logic:
+
+\begin{lstlisting}[language=Python, caption={Authorization test examples}, label={lst:auth-tests}]
+@pytest.mark.security
+def test_tool_requires_scope():
+    """Tool invocation without required scope returns 403."""
+    # Principal with only basic scope
+    principal = {"sub": "user_1", "scopes": ["tools:basic"]}
+    ctx = ToolContext(tool="graph.crud", action="create", principal=principal)
+    
+    with pytest.raises(PermissionError_) as exc_info:
+        check_permissions(ctx, required_scope="graph:write")
+    
+    assert exc_info.value.code == "E_PERMISSION"
+    assert "graph:write" in str(exc_info.value)
+
+@pytest.mark.security
+def test_admin_scope_grants_all():
+    """Admin scope bypasses all permission checks."""
+    principal = {"sub": "admin_1", "scopes": ["admin:all"]}
+    ctx = ToolContext(tool="tenancy.manage", action="delete", principal=principal)
+    
+    # Should not raise
+    check_permissions(ctx, required_scope="tools:admin")
+
+@pytest.mark.security
+def test_tenant_isolation():
+    """Cross-tenant access is denied."""
+    principal = {"sub": "user_1", "scopes": ["graph:read"], "tenant_id": "tenant_a"}
+    ctx = ToolContext(tool="graph.query", action="run", principal=principal, tenant="tenant_b")
+    
+    with pytest.raises(PermissionError_) as exc_info:
+        check_permissions(ctx, required_scope="graph:read")
+    
+    assert "Tenant mismatch" in str(exc_info.value)
+\end{lstlisting}
+
+\subsection{Summary}
+\label{subsec:auth-summary}
+
+The tool authorization system provides comprehensive access control through:
+
+\begin{itemize}
+    \item \textbf{Scope-based RBAC}: Each tool declares its required scope; the runtime enforces it.
+    \item \textbf{Principal validation}: JWT tokens are validated and principals are extracted.
+    \item \textbf{Tenant isolation}: Cross-tenant access is prevented at the authorization layer.
+    \item \textbf{Policy support}: External policy files enable flexible access rules.
+    \item \textbf{Wildcard and implied scopes}: \texttt{admin:all} and \texttt{*} patterns simplify administration.
+    \item \textbf{Comprehensive logging}: All authorization decisions are audited.
+    \item \textbf{Thorough testing}: Security tests verify authorization behavior.
+\end{itemize}
+
+This layered approach ensures that tool access is controlled, auditable, and aligned with enterprise security requirements.

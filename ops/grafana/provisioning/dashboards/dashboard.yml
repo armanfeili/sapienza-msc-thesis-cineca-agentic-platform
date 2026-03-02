@@ -1,0 +1,19 @@
+# ops/grafana/provisioning/dashboards/dashboard.yml
+# File provider that loads dashboards from the mounted folder.
+# docker-compose mounts ./docs/observability -> /var/lib/grafana/dashboards
+
+apiVersion: 1
+
+providers:
+  - name: "Cineca Agentic Dashboards"
+    uid: cineca_dashboards
+    orgId: 1
+    type: file
+    folder: ""                 # root folder in Grafana; change if you want a named folder
+    disableDeletion: false     # allow Grafana to delete dashboards that are removed from disk
+    allowUiUpdates: false      # dashboards are managed from files, not via UI
+    updateIntervalSeconds: 30  # how often to scan for changes
+    editable: false
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: true

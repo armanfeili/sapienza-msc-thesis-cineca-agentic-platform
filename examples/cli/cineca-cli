@@ -1,0 +1,226 @@
+#!/usr/bin/env python3
+"""
+Cineca CLI - Command-line interface for the Cineca Agentic Platform
+
+A simple CLI to interact with AI agents without a browser.
+"""
+
+import argparse
+import requests
+import json
+import sys
+import os
+from typing import Optional, Dict
+
+# Configuration
+API_BASE = os.environ.get("CINECA_API_BASE", "http://localhost:8080")
+TOKEN = os.environ.get("CINECA_TOKEN", "")
+
+def get_headers() -> Dict[str, str]:
+    """Get authorization headers"""
+    if not TOKEN:
+        print("⚠️  Warning: No token set. Set CINECA_TOKEN environment variable.")
+        print("   Example: export CINECA_TOKEN='your-jwt-token'")
+        return {"Content-Type": "application/json"}
+    return {
+        "Authorization": f"Bearer {TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+def list_agents():
+    """List all agents"""
+    try:
+        response = requests.get(
+            f"{API_BASE}/api/v1/agents",
+            headers=get_headers(),
+            timeout=5
+        )
+        
+        if response.status_code == 200:
+            agents = response.json().get("agents", [])
+            if agents:
+                print(f"\n🤖 Found {len(agents)} agent(s):\n")
+                for agent in agents:
+                    print(f"  📋 {agent.get('name')} ({agent.get('id')})")
+                    print(f"     Model: {agent.get('model')}, Temp: {agent.get('temperature')}")
+                    print(f"     {agent.get('description', 'No description')}\n")
+            else:
+                print("No agents found. Create one with: cineca-cli create")
+        else:
+            print(f"❌ Error: {response.status_code} - {response.text}")
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
+
+def create_agent(name: str, model: str, description: Optional[str] = None):
+    """Create a new agent"""
+    try:
+        payload = {
+            "name": name,
+            "description": description or f"Agent created via CLI",
+            "system_prompt": "You are a helpful assistant. Answer questions concisely and clearly.",
+            "model": model,
+            "temperature": 0.7,
+            "max_tokens": 500
+        }
+        
+        response = requests.post(
+            f"{API_BASE}/api/v1/agents",
+            headers=get_headers(),
+            json=payload,
+            timeout=5
+        )
+        
+        if response.status_code in [200, 201]:
+            agent = response.json()
+            print(f"\n✅ Successfully created agent!")
+            print(f"   Name: {agent.get('name')}")
+            print(f"   ID: {agent.get('id')}")
+            print(f"   Model: {agent.get('model')}\n")
+        else:
+            print(f"❌ Error: {response.status_code} - {response.text}")
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
+
+def ask_agent(agent_id: str, question: str):
+    """Ask an agent a question"""
+    try:
+        payload = {
+            "input": question,
+            "stream": False
+        }
+        
+        print(f"\n🤔 Asking agent...")
+        
+        response = requests.post(
+            f"{API_BASE}/api/v1/agents/{agent_id}/run",
+            headers=get_headers(),
+            json=payload,
+            timeout=30
+        )
+        
+        if response.status_code in [200, 201]:
+            result = response.json()
+            print(f"\n🤖 Agent Response:\n")
+            print(f"   {result.get('output', 'No response')}\n")
+            print(f"📊 Metadata:")
+            print(f"   Run ID: {result.get('run_id')}")
+            print(f"   Status: {result.get('status')}")
+            tokens = result.get('tokens_used', {})
+            if isinstance(tokens, dict):
+                print(f"   Tokens: {tokens.get('total', 0)} total")
+            print(f"   Duration: {result.get('duration_ms', 0)}ms\n")
+        else:
+            print(f"❌ Error: {response.status_code} - {response.text}")
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
+
+def get_agent_runs(agent_id: str, limit: int = 5):
+    """Get recent runs for an agent"""
+    try:
+        response = requests.get(
+            f"{API_BASE}/api/v1/agents/{agent_id}/runs",
+            headers=get_headers(),
+            timeout=5
+        )
+        
+        if response.status_code == 200:
+            runs = response.json().get("runs", [])
+            if runs:
+                print(f"\n📊 Recent runs for agent {agent_id}:\n")
+                for i, run in enumerate(runs[:limit]):
+                    print(f"  {i+1}. Run ID: {run.get('run_id')}")
+                    print(f"     Input: {run.get('input', 'N/A')[:50]}...")
+                    print(f"     Output: {run.get('output', 'N/A')[:50]}...")
+                    print(f"     Status: {run.get('status')}, Created: {run.get('created_at')}\n")
+            else:
+                print("No runs found for this agent.")
+        else:
+            print(f"❌ Error: {response.status_code} - {response.text}")
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
+
+def check_health():
+    """Check API health"""
+    try:
+        response = requests.get(f"{API_BASE}/health", timeout=3)
+        if response.status_code == 200:
+            health = response.json()
+            print(f"\n✅ API is healthy!")
+            print(f"   Status: {health.get('status')}")
+            print(f"   Version: {health.get('version', 'N/A')}\n")
+        else:
+            print(f"❌ API is unhealthy: {response.status_code}")
+    except Exception as e:
+        print(f"❌ Cannot reach API: {str(e)}")
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Cineca CLI - Command-line interface for the Cineca Agentic Platform",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Check API health
+  cineca-cli health
+
+  # List all agents
+  cineca-cli list
+
+  # Create a new agent
+  cineca-cli create --name "MyAgent" --model "gpt-4" --description "My first agent"
+
+  # Ask a question
+  cineca-cli ask agent_abc123 "What is the capital of France?"
+
+  # View agent run history
+  cineca-cli runs agent_abc123
+
+Environment Variables:
+  CINECA_API_BASE  API endpoint (default: http://localhost:8080)
+  CINECA_TOKEN     JWT authentication token
+        """
+    )
+    
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    
+    # Health command
+    subparsers.add_parser("health", help="Check API health")
+    
+    # List command
+    subparsers.add_parser("list", help="List all agents")
+    
+    # Create command
+    create_parser = subparsers.add_parser("create", help="Create a new agent")
+    create_parser.add_argument("--name", required=True, help="Agent name")
+    create_parser.add_argument("--model", required=True, help="LLM model (e.g., gpt-4)")
+    create_parser.add_argument("--description", help="Agent description")
+    
+    # Ask command
+    ask_parser = subparsers.add_parser("ask", help="Ask an agent a question")
+    ask_parser.add_argument("agent_id", help="Agent ID")
+    ask_parser.add_argument("question", help="Question to ask")
+    
+    # Runs command
+    runs_parser = subparsers.add_parser("runs", help="Get agent run history")
+    runs_parser.add_argument("agent_id", help="Agent ID")
+    runs_parser.add_argument("--limit", type=int, default=5, help="Number of runs to show")
+    
+    args = parser.parse_args()
+    
+    if not args.command:
+        parser.print_help()
+        sys.exit(1)
+    
+    # Execute command
+    if args.command == "health":
+        check_health()
+    elif args.command == "list":
+        list_agents()
+    elif args.command == "create":
+        create_agent(args.name, args.model, args.description)
+    elif args.command == "ask":
+        ask_agent(args.agent_id, args.question)
+    elif args.command == "runs":
+        get_agent_runs(args.agent_id, args.limit)
+
+if __name__ == "__main__":
+    main()

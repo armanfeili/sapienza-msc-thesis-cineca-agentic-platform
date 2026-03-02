@@ -1,0 +1,253 @@
+{
+  "title": "Memgraph Database Dashboard",
+  "dashboard": {
+    "id": null,
+    "uid": "db-memgraph-dashboard",
+    "title": "Memgraph Database Dashboard",
+    "tags": ["database", "memgraph", "observability"],
+    "timezone": "browser",
+    "schemaVersion": 37,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "type": "stat",
+        "title": "Active Connections",
+        "id": 1,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "memgraph_connections_active",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "calcs": ["lastNotNull"]
+          },
+          "orientation": "horizontal",
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "center"
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Transactions per Second",
+        "id": 2,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(memgraph_transactions_total[1m])",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "tps"
+          }
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Transaction Rollbacks",
+        "id": 3,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(memgraph_transactions_rollback_total[1m])",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Query Execution Time (p95)",
+        "id": 4,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(memgraph_query_execution_seconds_bucket[5m])) by (le))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Queries per Second",
+        "id": 5,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(rate(memgraph_queries_total[1m]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "qps"
+          }
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Error Rate (%)",
+        "id": 6,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "(sum(rate(memgraph_query_errors_total[5m])) / sum(rate(memgraph_queries_total[5m]))) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "type": "gauge",
+        "title": "Memory Usage (%)",
+        "id": 7,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "(memgraph_memory_usage_bytes / memgraph_memory_limit_bytes) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Memory Usage (Bytes)",
+        "id": 8,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "memgraph_memory_usage_bytes",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes"
+          }
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Disk Usage (Bytes)",
+        "id": 9,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "memgraph_disk_usage_bytes",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes"
+          }
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Index Hits",
+        "id": 10,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(memgraph_index_hits_total[1m])",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Index Misses",
+        "id": 11,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(memgraph_index_misses_total[1m])",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Replication Lag (Seconds)",
+        "id": 12,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "memgraph_replication_lag_seconds",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Replication Status",
+        "id": 13,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "memgraph_replication_status",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Cache Hit Ratio (%)",
+        "id": 14,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "(memgraph_cache_hits_total / (memgraph_cache_hits_total + memgraph_cache_misses_total)) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          }
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "instance",
+          "type": "query",
+          "datasource": "Prometheus",
+          "query": "label_values(memgraph_connections_active, instance)",
+          "refresh": 1
+        }
+      ]
+    },
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    }
+  },
+  "overwrite": true
+}

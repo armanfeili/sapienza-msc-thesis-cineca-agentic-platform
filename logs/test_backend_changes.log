@@ -1,0 +1,57 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.13, pytest-8.4.2, pluggy-1.6.0 -- /opt/venv/bin/python
+cachedir: .pytest_cache
+rootdir: /app
+configfile: pyproject.toml
+plugins: asyncio-1.2.0, Faker-37.12.0, anyio-4.11.0, timeout-2.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 1 item
+
+tests/integration/test_agent_execution.py::TestAgentExecution::test_agent_run_executes_successfully ⏩ Skipping Auth0 token fetch (using Docker environment variables)
+
+🔐 Fetching real Auth0 tokens...
+   ✅ Using tokens from environment variables (Docker)
+   ✅ admin token valid (expires in 1438.6 minutes)
+   ✅ user token valid (expires in 1438.6 minutes)
+   ✅ machine token valid (expires in 1438.6 minutes)
+✅ Successfully fetched and validated Auth0 tokens (admin, user, machine)
+2025-11-12 16:57:48 [info     ] provenance store: redis        url=redis://redis:6379/0
+
+================================================================================
+🧪 TRUE END-TO-END INTEGRATION TEST: Agent Run Execution
+================================================================================
+   API URL: http://app:8000
+   Using: Real Auth0 tokens, Real Redis, Real PostgreSQL
+   Platform: Linux x86_64
+   NO TIMEOUTS: CPU execution may take >15 minutes
+
+❤️  Step 0: Comprehensive health checks...
+   Waiting for app to be fully ready...
+   ✅ Basic health: ok
+   Checking detailed health (Redis, Postgres, Ollama)...
+   ... waiting for services to be ready: redis, postgres
+   Overall status: ok ✅
+   ✅ Redis: ok
+   ✅ Postgres: ok
+   ✅ Ollama: ok
+   ✅ All core services healthy (Redis, Postgres, Ollama)
+
+🔄 Waiting for ALL providers to be healthy...
+   ✅ All 1 providers healthy (Ollama ready)
+      Healthy: 1/1 providers
+
+🔍 Step 0b-2: Validating provider enumeration...
+   ✅ Provider count: 1 provider(s) configured
+   ✅ Provider enumeration includes individual provider details:
+FAILED
+
+=================================== FAILURES ===================================
+___________ TestAgentExecution.test_agent_run_executes_successfully ____________
+tests/integration/test_agent_execution.py:445: in test_agent_run_executes_successfully
+    assert len(models) > 0, (
+E   AssertionError: ❌ PROVIDER CONFIGURATION ERROR: Provider 'ollama-local' (ollama) has no models listed. Each provider must list at least one model. Check provider configuration and model discovery.
+E   assert 0 > 0
+E    +  where 0 = len([])
+=========================== short test summary info ============================
+FAILED tests/integration/test_agent_execution.py::TestAgentExecution::test_agent_run_executes_successfully
+============================== 1 failed in 8.48s ===============================

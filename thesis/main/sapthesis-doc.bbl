@@ -1,0 +1,201 @@
+\begin{thebibliography}{10}
+
+\bibitem{anthropic2024mcp}
+\textsc{{Anthropic}}.
+\newblock Introducing the {Model Context Protocol}.
+\newblock \url{https://www.anthropic.com/news/model-context-protocol} (2024).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{mcpservers2024}
+\textsc{{Anthropic}}.
+\newblock {Model Context Protocol} servers.
+\newblock \url{https://github.com/modelcontextprotocol/servers} (2024).
+\newblock Repository of reference and community-contributed MCP servers. Accessed: 2025-01-15.
+
+\bibitem{argoworkflows2023}
+\textsc{{Argoproj}}.
+\newblock {Argo Workflows}: The workflow engine for {Kubernetes}.
+\newblock \url{https://argoproj.github.io/argo-workflows/} (2023).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{langchain2023}
+\textsc{Chase, H.}
+\newblock {LangChain}: Building applications with {LLMs} through composability.
+\newblock \url{https://github.com/langchain-ai/langchain} (2023).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{cineca2023}
+\textsc{{CINECA}}.
+\newblock {CINECA}: Consorzio interuniversitario per il calcolo automatico.
+\newblock \url{https://www.cineca.it} (2023).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{opentelemetry2023}
+\textsc{{Cloud Native Computing Foundation}}.
+\newblock {OpenTelemetry}: An observability framework for cloud-native software.
+\newblock \url{https://opentelemetry.io} (2023).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{prometheus2023}
+\textsc{{Cloud Native Computing Foundation}}.
+\newblock {Prometheus}: Monitoring system and time series database.
+\newblock \url{https://prometheus.io} (2023).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{haystack2023}
+\textsc{{deepset GmbH}}.
+\newblock {Haystack}: {LLM} orchestration framework.
+\newblock \url{https://haystack.deepset.ai} (2023).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{nist2004rbac}
+\textsc{Ferraiolo, D.~F., Kuhn, D.~R., and Chandramouli, R.}
+\newblock Role-based access control ({RBAC}): Features and motivations.
+\newblock Tech. rep., National Institute of Standards and Technology (NIST) (2004).
+
+\bibitem{francis2018cypher}
+\textsc{Francis, N., et~al.}
+\newblock Cypher: An evolving query language for property graphs.
+\newblock In \emph{Proceedings of the 2018 International Conference on Management of Data (SIGMOD)}, pp. 1433--1445. ACM (2018).
+
+\bibitem{grafana2023}
+\textsc{{Grafana Labs}}.
+\newblock {Grafana}: The open observability platform.
+\newblock \url{https://grafana.com} (2023).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{rfc6749oauth2}
+\textsc{Hardt, D.}
+\newblock The {OAuth} 2.0 authorization framework.
+\newblock RFC 6749, IETF (2012).
+
+\bibitem{hogan2021knowledge}
+\textsc{Hogan, A., et~al.}
+\newblock Knowledge graphs.
+\newblock \emph{ACM Computing Surveys}, \textbf{54} (2021), 1.
+
+\bibitem{rfc7519jwt}
+\textsc{Jones, M.~B., Bradley, J., and Sakimura, N.}
+\newblock {JSON Web Token} ({JWT}).
+\newblock RFC 7519, IETF (2015).
+
+\bibitem{kaplan2020scaling}
+\textsc{Kaplan, J., et~al.}
+\newblock Scaling laws for neural language models.
+\newblock \emph{arXiv preprint arXiv:2001.08361},  (2020).
+
+\bibitem{langgraph2024}
+\textsc{{LangChain, Inc.}}
+\newblock {LangGraph}: Build resilient language agents as graphs.
+\newblock \url{https://github.com/langchain-ai/langgraph} (2024).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{langfuse2023}
+\textsc{{Langfuse GmbH}}.
+\newblock {Langfuse}: Open-source {LLM} engineering platform.
+\newblock \url{https://langfuse.com} (2023).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{lewis2020rag}
+\textsc{Lewis, P., et~al.}
+\newblock Retrieval-augmented generation for knowledge-intensive {NLP} tasks.
+\newblock \emph{Advances in Neural Information Processing Systems}, \textbf{33} (2020).
+
+\bibitem{llamaindex2023}
+\textsc{Liu, J.}
+\newblock {LlamaIndex}: Data framework for {LLM} applications.
+\newblock \url{https://github.com/run-llama/llama_index} (2023).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{memgraph2023}
+\textsc{{Memgraph Ltd.}}
+\newblock {Memgraph}: Real-time graph database.
+\newblock \url{https://memgraph.com} (2023).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{semantickernel2023}
+\textsc{{Microsoft}}.
+\newblock {Semantic Kernel}: Integrate cutting-edge {LLM} technology quickly and easily into your apps.
+\newblock \url{https://github.com/microsoft/semantic-kernel} (2023).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{n8n2023}
+\textsc{{n8n GmbH}}.
+\newblock {n8n}: Workflow automation tool.
+\newblock \url{https://n8n.io} (2023).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{neo4j2023}
+\textsc{{Neo4j, Inc.}}
+\newblock {Neo4j}: The graph database platform.
+\newblock \url{https://neo4j.com} (2023).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{openai2023functions}
+\textsc{{OpenAI}}.
+\newblock Function calling and other {API} updates.
+\newblock \url{https://openai.com/index/function-calling-and-other-api-updates/} (2023).
+\newblock Announced June 2023. Accessed: 2025-01-15.
+
+\bibitem{openaiagentssdk2025}
+\textsc{{OpenAI}}.
+\newblock {OpenAI Agents SDK}.
+\newblock \url{https://github.com/openai/openai-agents-python} (2025).
+\newblock Released March 2025. Accessed: 2025-06-15.
+
+\bibitem{opencypher2023}
+\textsc{{openCypher Implementers Group}}.
+\newblock {openCypher}: An open graph query language specification.
+\newblock \url{https://opencypher.org} (2023).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{oidc2014}
+\textsc{{OpenID Foundation}}.
+\newblock {OpenID Connect Core} 1.0.
+\newblock \url{https://openid.net/specs/openid-connect-core-1_0.html} (2014).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{fastapi2023}
+\textsc{Ram\'{i}rez, S.}
+\newblock {FastAPI}: Modern, fast web framework for building {APIs} with {Python}.
+\newblock \url{https://fastapi.tiangolo.com} (2023).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{schick2023toolformer}
+\textsc{Schick, T., Dwivedi-Yu, J., Dess{\`\i}, R., Raileanu, R., Lomeli, M., Hambro, E., Zettlemoyer, L., Cancedda, N., and Scialom, T.}
+\newblock Toolformer: Language models can teach themselves to use tools.
+\newblock In \emph{Advances in Neural Information Processing Systems}, vol.~36 (2023).
+
+\bibitem{temporal2023}
+\textsc{{Temporal Technologies, Inc.}}
+\newblock {Temporal}: Build invincible applications.
+\newblock \url{https://temporal.io} (2023).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{vaswani2017attention}
+\textsc{Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.~N., Kaiser, {\L}., and Polosukhin, I.}
+\newblock Attention is all you need.
+\newblock \emph{Advances in Neural Information Processing Systems}, \textbf{30} (2017).
+
+\bibitem{wei2022chain}
+\textsc{Wei, J., Wang, X., Schuurmans, D., Bosma, M., Ichter, B., Xia, F., Chi, E., Le, Q., and Zhou, D.}
+\newblock Chain-of-thought prompting elicits reasoning in large language models.
+\newblock \emph{Advances in Neural Information Processing Systems}, \textbf{35} (2022).
+
+\bibitem{windmill2023}
+\textsc{{Windmill Labs}}.
+\newblock {Windmill}: Developer platform for scripts, flows, and apps.
+\newblock \url{https://windmill.dev} (2023).
+\newblock Accessed: 2025-01-15.
+
+\bibitem{yao2023tree}
+\textsc{Yao, S., Yu, D., Zhao, J., Shafran, I., Griffiths, T.~L., Cao, Y., and Narasimhan, K.}
+\newblock Tree of thoughts: Deliberate problem solving with large language models.
+\newblock \emph{Advances in Neural Information Processing Systems}, \textbf{36} (2023).
+
+\bibitem{yao2022react}
+\textsc{Yao, S., Zhao, J., Yu, D., Du, N., Shafran, I., Narasimhan, K., and Cao, Y.}
+\newblock {ReAct}: Synergizing reasoning and acting in language models.
+\newblock In \emph{International Conference on Learning Representations (ICLR)} (2023).
+
+\end{thebibliography}

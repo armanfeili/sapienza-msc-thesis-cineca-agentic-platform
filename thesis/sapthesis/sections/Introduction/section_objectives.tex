@@ -1,0 +1,204 @@
+% TODO checklist:
+% - [x] README.md: Platform goals, feature list
+% - [x] Q&A.md: Q1-Q5 (Platform capabilities), evaluation criteria discussions
+% - [x] sapthesis-doc.tex: Abstract and contributions framing
+
+\section{Research Objectives}
+\label{sec:objectives}
+
+This thesis pursues a primary objective supported by several sub-objectives that collectively address the challenges identified in Section~\ref{sec:problem-statement}. The objectives are formulated to be specific, measurable, and verifiable through the evaluation presented in Chapter~\ref{ch:evaluation}.
+
+\subsection{Primary Objective}
+
+\begin{quote}
+\textbf{Primary Objective:} \emph{Design and implement an enterprise-grade AI agent orchestration platform that integrates comprehensive security, multi-tenancy, graph database querying, observability, and extensible tool capabilities into a production-ready system suitable for deployment at research institutions and enterprises.}
+\end{quote}
+
+This objective encompasses the full lifecycle from architectural design through implementation to production deployment, with the Cineca Agentic Platform serving as the concrete realization.
+
+\subsection{Sub-Objectives}
+
+The primary objective decomposes into six sub-objectives, each addressing a specific challenge area.
+
+\subsubsection{SO1: Security and Governance Architecture}
+
+\paragraph{Objective:} Design and implement a comprehensive security framework providing:
+
+\begin{enumerate}[label=\alph*)]
+    \item OIDC/JWT-based authentication with support for federated identity providers
+    \item Role-Based Access Control (RBAC) with scope-based permissions
+    \item Per-tool authorization policies integrated with the RBAC system
+    \item Comprehensive audit logging for compliance and forensics
+    \item PII detection and redaction capabilities
+    \item Intent-based filtering to block potentially dangerous operations
+\end{enumerate}
+
+\paragraph{Success Criteria:}
+\begin{itemize}
+    \item All API endpoints enforce authentication and authorization
+    \item Audit logs capture all significant operations with sufficient context
+    \item PII scrubbing correctly identifies and redacts sensitive data patterns
+    \item Security mechanisms do not introduce unacceptable latency overhead ($<$50ms per request)
+\end{itemize}
+
+\subsubsection{SO2: Multi-Tenancy Implementation}
+
+\paragraph{Objective:} Implement native multi-tenancy with:
+
+\begin{enumerate}[label=\alph*)]
+    \item Database-level tenant isolation for all data entities
+    \item Per-tenant configuration defaults (models, rate limits, policies)
+    \item Tenant-scoped API endpoints with header-based tenant identification
+    \item Administrative delegation within tenant boundaries
+    \item Cross-tenant data leakage prevention at all system layers
+\end{enumerate}
+
+\paragraph{Success Criteria:}
+\begin{itemize}
+    \item Tenant A cannot access Tenant B's data through any API path
+    \item Per-tenant configurations correctly override system defaults
+    \item Tenant isolation is enforced at database query level (not just application level)
+    \item Multi-tenant operations scale linearly with tenant count
+\end{itemize}
+
+\subsubsection{SO3: Graph Database Integration with NL-to-Cypher}
+
+\paragraph{Objective:} Develop a Natural Language to Cypher pipeline enabling:
+
+\begin{enumerate}[label=\alph*)]
+    \item Translation of natural language questions to syntactically correct Cypher queries
+    \item Multi-layer safety validation (syntax, read-only, tenant boundaries, resource limits)
+    \item Query execution against Memgraph graph database
+    \item Result summarization into natural language responses
+    \item Deterministic test mode for reliable pipeline testing
+\end{enumerate}
+
+\paragraph{Success Criteria:}
+\begin{itemize}
+    \item Generated Cypher queries pass syntax validation at $>$95\% rate
+    \item Safety validation correctly rejects all mutation attempts
+    \item Tenant filters are automatically injected into all generated queries
+    \item Query execution respects configured timeout and result limits
+    \item Test mode enables deterministic, LLM-independent testing
+\end{itemize}
+
+\subsubsection{SO4: Operational Observability Stack}
+
+\paragraph{Objective:} Implement comprehensive observability through:
+
+\begin{enumerate}[label=\alph*)]
+    \item Prometheus-compatible metrics covering HTTP requests, agent runs, jobs, tools, and LLM calls
+    \item Structured logging with request ID correlation across all components
+    \item OpenTelemetry distributed tracing for end-to-end request visualization
+    \item Kubernetes-compatible health probes (liveness, readiness, startup)
+    \item Component-level health checks with degradation detection
+\end{enumerate}
+
+\paragraph{Success Criteria:}
+\begin{itemize}
+    \item All key operations are instrumented with timing and outcome metrics
+    \item Log entries include correlation IDs enabling request tracing
+    \item Trace spans correctly propagate across async boundaries
+    \item Health probes accurately reflect system readiness
+    \item Degraded states (e.g., provider unavailability) are correctly reported
+\end{itemize}
+
+\subsubsection{SO5: LLM Provider Resilience and Management}
+
+\paragraph{Objective:} Design an LLM provider management system featuring:
+
+\begin{enumerate}[label=\alph*)]
+    \item Provider abstraction supporting multiple LLM backends (OpenAI, Ollama, Azure)
+    \item Circuit breaker pattern for provider failure isolation
+    \item Automatic provider fallback with configurable chains
+    \item Cost tracking and budget management
+    \item Default Model Resolver with hierarchy (user → tenant → system)
+    \item Provider health monitoring and reporting
+\end{enumerate}
+
+\paragraph{Success Criteria:}
+\begin{itemize}
+    \item Provider failures are isolated within circuit breaker timeouts
+    \item Fallback chains automatically route to healthy providers
+    \item Cost estimates are computed for all LLM calls
+    \item Model defaults correctly resolve through the configuration hierarchy
+    \item Provider health status is exposed via metrics and health endpoints
+\end{itemize}
+
+\subsubsection{SO6: Extensible Tool Ecosystem}
+
+\paragraph{Objective:} Develop an MCP-compatible tool framework supporting:
+
+\begin{enumerate}[label=\alph*)]
+    \item Tool registration with schema-based input/output validation
+    \item Tool discovery API with filtering by category and authorization
+    \item Per-tool RBAC with scope requirements
+    \item Comprehensive tool invocation logging
+    \item Straightforward patterns for adding new tools
+    \item Test fixtures for tool development
+\end{enumerate}
+
+\paragraph{Success Criteria:}
+\begin{itemize}
+    \item Tool discovery returns only tools the caller is authorized to invoke
+    \item Input validation rejects malformed invocation requests
+    \item Tool invocations are fully logged with inputs, outputs, and timing
+    \item New tools can be added by following documented patterns
+    \item Tool test coverage exceeds 80\% across all tool categories
+\end{itemize}
+
+\subsection{Non-Objectives}
+
+To clarify the scope of this work, the following are explicitly \emph{not} objectives:
+
+\begin{itemize}
+    \item Advancing the state of the art in LLM architectures or training methods
+    \item Developing novel natural language understanding algorithms
+    \item Creating a general-purpose workflow orchestration engine
+    \item Building a comprehensive RAG (Retrieval-Augmented Generation) library
+    \item Replacing existing agent frameworks for all use cases
+\end{itemize}
+
+The focus remains on the integration, orchestration, and operationalization of existing AI capabilities within an enterprise-grade platform architecture.
+
+\subsection{Objective Traceability}
+
+Table~\ref{tab:objective-traceability} maps each sub-objective to the challenges it addresses and the evaluation sections where it is verified.
+
+\begin{table}[ht]
+\centering
+\caption{Objective traceability matrix.}
+\label{tab:objective-traceability}
+\small
+\begin{tabular}{llll}
+\hline
+\textbf{Sub-Objective} & \textbf{Addresses Challenge} & \textbf{Primary Chapter} & \textbf{Evaluation} \\
+\hline
+SO1: Security & Challenge 1 & Chapter~\ref{ch:security} & Sec.~\ref{sec:security-eval} \\
+SO2: Multi-Tenancy & Challenge 2 & Chapter~\ref{ch:security} & Sec.~\ref{sec:functional-eval} \\
+SO3: NL-to-Cypher & Challenge 3 & Chapter~\ref{ch:orchestration} & Sec.~\ref{sec:functional-eval} \\
+SO4: Observability & Challenge 4 & Chapter~\ref{ch:observability} & Sec.~\ref{sec:performance-eval} \\
+SO5: LLM Resilience & Challenge 5 & Chapter~\ref{ch:orchestration} & Sec.~\ref{sec:availability-ft} \\
+SO6: Tool Ecosystem & Challenge 6 & Chapter~\ref{ch:mcp-tools} & Sec.~\ref{sec:functional-eval} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Validation Approach}
+
+Each objective will be validated through a combination of:
+
+\begin{description}
+    \item[Functional Testing:] Automated tests verifying that implemented features meet specifications. The test suite includes over 2,700 test functions covering all major subsystems.
+    
+    \item[Performance Benchmarking:] Quantitative measurements of latency, throughput, and resource utilization under realistic workloads.
+    
+    \item[Security Assessment:] Evaluation of authentication, authorization, and data protection mechanisms against defined threat scenarios.
+    
+    \item[Operational Evaluation:] Assessment of monitoring, alerting, and operational procedures in production-like environments.
+    
+    \item[Comparative Analysis:] Comparison with existing frameworks to demonstrate relative capabilities and limitations.
+\end{description}
+
+The evaluation chapter (Chapter~\ref{ch:evaluation}) presents detailed results for each validation approach.
+

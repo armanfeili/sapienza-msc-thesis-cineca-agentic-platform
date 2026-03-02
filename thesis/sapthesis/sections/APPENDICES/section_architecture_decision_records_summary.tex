@@ -1,0 +1,229 @@
+% TODO checklist: Inspected files:
+% - docs/adr/0001-record-architecture-decisions.md
+% - docs/adr/_template.md
+% - README.md (architecture sections)
+% - Q&A.md (design decisions throughout)
+
+\chapter{Architecture Decision Records Summary}
+\label{app:adr-summary}
+
+This appendix summarizes the key Architecture Decision Records (ADRs) that document the rationale behind major design choices in the Cineca Agentic Platform. ADRs follow the MADR (Markdown Architecture Decision Records) format.
+
+%------------------------------------------------------------------------------
+\section{ADR Process}
+\label{app:adr:process}
+
+\subsection{ADR Format}
+
+Each ADR follows a standardized template with the following sections:
+
+\begin{itemize}
+    \item \textbf{Status}: Proposed, Accepted, Deprecated, or Superseded
+    \item \textbf{Date}: When the decision was made
+    \item \textbf{Context}: Background and problem statement
+    \item \textbf{Decision}: The chosen approach and rationale
+    \item \textbf{Consequences}: Positive, negative, and neutral impacts
+    \item \textbf{Alternatives Considered}: Options evaluated but not chosen
+    \item \textbf{References}: Related documents and specifications
+\end{itemize}
+
+\subsection{File Naming Convention}
+
+ADRs are stored in \texttt{docs/adr/} with the naming pattern:
+\begin{verbatim}
+NNNN-title-with-hyphens.md
+\end{verbatim}
+
+where \texttt{NNNN} is a zero-padded sequence number.
+
+%------------------------------------------------------------------------------
+\section{Recorded Decisions}
+\label{app:adr:decisions}
+
+\subsection{ADR-0001: Record Architecture Decisions}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Status} & Accepted \\
+    \textbf{Date} & 2025-08-09 \\
+    \textbf{Context} & As the project grows, technical decisions need structured documentation to preserve rationale and enable informed future changes. \\
+    \textbf{Decision} & Adopt MADR format for recording architecture decisions in \texttt{docs/adr/}. \\
+    \textbf{Consequences} & Improved communication, easier onboarding, traceable rationale; small maintenance overhead. \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Implicit Decisions}
+\label{app:adr:implicit}
+
+The following key decisions are documented implicitly through the codebase and documentation, pending formal ADR creation:
+
+\subsection{Three-Layer Architecture}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Decision} & Separate the platform into Core Backend, Data/Infrastructure, and Presentation layers. \\
+    \textbf{Rationale} & Clear separation of concerns enables independent scaling, testing, and evolution of each layer. \\
+    \textbf{Alternatives} & Monolithic application (rejected for complexity), microservices per feature (rejected for operational overhead at current scale). \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{PostgreSQL as Control Plane}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Decision} & Use PostgreSQL as the authoritative source of truth for all control-plane entities. \\
+    \textbf{Rationale} & ACID compliance, mature ecosystem, strong consistency guarantees, and robust tooling (Alembic, SQLAlchemy). \\
+    \textbf{Alternatives} & NoSQL databases (rejected for schema flexibility needs), distributed SQL (rejected for operational complexity). \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Redis as Data Plane}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Decision} & Use Redis for low-latency operations including caching, job queues, rate limiting, and session state. \\
+    \textbf{Rationale} & Sub-millisecond latency, rich data structures (ZSET for rate limiting, LIST for queues), and pub/sub capabilities. \\
+    \textbf{Alternatives} & In-memory caching only (rejected for distributed scenarios), Kafka (rejected for queue simplicity needs). \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Memgraph for Graph Domain}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Decision} & Use Memgraph as the graph database for bioinformatics knowledge graphs. \\
+    \textbf{Rationale} & Cypher compatibility, in-memory performance for traversal queries, and strong integration with Python ecosystem. \\
+    \textbf{Alternatives} & Neo4j (considered, similar capabilities), PostgreSQL graph extensions (rejected for performance on deep traversals). \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{MCP-Style Tool Protocol}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Decision} & Implement a native MCP-style tool protocol for agent-tool interactions. \\
+    \textbf{Rationale} & Standardized tool discovery and invocation, JSON Schema validation, consistent audit logging, and scope-based authorization. \\
+    \textbf{Alternatives} & Custom RPC (rejected for interoperability), direct function calls (rejected for audit/security requirements). \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{OIDC/JWT for Authentication}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Decision} & Use OIDC-compliant JWT tokens for authentication with external identity providers. \\
+    \textbf{Rationale} & Industry standard, stateless verification, support for enterprise SSO, and clear separation of identity management. \\
+    \textbf{Alternatives} & Session-based auth (rejected for statelessness), custom token format (rejected for interoperability). \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Multi-Tenant Isolation}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Decision} & Implement multi-tenancy through tenant ID propagation and database-level filtering. \\
+    \textbf{Rationale} & Shared infrastructure reduces costs while maintaining logical isolation; row-level security provides defense in depth. \\
+    \textbf{Alternatives} & Separate databases per tenant (rejected for operational complexity), schema-per-tenant (rejected for migration complexity). \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Dual UI Architecture}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Decision} & Provide separate UIs for end-users (Next.js Chat) and operators (Streamlit Control Panel). \\
+    \textbf{Rationale} & Persona separation enables optimized UX per role; technology specialization matches use case requirements. \\
+    \textbf{Alternatives} & Single unified UI (rejected for complexity and role confusion), CLI-only for admins (rejected for accessibility). \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Pending Decisions}
+\label{app:adr:pending}
+
+The following decisions are under consideration for future ADRs:
+
+\begin{enumerate}
+    \item \textbf{Multi-Agent Collaboration}: Protocol for agent-to-agent communication
+    \item \textbf{Event Sourcing}: Full event sourcing for audit trail reconstruction
+    \item \textbf{Microservices Decomposition}: Criteria for service extraction
+    \item \textbf{GraphQL API}: Alternative query interface for complex operations
+    \item \textbf{Federated Deployment}: Multi-cluster coordination patterns
+\end{enumerate}
+
+%------------------------------------------------------------------------------
+\section{ADR Template}
+\label{app:adr:template}
+
+The following template is used for creating new ADRs:
+
+\begin{verbatim}
+# ADR [NUMBER]: [TITLE]
+
+## Status
+[Proposed | Accepted | Deprecated | Superseded by ADR-XXX]
+
+## Date
+YYYY-MM-DD
+
+## Context
+[Background and problem description]
+
+## Decision
+[The decision and key points of the chosen approach]
+
+## Consequences
+**Positive:**
+- [Benefits]
+
+**Negative:**
+- [Drawbacks]
+
+**Neutral:**
+- [Trade-offs]
+
+## Alternatives Considered
+- Alternative 1 -- [reason for rejection]
+- Alternative 2 -- [reason for rejection]
+
+## References
+- [Links to related documents]
+\end{verbatim}
+

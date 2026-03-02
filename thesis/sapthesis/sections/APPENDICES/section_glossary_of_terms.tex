@@ -1,0 +1,314 @@
+% TODO checklist: Inspected files:
+% - README.md (terminology throughout)
+% - Q&A.md (definitions in answers)
+% - docs/general/GLOSSARY.md
+% - src/ (code terminology)
+
+\chapter{Glossary of Terms}
+\label{app:glossary}
+
+This appendix defines key terms, acronyms, and concepts used throughout this thesis and the Cineca Agentic Platform documentation.
+
+%------------------------------------------------------------------------------
+\section{General Terms}
+\label{app:glossary:general}
+
+\begin{description}[style=nextline,leftmargin=2cm,labelwidth=1.8cm]
+
+\item[Agent]
+An autonomous software entity that can perceive its environment, make decisions, and take actions to achieve goals. In this platform, agents are LLM-powered systems that execute multi-step workflows.
+
+\item[Agentic AI]
+AI systems that exhibit autonomous, goal-directed behavior, capable of planning, reasoning, and using tools to accomplish complex tasks without explicit step-by-step instructions.
+
+\item[Control Plane]
+The layer responsible for configuration, orchestration, and management of platform components. In this architecture, PostgreSQL serves as the control plane data store.
+
+\item[Data Plane]
+The layer handling low-latency, high-throughput data operations. Redis serves this role for caching, queuing, and session state.
+
+\item[Multi-Tenancy]
+An architecture where a single application instance serves multiple tenant organizations with logical data isolation.
+
+\item[Orchestration]
+The coordination of multiple components, services, or steps to accomplish a complex task. The Agent Orchestration Engine coordinates LLM reasoning, tool invocation, and state management.
+
+\item[Pipeline]
+A sequence of processing stages where the output of one stage becomes the input of the next. The NL$\rightarrow$Cypher pipeline translates natural language to graph queries.
+
+\item[Resilience]
+The ability of a system to continue operating correctly in the presence of failures, including LLM provider outages, network issues, and resource exhaustion.
+
+\item[Tool]
+A discrete, invokable capability that agents can use to interact with external systems, process data, or perform specialized tasks.
+
+\end{description}
+
+%------------------------------------------------------------------------------
+\section{Architecture Terms}
+\label{app:glossary:architecture}
+
+\begin{description}[style=nextline,leftmargin=2cm,labelwidth=1.8cm]
+
+\item[ADR]
+Architecture Decision Record. A document capturing the context, decision, and consequences of an architectural choice.
+
+\item[API Gateway]
+A single entry point for all client requests, providing routing, authentication, rate limiting, and request transformation.
+
+\item[Circuit Breaker]
+A fault tolerance pattern that prevents cascading failures by temporarily stopping requests to a failing service after a threshold of failures.
+
+\item[CQRS]
+Command Query Responsibility Segregation. A pattern separating read and write operations into different models or services.
+
+\item[Event Sourcing]
+An architectural pattern where state changes are stored as a sequence of events, enabling full audit trails and state reconstruction.
+
+\item[Microservices]
+An architectural style where an application is composed of loosely coupled, independently deployable services.
+
+\item[Repository Pattern]
+A data access pattern that abstracts database operations behind a collection-like interface, promoting testability and decoupling.
+
+\item[SSE]
+Server-Sent Events. A protocol for servers to push real-time updates to clients over HTTP. Used for job progress streaming.
+
+\end{description}
+
+%------------------------------------------------------------------------------
+\section{LLM and AI Terms}
+\label{app:glossary:llm}
+
+\begin{description}[style=nextline,leftmargin=2cm,labelwidth=1.8cm]
+
+\item[Chain-of-Thought (CoT)]
+A prompting technique where the LLM is encouraged to articulate its reasoning step-by-step before providing a final answer.
+
+\item[Context Window]
+The maximum number of tokens an LLM can process in a single request, including both input and output.
+
+\item[Embedding]
+A dense vector representation of text that captures semantic meaning, enabling similarity search and clustering.
+
+\item[Fine-tuning]
+The process of training a pre-trained model on a specific dataset to adapt it for particular tasks or domains.
+
+\item[Hallucination]
+When an LLM generates plausible-sounding but factually incorrect or unsupported information.
+
+\item[Intent Classification]
+The process of determining the user's intended action from their natural language input. Used as a security filter.
+
+\item[LLM]
+Large Language Model. A neural network trained on vast text corpora, capable of understanding and generating human-like text.
+
+\item[MCP]
+Model Context Protocol. A standardized interface for tool discovery, invocation, and result handling in agentic systems.
+
+\item[Ollama]
+An open-source platform for running LLMs locally, providing an OpenAI-compatible API.
+
+\item[Prompt Engineering]
+The practice of crafting effective prompts to elicit desired behaviors from LLMs.
+
+\item[RAG]
+Retrieval-Augmented Generation. A technique combining information retrieval with LLM generation to provide grounded, factual responses.
+
+\item[Temperature]
+A hyperparameter controlling the randomness of LLM outputs. Lower values (e.g., 0.0) produce deterministic outputs; higher values (e.g., 1.0) increase creativity.
+
+\item[Token]
+The basic unit of text processed by LLMs. Roughly equivalent to 3-4 characters or 0.75 words in English.
+
+\item[Tool Calling]
+The capability of LLMs to invoke external functions or APIs based on natural language instructions.
+
+\end{description}
+
+%------------------------------------------------------------------------------
+\section{Database Terms}
+\label{app:glossary:database}
+
+\begin{description}[style=nextline,leftmargin=2cm,labelwidth=1.8cm]
+
+\item[Alembic]
+A database migration framework for SQLAlchemy, enabling version-controlled schema changes.
+
+\item[Bolt Protocol]
+A binary protocol used by graph databases (Neo4j, Memgraph) for efficient client-server communication.
+
+\item[Cypher]
+A declarative graph query language used by Memgraph and Neo4j, similar to SQL for graph data.
+
+\item[JSONB]
+A PostgreSQL data type for storing JSON documents in a binary, indexed format.
+
+\item[Memgraph]
+An in-memory graph database using the Cypher query language, optimized for real-time analytics.
+
+\item[ORM]
+Object-Relational Mapping. A technique for accessing relational data using object-oriented paradigms. SQLAlchemy is the ORM used in this platform.
+
+\item[PostgreSQL]
+An advanced open-source relational database known for robustness, extensibility, and standards compliance.
+
+\item[Redis]
+An in-memory data store supporting strings, lists, sets, sorted sets, and hashes. Used for caching, queues, and pub/sub.
+
+\item[SQLAlchemy]
+A Python SQL toolkit and ORM providing database abstraction and query generation.
+
+\end{description}
+
+%------------------------------------------------------------------------------
+\section{Security Terms}
+\label{app:glossary:security}
+
+\begin{description}[style=nextline,leftmargin=2cm,labelwidth=1.8cm]
+
+\item[JWT]
+JSON Web Token. A compact, URL-safe token format for representing claims between parties, used for authentication.
+
+\item[JWKS]
+JSON Web Key Set. A set of keys containing public keys used to verify JWT signatures.
+
+\item[OAuth 2.0]
+An authorization framework enabling third-party applications to access resources on behalf of a user.
+
+\item[OIDC]
+OpenID Connect. An identity layer on top of OAuth 2.0, providing authentication and user identity information.
+
+\item[Output Guard]
+A security mechanism that validates LLM outputs for harmful content, policy violations, or sensitive data.
+
+\item[PII]
+Personally Identifiable Information. Data that can identify an individual, such as names, emails, or phone numbers. The platform scrubs PII from logs.
+
+\item[RBAC]
+Role-Based Access Control. An authorization model where permissions are assigned to roles rather than individual users.
+
+\item[Scope]
+A permission unit in OAuth/OIDC defining what resources a token can access (e.g., \texttt{graph:read}, \texttt{admin:all}).
+
+\item[Tenant]
+An organizational unit in a multi-tenant system, with isolated data and potentially separate configuration.
+
+\end{description}
+
+%------------------------------------------------------------------------------
+\section{Observability Terms}
+\label{app:glossary:observability}
+
+\begin{description}[style=nextline,leftmargin=2cm,labelwidth=1.8cm]
+
+\item[APM]
+Application Performance Monitoring. Tools and practices for measuring and managing application performance.
+
+\item[Correlation ID]
+A unique identifier passed through all services handling a request, enabling distributed trace analysis.
+
+\item[Grafana]
+An open-source analytics and visualization platform, used to display metrics from Prometheus.
+
+\item[Health Check]
+An endpoint that returns the health status of a service, used by orchestrators for liveness and readiness probes.
+
+\item[Metrics]
+Numeric measurements collected over time, such as request counts, latencies, and error rates.
+
+\item[OpenTelemetry (OTel)]
+A vendor-neutral observability framework providing APIs and tools for tracing, metrics, and logging.
+
+\item[Prometheus]
+A time-series database and monitoring system that scrapes metrics from instrumented services.
+
+\item[Span]
+A unit of work in a distributed trace, representing an operation with a start time and duration.
+
+\item[Trace]
+A distributed trace following a request across multiple services, composed of spans.
+
+\end{description}
+
+%------------------------------------------------------------------------------
+\section{Platform-Specific Terms}
+\label{app:glossary:platform}
+
+\begin{description}[style=nextline,leftmargin=2cm,labelwidth=1.8cm]
+
+\item[Agent Run]
+A single execution of an agent, from receiving a user request to producing a final response.
+
+\item[Agent Session]
+A stateful conversation context containing multiple agent runs (steps) with shared history.
+
+\item[Agent Step]
+An individual action within an agent session: user message, assistant response, tool invocation, or system event.
+
+\item[Built-in LLM Manifest]
+Configuration for locally-managed LLM processes, including model paths, ports, and resource limits.
+
+\item[Job]
+A unit of background work with a lifecycle (queued $\rightarrow$ running $\rightarrow$ finished/failed) and associated payload and result.
+
+\item[Model Instance]
+A loaded, configured LLM accessible through a provider, with associated capabilities and settings.
+
+\item[NL$\rightarrow$Cypher]
+The pipeline translating Natural Language questions into Cypher graph queries for Memgraph.
+
+\item[Provider]
+An LLM service configuration (OpenAI, Ollama, etc.) with connection details and credentials.
+
+\item[Provider Pool]
+A collection of LLM providers that can be used for failover and load balancing.
+
+\item[Tool Invocation]
+A recorded execution of a tool, including input parameters, output, latency, and any errors.
+
+\end{description}
+
+%------------------------------------------------------------------------------
+\section{Acronyms}
+\label{app:glossary:acronyms}
+
+\begin{table}[ht]
+\centering
+\caption{Common Acronyms}
+\label{tab:acronyms}
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Acronym} & \textbf{Meaning} \\
+    \hline
+    ADR & Architecture Decision Record \\
+    API & Application Programming Interface \\
+    CORS & Cross-Origin Resource Sharing \\
+    CRUD & Create, Read, Update, Delete \\
+    DTO & Data Transfer Object \\
+    HSTS & HTTP Strict Transport Security \\
+    HTTP & Hypertext Transfer Protocol \\
+    JSON & JavaScript Object Notation \\
+    JWT & JSON Web Token \\
+    LLM & Large Language Model \\
+    MADR & Markdown Architecture Decision Records \\
+    MCP & Model Context Protocol \\
+    NL & Natural Language \\
+    OIDC & OpenID Connect \\
+    ORM & Object-Relational Mapping \\
+    OTel & OpenTelemetry \\
+    PII & Personally Identifiable Information \\
+    RBAC & Role-Based Access Control \\
+    REST & Representational State Transfer \\
+    RPC & Remote Procedure Call \\
+    SQL & Structured Query Language \\
+    SSE & Server-Sent Events \\
+    TLS & Transport Layer Security \\
+    TTL & Time To Live \\
+    UI & User Interface \\
+    UUID & Universally Unique Identifier \\
+    \hline
+\end{tabularx}
+\end{table}
+

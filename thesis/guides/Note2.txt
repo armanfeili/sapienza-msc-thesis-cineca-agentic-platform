@@ -1,0 +1,72 @@
+Follow this structure for the thesis:
+- Title
+- Abstract
+- Introduction
+- Related works
+- Proposed solution
+- Tests
+- Results
+- Conclusions
+- Future works
+- Appendices
+- Bibliography
+
+Sometimes some sections are grouped together, use this structure as a basis and try to stick with it. While you work on your thesis, see if it's good to follow this structure, or if you should change it a bit.
+
+###############################################
+
+Reading your thesis what should be clear is:
+- what is the problem that we're dealing with
+- what have you done to address to problem
+- what kind of results you've gotten
+
+Everything else that you write should help better explain this things and make your thesis richer.
+If something doesn't help explain, or worse makes the thesis less clear, then it's probably best to leave it out.
+
+Specific implementation details are not necessary.
+Usually the most that is required about implementation details is the hardware used and the software version of the main libraries used.
+
+Assume that whoever is going to read your thesis doesn't know anything about what you've done, and probably doesn't even understand it; don't make too many assumptions and write everything as clear as possible.
+I'm not telling you to assume that the reader is 5 years old, because people in universities are a bit smarter than that, but almost 5.
+
+
+###############################################
+
+Hints to improve your thesis:
+- Group up sections and chapters
+- Remove implementation details
+
+GROUP UP SECTIONS AND CHAPTERS
+The structure of the thesis isn't something that cannot be changed, but it should be coherent.
+Giving a good structure is important.
+
+For instance, a thorough explanation of your work/methodology should go under a chapter called about the "proposed method", and everything should be there.
+Another actual example, in your draft you have a bunch of appendices. They should all be under a single chapter called "Appendices", which not only groups them up, but make it clear that there you will find the appendices.
+While you have created a bunch of chapters, one for each appendix, and with a name that doesn't help in recognizing them as appendices, unless when goes to the specific page and reads "Appendix A".
+
+
+REMOVE IMPLEMENTATION DETAILS
+The most important thing is to explain how your method works, in such a way that, if someone wants to, it is replicable.
+
+Explaining every single implementation detail is too much:
+- it isn't helpful in explaining the methodology
+- makes the thesis harder to read, because it's easier getting lost
+- makes the thesis longer, which might end up being too long
+
+For instance, I noticed that you even mentioned which python file implements some specific stuff.
+That is a perfect example of a detail that can be left out of the final thesis (but good for a technical report, which might be suited for CINECA).
+
+There isn't a specific amount of pages required, but the length must be in some way justified.
+
+
+OTHER HINTS
+
+I noticed that you used a lot of bulleted lists (i.e. \begin{itemize}).
+Those are helpful, but shouldn't be used everywhere.
+
+A rule of thumb is to use them to list the main aspects of some section/subsection, that you are going to later explain with normal sentences, without lists.
+
+Small lists of non-important stuff can either be:
+- left out, if something is not even important enough to be mentioned
+- written in a small list in normal text, without an explicit list; e.g. "Programs can be classified in compiled and interpreted"
+

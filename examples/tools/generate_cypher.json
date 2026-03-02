@@ -1,0 +1,26 @@
+{
+  "name": "graph.generate_cypher",
+  "arguments": {
+    "action": "generate",
+    "nl_query": "List the 10 most recent tasks (of any task label) with their runner (username), status, and start timestamp. Include the first output file name if one exists. Order by start desc.",
+    "schema_context": {
+      "nodes": ["User", "Institution", "File", "Fasta", "BlastDb", "Xml", "BlastedSeq", "SearchbyTaxon", "Bold", "Command", "Blast", "BlastSeq", "CreateDb"],
+      "relationships": [
+        "(:User)-[:WORKS_AT]->(:Institution)",
+        "(:User)-[:RUNS]->(:SearchbyTaxon|:Bold|:Command|:Blast|:BlastSeq|:CreateDb)",
+        "(:Fasta|:File|:BlastDb)-[:INPUT]->(:SearchbyTaxon|:Bold|:Command|:Blast|:BlastSeq|:CreateDb)",
+        "(:SearchbyTaxon|:Bold|:Command|:Blast|:BlastSeq|:CreateDb)-[:OUTPUT]->(:File|:Fasta|:Xml|:BlastedSeq|:BlastDb)"
+      ]
+    },
+    "examples": [
+      {
+        "nl_query": "How many nodes of each label do we have?",
+        "cypher": "MATCH (n)\nUNWIND labels(n) AS lbl\nRETURN lbl AS label, count(*) AS count\nORDER BY count DESC"
+      },
+      {
+        "nl_query": "Show distinct (from-label)-[REL]->(to-label).",
+        "cypher": "MATCH (a)-[r]->(b)\nWITH labels(a)[0] AS from, type(r) AS rel, labels(b)[0] AS to\nRETURN DISTINCT from, rel, to\nORDER BY from, rel, to"
+      }
+    ]
+  }
+}

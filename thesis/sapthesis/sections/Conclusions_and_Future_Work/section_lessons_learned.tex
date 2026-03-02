@@ -1,0 +1,246 @@
+% TODO checklist: Inspected files for this section:
+% - README.md (architecture overview, project structure)
+% - Q&A.md (questions 41, 45, 46 - operational strengths/weaknesses, extensibility, technical debt)
+% - comparison.md (trade-offs section, practical decision guide)
+% - sapthesis-doc.tex (design principles, constraints)
+
+\section{Lessons Learned}
+\label{sec:lessons}
+
+The development of the Cineca Agentic Platform over the course of this thesis has yielded valuable insights into the design and implementation of enterprise AI agent systems. This section distills the key lessons learned across architectural, development, and operational dimensions.
+
+\subsection{Architectural Insights}
+
+\paragraph{Lesson 1: Separation of Control Plane and Data Plane}
+
+One of the most impactful architectural decisions was the clear separation between the \textbf{control plane} (PostgreSQL for authoritative records) and the \textbf{data plane} (Redis for low-latency operations). This dual-store architecture provides:
+
+\begin{itemize}
+    \item \textbf{Durability guarantees}: Critical data (jobs, runs, audit logs) survive Redis restarts
+    \item \textbf{Performance optimization}: Hot-path operations use Redis without database round-trips
+    \item \textbf{Operational flexibility}: Redis can be flushed for recovery without data loss
+\end{itemize}
+
+However, this architecture introduces \textbf{consistency challenges}. The platform addresses these through:
+\begin{itemize}
+    \item PostgreSQL as the authoritative source with Redis as a cache
+    \item Idempotency keys stored in both layers for deduplication
+    \item Periodic synchronization and orphaned-index cleanup
+\end{itemize}
+
+\textit{Recommendation}: Future systems should carefully document the consistency model and provide clear recovery procedures for divergent states.
+
+\paragraph{Lesson 2: Security as a First-Class Concern}
+
+Retrofitting security into an existing system is significantly more costly than designing it from the start. The platform's security framework---OIDC authentication, RBAC authorization, tenant isolation, rate limiting, PII scrubbing---touches nearly every component:
+
+\begin{itemize}
+    \item API endpoints require authentication dependencies
+    \item Database queries include tenant filters
+    \item Tool invocations check scope requirements
+    \item Logs scrub sensitive data before emission
+    \item Responses pass through output guards
+\end{itemize}
+
+This pervasive integration would be extremely difficult to add incrementally. The lesson is clear: \textbf{security architecture must be established in the initial design phase}, not treated as an afterthought.
+
+\paragraph{Lesson 3: The Orchestrator Complexity Trade-off}
+
+The central orchestrator (\texttt{orchestrator.py}, 8,263 lines) embodies a fundamental trade-off:
+
+\begin{itemize}
+    \item \textbf{Centralization advantages}: Single point for policy enforcement, metrics collection, and debugging; consistent behavior across all agent runs
+    \item \textbf{Centralization disadvantages}: Large file complexity, testing challenges, merge conflicts, cognitive load for new developers
+\end{itemize}
+
+In hindsight, the orchestrator would benefit from decomposition into:
+\begin{itemize}
+    \item Intent classification module
+    \item Step execution engine
+    \item Provider management layer
+    \item Metrics aggregation service
+\end{itemize}
+
+\textit{Recommendation}: For large orchestration logic, establish module boundaries early and enforce them through code organization, even if initial development is faster with a monolithic approach.
+
+\paragraph{Lesson 4: Graph Databases Require Specialized Handling}
+
+Integrating Memgraph as a first-class data store revealed unique challenges not present with traditional relational databases:
+
+\begin{itemize}
+    \item \textbf{Schema flexibility}: Graph databases' schema-optional nature requires application-level constraints
+    \item \textbf{Query safety}: Cypher's expressiveness creates injection risks that SQL parameterization patterns don't fully address
+    \item \textbf{Performance characteristics}: Graph traversal costs are less predictable than relational query planning
+    \item \textbf{Tooling maturity}: Migration and backup tooling is less mature than PostgreSQL ecosystem
+\end{itemize}
+
+The NL-to-Cypher pipeline's six-layer safety validation emerged from iterative discovery of these challenges. \textit{Recommendation}: When integrating graph databases with LLM-generated queries, assume adversarial inputs and implement defense-in-depth from the start.
+
+\subsection{Development Challenges}
+
+\paragraph{Challenge 1: Testing LLM-Dependent Components}
+
+Testing components that depend on LLM outputs presents fundamental challenges:
+
+\begin{itemize}
+    \item \textbf{Non-determinism}: Identical prompts can produce different outputs
+    \item \textbf{Latency}: Real LLM calls are too slow for rapid test iteration
+    \item \textbf{Cost}: Extensive testing with commercial APIs incurs significant expense
+    \item \textbf{Availability}: Provider outages can break CI pipelines
+\end{itemize}
+
+The platform addresses these through:
+\begin{itemize}
+    \item \textbf{Test mode}: JSON file mapping prompts to expected outputs for deterministic testing
+    \item \textbf{Mock providers}: Stubbed responses for unit tests
+    \item \textbf{Provider abstraction}: Interface allowing easy substitution of real and fake implementations
+    \item \textbf{Separate test markers}: \texttt{@pytest.mark.integration} for tests requiring real services
+\end{itemize}
+
+\textit{Lesson}: Design for testability from the start by ensuring all LLM interactions pass through mockable interfaces.
+
+\paragraph{Challenge 2: Multi-Tenancy Testing}
+
+Validating tenant isolation requires testing that data from one tenant is \textit{never} visible to another. This is challenging because:
+
+\begin{itemize}
+    \item Tests must create realistic multi-tenant scenarios
+    \item Isolation failures may be subtle (e.g., cache leakage, log exposure)
+    \item Complete coverage requires testing every data access path
+\end{itemize}
+
+The platform's approach includes:
+\begin{itemize}
+    \item Fixture-based tenant creation with unique identifiers
+    \item Cross-tenant access attempt tests
+    \item ContextVar-based tenant propagation ensuring consistent filtering
+\end{itemize}
+
+\textit{Lesson}: Multi-tenancy testing should be treated as a first-class concern with dedicated test categories and coverage requirements.
+
+\paragraph{Challenge 3: Dual-UI Maintenance}
+
+Maintaining two user interfaces (Next.js and Streamlit) creates overhead:
+
+\begin{itemize}
+    \item API client logic is duplicated in TypeScript and Python
+    \item Feature additions may require updates in both UIs
+    \item Different technologies require different skill sets
+    \item End-to-end tests must cover both interfaces
+\end{itemize}
+
+Mitigations implemented:
+\begin{itemize}
+    \item Single backend API as source of truth
+    \item OpenAPI specification for contract documentation
+    \item Clear persona separation (chat UI for users, control panel for operators)
+\end{itemize}
+
+\textit{Lesson}: Dual-UI architectures are justified when personas have fundamentally different needs, but require explicit strategies for maintaining consistency.
+
+\subsection{Best Practices Identified}
+
+Through iterative development, several best practices emerged that should inform future enterprise AI systems:
+
+\paragraph{Practice 1: Decorator-Based Tool Registration}
+
+The \texttt{@mcp\_tool} decorator pattern enables declarative tool definition:
+
+\begin{lstlisting}[language=Python]
+@mcp_tool(
+    name="graph.query",
+    scopes=["graph:read"],
+    timeout_ms=30000,
+    rate_limit=60,
+)
+async def invoke(payload: dict, ctx: ToolContext) -> dict:
+    # Implementation
+\end{lstlisting}
+
+Benefits:
+\begin{itemize}
+    \item Metadata is co-located with implementation
+    \item Automatic registration via discovery
+    \item Consistent enforcement of timeouts, rate limits, and authorization
+    \item Easy addition of new tools without modifying central registries
+\end{itemize}
+
+\paragraph{Practice 2: RFC 7807 Problem Details for Errors}
+
+Standardizing error responses on RFC 7807 Problem Details provides:
+
+\begin{itemize}
+    \item Consistent error structure across all endpoints
+    \item Machine-readable error types for client handling
+    \item Human-readable details for debugging
+    \item Extension fields for context-specific information
+\end{itemize}
+
+This standardization simplifies client implementation and debugging, particularly for the dual-UI architecture.
+
+\paragraph{Practice 3: Health Probes with Component Granularity}
+
+Beyond simple liveness/readiness probes, the component-level health endpoint (\texttt{/v1/health/components}) provides:
+
+\begin{itemize}
+    \item Per-component status (PostgreSQL, Redis, Memgraph, LLM providers)
+    \item Latency measurements for each component
+    \item Degraded states for partial failures
+    \item Actionable diagnostics for operators
+\end{itemize}
+
+This granularity enables intelligent load balancing and targeted incident response.
+
+\paragraph{Practice 4: Idempotency as Default}
+
+Making operations idempotent by default, rather than as an opt-in feature, prevents a class of bugs:
+
+\begin{itemize}
+    \item Job creation with idempotency keys prevents duplicate processing
+    \item Tool invocations with request IDs enable safe retries
+    \item Database operations use upsert patterns where appropriate
+\end{itemize}
+
+The overhead of idempotency support is minimal compared to the debugging cost of non-idempotent failures.
+
+\paragraph{Practice 5: Structured Logging with Context Propagation}
+
+The combination of structlog with ContextVar-based context propagation enables:
+
+\begin{itemize}
+    \item Automatic inclusion of request ID, tenant ID, and trace ID in all logs
+    \item Correlation of logs across service calls
+    \item PII scrubbing before log emission
+    \item JSON format for production log aggregation
+\end{itemize}
+
+This infrastructure investment pays dividends in debugging and compliance.
+
+\subsection{Organizational and Process Insights}
+
+\paragraph{Documentation as First-Class Deliverable}
+
+The comprehensive documentation (README, Q\&A, API docs, ADRs) required significant investment but proved essential for:
+
+\begin{itemize}
+    \item Onboarding and knowledge transfer
+    \item Architectural decision preservation
+    \item Thesis writing and external communication
+    \item Self-documentation for future maintenance
+\end{itemize}
+
+\textit{Lesson}: Allocate explicit time for documentation as part of the development process, not as an afterthought.
+
+\paragraph{Incremental Complexity Management}
+
+The platform's complexity grew organically from initial prototypes. Managing this growth required:
+
+\begin{itemize}
+    \item Regular refactoring to prevent architectural drift
+    \item Clear module boundaries enforced through directory structure
+    \item Consistent patterns (repository, adapter, decorator) applied uniformly
+    \item Code review focused on architectural consistency
+\end{itemize}
+
+\textit{Lesson}: Establish architectural patterns early and enforce them consistently, even when shortcuts are tempting.
+

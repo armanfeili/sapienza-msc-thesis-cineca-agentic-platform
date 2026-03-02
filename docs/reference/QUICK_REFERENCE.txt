@@ -1,0 +1,99 @@
+╔═══════════════════════════════════════════════════════════════════╗
+║                                                                   ║
+║            CINECA AGENTIC PLATFORM - QUICK REFERENCE              ║
+║                      (100% Complete - v0.1.0)                     ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+📍 DOCUMENTATION STARTING POINTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🏠 Main README              → README.md
+  📚 Documentation Index      → docs/INDEX.md
+  🔧 Operator Runbook         → docs/OPERATOR_RUNBOOK.md
+  ✅ Completion Status        → docs/TODO_COMPLETION_SUMMARY.md
+  🎉 100% Complete Report     → docs/PLATFORM_100_PERCENT_COMPLETE.md
+
+🚀 QUICK DEPLOYMENT (5 Minutes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  1. git clone <repo> && cd Cineca-Agentic-Platform
+  2. cp .env.example .env
+  3. # Edit .env: JWT_SECRET, DB_PASSWORD, REDIS_PASSWORD
+  4. docker compose up -d
+  5. docker compose ps  # Wait for healthy status
+  6. curl http://localhost:8000/v1/health/ready
+  7. Configure defaults via UI: http://localhost:8501
+
+🌐 SERVICE ENDPOINTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  API Server       http://localhost:8000
+  UI (Streamlit)   http://localhost:8501
+  PostgreSQL       localhost:5432
+  Redis            localhost:6379
+  Memgraph         localhost:7687
+  Ollama           localhost:11434
+  Grafana          http://localhost:3000  (admin/admin)
+  Prometheus       http://localhost:9090
+
+🔑 KEY API ENDPOINTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Health           GET  /v1/health/ready
+  Agent Runs       POST /v1/agent-runs
+  Sessions         POST /v1/agents/sessions
+  Tools List       GET  /v1/tools
+  Tool Invoke      POST /v1/tools/{name}/invocations
+  Jobs             GET  /v1/jobs/{id}
+  API Docs         GET  /docs  (if ENABLE_DOCS=true)
+
+🛠️ COMMON OPERATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Start Services   docker compose up -d
+  Stop Services    docker compose down
+  View Logs        docker compose logs -f [service]
+  Restart Service  docker compose restart [service]
+  Shell Access     docker compose exec app bash
+  Database Shell   docker compose exec postgres psql -U postgres
+
+📊 MONITORING & TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Health Check     curl http://localhost:8000/v1/health/ready
+  Metrics          curl http://localhost:8000/metrics
+  Grafana          http://localhost:3000 (Dashboards)
+  Prometheus       http://localhost:9090 (Raw metrics)
+  Logs (UI)        UI → Admin → System Logs
+
+🎯 CORE FEATURES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✅ Agent Orchestration   (One-shot runs + long-lived sessions)
+  ✅ NL → Cypher          (Natural language to graph queries)
+  ✅ Tools Management     (Discovery, invocation, bulk testing)
+  ✅ Admin Workflows      (Sessions, Jobs, Providers, Tenants)
+  ✅ Auto-Renewal         (Machine tokens at T-5min)
+  ✅ Log Viewer           (Redacted, filterable)
+  ✅ Monitoring           (Prometheus + Grafana)
+
+💡 TROUBLESHOOTING QUICK LINKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Health errors       → ui/README.md#troubleshooting
+  Agent runs issues   → docs/ORCHESTRATOR_FIX_COMPLETE.md
+  Permission errors   → docs/AUTH_GUIDE.md
+  Token issues        → ui/README.md#token-refresh
+  Deployment issues   → docs/OPERATOR_RUNBOOK.md
+
+🎓 LEARNING PATH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  1. Read README.md (Platform overview)
+  2. Deploy locally (5-minute guide in README)
+  3. Explore UI at http://localhost:8501
+  4. Try agent run (UI → Agents → Run Agent)
+  5. Review docs/INDEX.md for deep dive
+
+✨ ACHIEVEMENTS (October 2025)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🏆 100% Complete (19/19 sections)
+  🏆 Orchestrator E2E Working
+  🏆 Complete Documentation Index
+  🏆 Production Ready
+
+╔═══════════════════════════════════════════════════════════════════╗
+║  Need Help? Start with docs/INDEX.md or docs/OPERATOR_RUNBOOK.md ║
+╚═══════════════════════════════════════════════════════════════════╝

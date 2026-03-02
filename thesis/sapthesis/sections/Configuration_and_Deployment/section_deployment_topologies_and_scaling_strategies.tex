@@ -1,0 +1,301 @@
+% TODO checklist:
+% - Inspected: docker-compose.yml (service definitions)
+% - Inspected: docker-compose.nginx.yml (production proxy setup)
+% - Inspected: Q&A.md sections on deployment assumptions and scaling
+% - Inspected: ops/nginx/nginx.conf (upstream definitions)
+% - Inspected: src/workers/jobs_worker.py structure
+% - Inspected: Dockerfile worker target
+
+\section{Deployment Topologies and Scaling Strategies}
+\label{sec:deployment-topologies}
+
+The Cineca Agentic Platform supports multiple deployment topologies ranging from single-node development environments to horizontally-scaled production clusters. This section describes the supported deployment patterns, scaling strategies, and considerations for different operational requirements.
+
+\subsection{Single-Node Deployment}
+
+The simplest deployment topology runs all services on a single host using Docker Compose. This configuration is suitable for:
+\begin{itemize}
+    \item Development and testing environments
+    \item Small-scale production deployments with moderate load
+    \item Proof-of-concept installations
+    \item Resource-constrained environments (e.g., edge deployments)
+\end{itemize}
+
+\begin{verbatim}
+┌─────────────────────────────────────────────────────────────────────┐
+│                         Single Host                                  │
+├─────────────────────────────────────────────────────────────────────┤
+│  ┌─────────┐  ┌────────┐  ┌──────────┐  ┌───────┐  ┌─────────────┐ │
+│  │ FastAPI │  │ Worker │  │ Postgres │  │ Redis │  │  Memgraph   │ │
+│  │   :8000 │  │        │  │   :5432  │  │ :6379 │  │    :7687    │ │
+│  └─────────┘  └────────┘  └──────────┘  └───────┘  └─────────────┘ │
+│  ┌─────────┐  ┌────────┐  ┌──────────────────────────────────────┐ │
+│  │ Ollama  │  │Prometh.│  │         Grafana :3001                │ │
+│  │  :11434 │  │  :9090 │  │                                      │ │
+│  └─────────┘  └────────┘  └──────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+\end{verbatim}
+
+All services communicate over Docker's internal bridge network (\texttt{app-net}), and data is persisted in named volumes on the host filesystem.
+
+\subsection{Production Deployment with Reverse Proxy}
+
+For production deployments, the platform includes NGINX reverse proxy configuration that provides TLS termination, rate limiting, and load balancing:
+
+\begin{verbatim}
+┌───────────────────────────────────────────────────────────────────────┐
+│                        Production Deployment                           │
+├───────────────────────────────────────────────────────────────────────┤
+│                                                                        │
+│                    ┌─────────────────────┐                            │
+│    Internet ──────▶│  NGINX :443/:80     │                            │
+│                    │  TLS Termination    │                            │
+│                    │  Rate Limiting      │                            │
+│                    └──────────┬──────────┘                            │
+│                               │                                        │
+│           ┌───────────────────┼───────────────────┐                   │
+│           │                   │                   │                   │
+│           ▼                   ▼                   ▼                   │
+│    ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐         │
+│    │  FastAPI    │    │  FastAPI    │    │ Streamlit UI    │         │
+│    │  Instance 1 │    │  Instance 2 │    │  Control Panel  │         │
+│    └─────────────┘    └─────────────┘    └─────────────────┘         │
+│           │                   │                   │                   │
+│           └───────────────────┼───────────────────┘                   │
+│                               │                                        │
+│    ┌──────────────────────────┼──────────────────────────────────┐   │
+│    │              Shared Infrastructure                           │   │
+│    ├──────────────────────────┼──────────────────────────────────┤   │
+│    │  PostgreSQL      Redis        Memgraph       Ollama          │   │
+│    └──────────────────────────────────────────────────────────────┘   │
+└───────────────────────────────────────────────────────────────────────┘
+\end{verbatim}
+
+The NGINX configuration in \texttt{docker-compose.nginx.yml} provides:
+
+\begin{lstlisting}[language=yaml, caption=NGINX production configuration]
+services:
+  nginx:
+    build:
+      context: ./ops/nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./ops/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ops/nginx/ssl:/etc/ssl:ro
+    depends_on:
+      - app
+      - ui_control_panel
+
+  app:
+    ports: []  # Remove direct port exposure
+    environment:
+      ENABLE_CORS: "false"       # NGINX handles CORS
+      TRUST_PROXY: "true"        # Trust X-Forwarded headers
+      SECURE_COOKIES: "true"     # Enable secure cookie flag
+\end{lstlisting}
+
+\subsection{Horizontal Scaling Patterns}
+
+\subsubsection{Application Server Scaling}
+
+The FastAPI application is stateless and can be horizontally scaled by running multiple instances behind a load balancer:
+
+\begin{lstlisting}[language=bash, caption=Scaling application instances]
+# Scale to 3 application instances
+docker compose up -d --scale app=3
+\end{lstlisting}
+
+NGINX's upstream configuration supports multiple backend instances:
+
+\begin{lstlisting}[language=nginx, caption=NGINX upstream configuration for load balancing]
+upstream app_backend {
+    server app:8000 max_fails=3 fail_timeout=30s;
+    # Additional instances are automatically discovered
+    # by Docker Compose service scaling
+}
+
+location /v1/ {
+    proxy_pass http://app_backend;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+\end{lstlisting}
+
+\subsubsection{Worker Process Scaling}
+
+Background job workers can be scaled independently from the API servers:
+
+\begin{lstlisting}[language=bash, caption=Scaling worker processes]
+# Scale to 5 worker instances
+docker compose up -d --scale worker=5
+\end{lstlisting}
+
+Workers implement distributed locking through Redis to prevent duplicate job processing:
+\begin{itemize}
+    \item Jobs are claimed atomically using \texttt{SETNX} operations
+    \item Heartbeats indicate worker liveness
+    \item Orphaned jobs are recovered after missed heartbeats
+\end{itemize}
+
+\subsubsection{Redis Scaling Considerations}
+
+For high-traffic deployments, Redis can be scaled using:
+
+\begin{enumerate}
+    \item \textbf{Redis Sentinel}: Provides automatic failover for high availability
+    \item \textbf{Redis Cluster}: Provides horizontal sharding for large datasets
+    \item \textbf{Managed Redis}: Cloud-managed solutions (e.g., AWS ElastiCache, Azure Cache for Redis)
+\end{enumerate}
+
+The platform's Redis usage is compatible with Redis Cluster mode, with the following considerations:
+\begin{itemize}
+    \item Job queues use \texttt{BRPOP} which requires single-key operations
+    \item Rate limiting uses sorted sets with tenant-scoped keys
+    \item Session state is stored with TTL-based expiration
+\end{itemize}
+
+\subsection{Kubernetes Deployment Patterns}
+
+While the primary deployment method uses Docker Compose, the platform is designed to be Kubernetes-ready:
+
+\paragraph{Health Probe Compatibility}
+The platform exposes Kubernetes-compatible health endpoints:
+
+\begin{lstlisting}[language=yaml, caption=Kubernetes probe configuration example]
+livenessProbe:
+  httpGet:
+    path: /v1/health/live
+    port: 8000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /v1/health/ready
+    port: 8000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+
+startupProbe:
+  httpGet:
+    path: /v1/health/startup
+    port: 8000
+  failureThreshold: 30
+  periodSeconds: 10
+\end{lstlisting}
+
+\paragraph{ConfigMap and Secret Management}
+Configuration can be injected via Kubernetes ConfigMaps and Secrets:
+
+\begin{lstlisting}[language=yaml, caption=Kubernetes environment configuration example]
+env:
+  - name: DB_HOST
+    valueFrom:
+      configMapKeyRef:
+        name: cineca-config
+        key: db-host
+  - name: DB_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: cineca-secrets
+        key: db-password
+  - name: OIDC_ISSUER
+    valueFrom:
+      configMapKeyRef:
+        name: cineca-config
+        key: oidc-issuer
+\end{lstlisting}
+
+\paragraph{Horizontal Pod Autoscaling}
+The FastAPI application exports Prometheus metrics that can drive Kubernetes HPA decisions:
+
+\begin{lstlisting}[language=yaml, caption=Horizontal Pod Autoscaler example]
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cineca-app-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cineca-app
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+\end{lstlisting}
+
+\subsection{Scaling Strategy Summary}
+
+Table~\ref{tab:scaling-strategies} summarizes the scaling approaches for each component.
+
+\begin{table}[ht]
+\centering
+\caption{Scaling strategies by component.}
+\label{tab:scaling-strategies}
+\small
+\begin{tabular}{lp{4cm}p{5cm}}
+\hline
+\textbf{Component} & \textbf{Scaling Approach} & \textbf{Considerations} \\
+\hline
+FastAPI App & Horizontal (replicas) & Stateless; requires shared Redis for sessions \\
+Worker & Horizontal (replicas) & Distributed locking prevents duplicate processing \\
+PostgreSQL & Vertical or read replicas & Consider managed solutions for HA \\
+Redis & Sentinel or Cluster & Job queues require single-key operations \\
+Memgraph & Vertical & Graph analytics benefit from memory \\
+Ollama & Vertical (GPU/memory) & Model loading is memory-intensive \\
+NGINX & Horizontal (replicas) & Typically not the bottleneck \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Resource Requirements}
+
+Table~\ref{tab:resource-requirements} provides recommended resource allocations for different deployment scales.
+
+\begin{table}[ht]
+\centering
+\caption{Recommended resource allocations by deployment scale.}
+\label{tab:resource-requirements}
+\small
+\begin{tabular}{lcccc}
+\hline
+\textbf{Component} & \textbf{Dev} & \textbf{Small Prod} & \textbf{Medium Prod} & \textbf{Large Prod} \\
+\hline
+FastAPI App & 512MB / 0.5 CPU & 1GB / 1 CPU & 2GB / 2 CPU & 4GB / 4 CPU \\
+Worker & 256MB / 0.25 CPU & 512MB / 0.5 CPU & 1GB / 1 CPU & 2GB / 2 CPU \\
+PostgreSQL & 256MB / 0.5 CPU & 1GB / 1 CPU & 4GB / 2 CPU & 8GB / 4 CPU \\
+Redis & 128MB / 0.25 CPU & 256MB / 0.5 CPU & 1GB / 1 CPU & 4GB / 2 CPU \\
+Memgraph & 512MB / 0.5 CPU & 2GB / 1 CPU & 8GB / 2 CPU & 32GB / 4 CPU \\
+Ollama (CPU) & 7GB / 4 CPU & 10GB / 8 CPU & --- & --- \\
+Ollama (GPU) & --- & 8GB VRAM & 16GB VRAM & 24GB+ VRAM \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{High Availability Considerations}
+
+For high-availability deployments, consider:
+
+\begin{enumerate}
+    \item \textbf{Multiple API instances}: At least 2 instances behind a load balancer
+    \item \textbf{Database replication}: PostgreSQL streaming replication or managed database service
+    \item \textbf{Redis redundancy}: Redis Sentinel for automatic failover
+    \item \textbf{Health-based routing}: Remove unhealthy instances from rotation
+    \item \textbf{Geographic distribution}: Deploy across availability zones
+    \item \textbf{Backup strategy}: Regular automated backups with tested restore procedures
+\end{enumerate}
+
+The platform's graceful degradation features (circuit breakers, fallback modes) help maintain partial functionality during component failures, enhancing overall system resilience.
+

@@ -1,0 +1,65 @@
+# ───────── app server ─────────
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0   # [standard] pulls in watchfiles, h11, uvloop, etc.
+
+# ───────── core graph / faker / env helpers ─────────
+gqlalchemy>=1.8.0            # Memgraph Python client/ORM
+Faker>=24.8.0
+python-dotenv>=1.0.1
+pydantic-settings>=2.2.1
+typing-extensions>=4.11.0
+PyYAML>=6.0.2
+
+# ───────── database (PostgreSQL) ─────────
+SQLAlchemy>=2.0.30
+psycopg2-binary>=2.9.9
+alembic>=1.13.0
+
+# ───────── security & auth ─────────
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+email-validator>=2.1.1
+
+# ───────── cache / rate limit / messaging ─────────
+redis>=5.0.1                 # includes redis.asyncio
+
+# ───────── http client / retries ─────────
+httpx>=0.27.0
+tenacity>=8.2.3
+jinja2>=3.1.4
+jmespath>=1.0.1
+
+# ───────── serialization / perf ─────────
+orjson>=3.10.0               # FastAPI will auto-use if present
+jsonschema>=4.18.0           # For pre-invocation args validation against tool schemas
+
+# ───────── observability (Prometheus + OTEL) ─────────
+prometheus-client>=0.20.0
+opentelemetry-api>=1.26.0
+opentelemetry-sdk>=1.26.0
+opentelemetry-exporter-otlp>=1.26.0
+opentelemetry-instrumentation-fastapi>=0.47b0
+opentelemetry-instrumentation-logging>=0.47b0
+opentelemetry-instrumentation-requests>=0.47b0
+
+# ───────── background scheduling ─────────
+APScheduler>=3.10.4
+
+# ───────── logging ─────────
+structlog>=24.1.0
+
+# ───────── testing ─────────
+pytest>=8.2.0
+pytest-asyncio>=0.22.0
+pytest-timeout>=2.3.1
+trio>=0.23.0
+python-multipart>=0.0.6
+
+# Optional UI (Streamlit) - lightweight, replaceable frontend
+streamlit>=1.30.0
+
+# System util for strict memory checks (used by auto-start heuristics)
+psutil>=5.9.0
+
+# Data helpers for UI table export
+pandas>=2.2.0

@@ -1,0 +1,311 @@
+% TODO checklist:
+% - [x] Inspected src/observability/tracing.py (OpenTelemetry integration)
+% - [x] Inspected src/observability/middleware.py (trace ID propagation)
+% - [x] Reviewed Q&A.md sections on tracing and OpenTelemetry
+% - [x] Reviewed README.md for tracing overview
+% - [x] Examined OTLP exporter configuration options
+
+\section{Tracing}
+\label{sec:tracing}
+
+The Cineca Agentic Platform integrates OpenTelemetry for distributed tracing, providing end-to-end visibility into request flows across service boundaries. The tracing subsystem is designed with graceful degradation---applications run normally even when OpenTelemetry dependencies are unavailable or tracing is disabled.
+
+\subsection{OpenTelemetry Integration Architecture}
+
+The platform's tracing implementation wraps the OpenTelemetry SDK with a defensive layer that handles missing dependencies, configuration errors, and runtime failures without impacting application functionality:
+
+\begin{lstlisting}[language=Python, caption={Defensive OpenTelemetry initialization (src/observability/tracing.py)}]
+try:
+    from opentelemetry import trace as otel_trace
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+    from opentelemetry.sdk.trace.sampling import (
+        AlwaysOnSampler, ParentBased, TraceIdRatioBased
+    )
+    _OTEL_AVAILABLE = True
+except Exception:
+    _OTEL_AVAILABLE = False
+
+def setup_tracing(app=None) -> bool:
+    """
+    Initialize OpenTelemetry tracing if enabled in configuration.
+    Returns True if tracing is active, False if no-op.
+    """
+    global _INITIALIZED, _PROVIDER
+    
+    if _INITIALIZED:
+        return _PROVIDER is not None
+    
+    if not getattr(settings, "OTEL_ENABLED", False):
+        log.info("otel.tracing.disabled")
+        _INITIALIZED = True
+        return False
+    
+    if not _OTEL_AVAILABLE:
+        log.warning("otel.tracing.requested_but_unavailable")
+        _INITIALIZED = True
+        return False
+    
+    # ... proceed with initialization ...
+\end{lstlisting}
+
+\subsection{Resource Attributes}
+
+OpenTelemetry traces are enriched with semantic resource attributes that identify the service, version, and deployment context:
+
+\begin{lstlisting}[language=Python, caption={OpenTelemetry resource attribute configuration}]
+def _build_resource() -> Resource:
+    """Construct a Resource with standard semantic attributes."""
+    hostname = socket.gethostname()
+    attrs = {
+        "service.name": getattr(settings, "APP_NAME", 
+                                "cineca-agentic-platform"),
+        "service.version": __version__,
+        "service.instance.id": hostname,
+        "deployment.environment": getattr(settings, "APP_ENV", "dev"),
+        "host.name": hostname,
+    }
+    return Resource.create(attrs)
+\end{lstlisting}
+
+These attributes follow OpenTelemetry Semantic Conventions and enable filtering, grouping, and comparison of traces across deployments.
+
+\subsection{Sampling Strategies}
+
+The platform implements environment-aware sampling to balance observability needs with storage and network costs:
+
+\begin{lstlisting}[language=Python, caption={Environment-aware trace sampling}]
+def _select_sampler() -> ParentBased:
+    """
+    Choose a sampler based on environment:
+    - Production: ParentBased(TraceIdRatioBased(X)) where X from 
+                  OTEL_SAMPLER_RATIO (default 0.2 = 20%)
+    - Non-production: ParentBased(AlwaysOnSampler)
+    """
+    env = getattr(settings, "APP_ENV", "dev").lower()
+    if env in {"prod", "production"}:
+        ratio = float(getattr(settings, "OTEL_SAMPLER_RATIO", 0.2))
+        ratio = max(0.0, min(1.0, ratio))
+        return ParentBased(TraceIdRatioBased(ratio))
+    return ParentBased(AlwaysOnSampler())
+\end{lstlisting}
+
+The sampling configuration:
+
+\begin{table}[ht]
+\centering
+\caption{Trace sampling configuration by environment.}
+\label{tab:trace-sampling}
+\begin{tabular}{lll}
+\hline
+\textbf{Environment} & \textbf{Sampler} & \textbf{Default Ratio} \\
+\hline
+Development/Test & \texttt{AlwaysOnSampler} & 100\% \\
+Production & \texttt{TraceIdRatioBased} & 20\% \\
+\hline
+\end{tabular}
+\end{table}
+
+The \texttt{ParentBased} wrapper ensures that child spans inherit the sampling decision from their parent, maintaining trace continuity across service boundaries.
+
+\subsection{OTLP Exporters}
+
+The platform supports both gRPC and HTTP/protobuf OTLP exporters for sending traces to an OpenTelemetry Collector or compatible backend:
+
+\begin{lstlisting}[language=Python, caption={OTLP exporter configuration}]
+def _make_exporter() -> object | None:
+    """Create OTLP exporter according to protocol and endpoint."""
+    protocol = str(getattr(settings, "OTEL_EXPORTER_OTLP_PROTOCOL", 
+                          "grpc")).lower()
+    endpoint = str(getattr(settings, "OTEL_EXPORTER_OTLP_ENDPOINT", 
+                          "")).strip()
+    
+    if not endpoint:
+        endpoint = ("http://otel-collector:4317" if protocol == "grpc" 
+                   else "http://otel-collector:4318/v1/traces")
+    
+    if protocol in {"grpc", "otlp", "otlp_grpc"}:
+        if OTLPGrpcSpanExporter is None:
+            log.warning("opentelemetry OTLP gRPC exporter not available")
+            return None
+        insecure = endpoint.startswith("http://")
+        return OTLPGrpcSpanExporter(endpoint=endpoint, insecure=insecure)
+    
+    # Default to HTTP/protobuf
+    if OTLPHttpSpanExporter is None:
+        log.warning("opentelemetry OTLP HTTP exporter not available")
+        return None
+    return OTLPHttpSpanExporter(endpoint=endpoint)
+\end{lstlisting}
+
+\begin{table}[ht]
+\centering
+\caption{OTLP exporter configuration options.}
+\label{tab:otlp-config}
+\begin{tabular}{lp{8cm}}
+\hline
+\textbf{Environment Variable} & \textbf{Description} \\
+\hline
+\texttt{OTEL\_ENABLED} & Enable/disable tracing (default: \texttt{false}) \\
+\texttt{OTEL\_EXPORTER\_OTLP\_PROTOCOL} & Protocol: \texttt{grpc} or \texttt{http} (default: \texttt{grpc}) \\
+\texttt{OTEL\_EXPORTER\_OTLP\_ENDPOINT} & Collector endpoint (default: \texttt{http://otel-collector:4317}) \\
+\texttt{OTEL\_SAMPLER\_RATIO} & Production sampling ratio (default: \texttt{0.2}) \\
+\texttt{OTEL\_CONSOLE\_EXPORTER} & Enable console span output for debugging \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Automatic Instrumentation}
+
+When available, the tracing system automatically instruments common libraries and frameworks:
+
+\begin{lstlisting}[language=Python, caption={Automatic instrumentation setup}]
+# FastAPI instrumentation
+if FastAPIInstrumentor is not None and app is not None:
+    try:
+        FastAPIInstrumentor().instrument_app(app, tracer_provider=provider)
+        log.info("otel.tracing.fastapi.instrumented")
+    except Exception:
+        log.exception("otel.tracing.fastapi.instrument_failed")
+
+# Requests library instrumentation
+if RequestsInstrumentor is not None:
+    try:
+        RequestsInstrumentor().instrument()
+        log.info("otel.tracing.requests.instrumented")
+    except Exception:
+        log.exception("otel.tracing.requests.instrument_failed")
+
+# Logging instrumentation (inject trace context into logs)
+if LoggingInstrumentor is not None:
+    try:
+        LoggingInstrumentor().instrument(set_logging_format=True)
+        log.info("otel.tracing.logging.instrumented")
+    except Exception:
+        log.exception("otel.tracing.logging.instrument_failed")
+\end{lstlisting}
+
+The automatic instrumentation captures:
+
+\begin{itemize}
+    \item \textbf{FastAPI}: Incoming HTTP requests with route, method, status code, and exception information.
+    \item \textbf{Requests}: Outgoing HTTP calls to LLM providers and external services.
+    \item \textbf{Logging}: Trace context injection into log entries for correlation.
+\end{itemize}
+
+\subsection{Trace Context Propagation}
+
+The platform propagates trace context through HTTP headers and exposes trace IDs in response headers for client-side correlation:
+
+\begin{lstlisting}[language=Python, caption={Trace ID extraction and response headers}]
+def _current_trace_id() -> str | None:
+    """Extract current trace ID for response headers."""
+    if not otel_trace:
+        return None
+    try:
+        span = otel_trace.get_current_span()
+        ctx = span.get_span_context()
+        if ctx and getattr(ctx, "trace_id", 0):
+            return f"{ctx.trace_id:032x}"
+    except Exception:
+        return None
+    return None
+
+# In middleware:
+trace_id = _current_trace_id()
+if trace_id:
+    bind_contextvars(trace_id=trace_id)
+    response.headers["X-Trace-Id"] = trace_id
+\end{lstlisting}
+
+Clients can use the \texttt{X-Trace-Id} response header to search for traces in the backend visualization tool (Jaeger, Zipkin, Grafana Tempo).
+
+\subsection{Manual Span Creation}
+
+For custom instrumentation beyond automatic coverage, the platform provides a \texttt{get\_tracer()} function that returns either a real tracer or a no-op implementation:
+
+\begin{lstlisting}[language=Python, caption={Manual tracer access with no-op fallback}]
+def get_tracer(name: str) -> otel_trace.Tracer:
+    """
+    Return a tracer. If tracing is disabled/unavailable, 
+    a no-op tracer is returned.
+    """
+    if not _OTEL_AVAILABLE:
+        class _NoopTracer:
+            def start_as_current_span(self, *_, **__):
+                from contextlib import nullcontext
+                return nullcontext()
+        return _NoopTracer()
+    
+    return otel_trace.get_tracer(name, __version__)
+\end{lstlisting}
+
+Usage example for custom span creation:
+
+\begin{lstlisting}[language=Python, caption={Example of manual span instrumentation}]
+from src.observability.tracing import get_tracer
+
+tracer = get_tracer(__name__)
+
+async def process_agent_run(run_id: str, input_text: str) -> str:
+    with tracer.start_as_current_span("agent.run.process") as span:
+        span.set_attribute("run.id", run_id)
+        span.set_attribute("input.length", len(input_text))
+        
+        # ... processing logic ...
+        
+        span.set_attribute("output.tokens", token_count)
+        return output
+\end{lstlisting}
+
+\subsection{Graceful Shutdown}
+
+The tracing system provides a shutdown function to flush pending spans before process termination:
+
+\begin{lstlisting}[language=Python, caption={Trace provider shutdown}]
+def shutdown_tracing() -> None:
+    """Flush and shutdown the tracer provider (graceful shutdown)."""
+    global _PROVIDER
+    if _PROVIDER is not None:
+        try:
+            _PROVIDER.shutdown()
+            log.info("otel.tracing.shutdown.complete")
+        except Exception:
+            log.exception("otel.tracing.shutdown.failed")
+        finally:
+            _PROVIDER = None
+\end{lstlisting}
+
+This function should be called during application shutdown (e.g., in FastAPI's \texttt{@app.on\_event("shutdown")} handler) to ensure that all buffered spans are exported before the process exits.
+
+\subsection{Trace Visualization and Analysis}
+
+Traces exported via OTLP can be visualized in various backends:
+
+\begin{itemize}
+    \item \textbf{Jaeger}: Open-source distributed tracing system with dependency analysis and performance optimization features.
+    
+    \item \textbf{Grafana Tempo}: Scalable distributed tracing backend integrated with Grafana for unified observability.
+    
+    \item \textbf{Zipkin}: Distributed tracing system with a focus on latency troubleshooting.
+    
+    \item \textbf{Cloud Providers}: AWS X-Ray, Google Cloud Trace, and Azure Monitor support OTLP ingestion.
+\end{itemize}
+
+\subsection{Tracing Best Practices}
+
+The platform's tracing implementation follows several best practices for effective distributed tracing:
+
+\begin{enumerate}
+    \item \textbf{Meaningful Span Names}: Span names use verb.noun patterns (e.g., \texttt{agent.run.execute}, \texttt{llm.call.generate}) that describe the operation being performed.
+    
+    \item \textbf{Bounded Attribute Values}: Large values (prompts, responses) are summarized or omitted to prevent trace storage bloat; length attributes are recorded instead.
+    
+    \item \textbf{Error Recording}: Exceptions are recorded on spans with stack traces for debugging, but sensitive error details are filtered.
+    
+    \item \textbf{Sampling Awareness}: Critical paths (authentication, authorization) may use explicit sampling overrides to ensure they're always captured.
+    
+    \item \textbf{Trace Context Preservation}: Trace context is propagated across async boundaries and background job execution.
+\end{enumerate}
+

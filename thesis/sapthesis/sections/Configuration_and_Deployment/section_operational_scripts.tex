@@ -1,0 +1,418 @@
+% TODO checklist:
+% - Inspected: Makefile (324 lines, all targets)
+% - Inspected: scripts/deployment/deploy-production.sh
+% - Inspected: scripts/auth/fetch_tokens.py
+% - Inspected: scripts/ollama/init_default_model.py
+% - Inspected: scripts/openapi/export_openapi.py (via directory listing)
+% - Inspected: ops/backup/backup.sh
+% - Inspected: scripts/database/ directory
+% - Inspected: README.md operational scripts section
+
+\section{Operational Scripts}
+\label{sec:operational-scripts}
+
+The Cineca Agentic Platform includes a comprehensive suite of operational scripts and Makefile targets that automate common development and deployment tasks. This section documents the available scripts and their usage.
+
+\subsection{Makefile Targets}
+
+The project Makefile provides the primary interface for common operations. Targets are organized by category:
+
+\subsubsection{Environment and Setup}
+
+\begin{lstlisting}[language=bash, caption=Environment setup targets]
+# Create .env file from example template
+make env
+
+# Install Python dependencies
+make install
+
+# Install pre-commit hooks
+make pre-commit-install
+\end{lstlisting}
+
+\subsubsection{Development Server}
+
+\begin{lstlisting}[language=bash, caption=Development server targets]
+# Run FastAPI with hot reload (local development)
+make dev
+
+# Probe health endpoints
+make ready
+\end{lstlisting}
+
+\subsubsection{Docker Compose Operations}
+
+\begin{lstlisting}[language=bash, caption=Docker Compose targets]
+# Start all services
+make up
+
+# Start with CPU profile (extended timeouts)
+make up-cpu
+
+# Start with GPU profile (CUDA support)
+make up-gpu
+
+# Start only observability services
+make up-observability
+
+# Start only Redis service
+make up-redis
+
+# Stop all services
+make down
+
+# Stop and remove volumes (destructive)
+make clean
+
+# Restart app service
+make restart
+
+# View logs (all or specific service)
+make logs         # All services
+make logs S=app   # Specific service
+
+# Show process status
+make ps
+\end{lstlisting}
+
+\subsubsection{Code Quality}
+
+\begin{lstlisting}[language=bash, caption=Code quality targets]
+# Auto-format code (black + ruff)
+make fmt
+
+# Lint with auto-fixes
+make lint
+
+# Static type checking
+make typecheck
+
+# Run all quality checks
+make check
+\end{lstlisting}
+
+\subsubsection{Testing}
+
+\begin{lstlisting}[language=bash, caption=Testing targets]
+# Run quick tests
+make test
+
+# Run full test suite (including e2e, performance)
+make test-all
+
+# Run Ollama-focused tests
+make test-ollama
+
+# Run Memgraph NL integration tests
+make test-memgraph-nl
+
+# Run smoke test (first 3 prompts)
+make test-memgraph-nl-smoke
+
+# Run security linters and scanners
+make security
+
+# Run CI tests in Docker
+make test-ci
+\end{lstlisting}
+
+\subsubsection{Database Operations}
+
+\begin{lstlisting}[language=bash, caption=Database operation targets]
+# Memgraph operations
+make seed      # Seed original DB
+make populate  # Populate demo data
+make backup    # Backup to backups/ directory
+make restore BACKUP=backups/backup_xxx.tar.gz
+
+# PostgreSQL operations
+make db-migrate       # Run Alembic migrations
+make db-migrate-down  # Rollback last migration
+make db-reset         # Drop and recreate (destructive)
+make db-seed          # Seed demo tenants
+make db-revision MSG="description"  # Create new migration
+make db-shell         # Open psql shell
+make db-logs          # View PostgreSQL logs
+\end{lstlisting}
+
+\subsubsection{Model Operations}
+
+\begin{lstlisting}[language=bash, caption=Model operation targets]
+# Bootstrap model artifacts
+make bootstrap-models TARGET_DIR=/opt/models
+
+# Create Ollama models from Modelfiles
+make ollama-models
+
+# Verify LLM configuration
+make llm-smoke-test
+
+# Register providers and create instances
+make runtime-smoke
+\end{lstlisting}
+
+\subsubsection{Documentation}
+
+\begin{lstlisting}[language=bash, caption=Documentation targets]
+# Export OpenAPI specification
+make openapi
+
+# Export OpenAPI via Docker container
+make openapi-docker
+
+# Aggregate CI target
+make ci
+\end{lstlisting}
+
+\subsection{Deployment Scripts}
+
+\subsubsection{Production Deployment Script}
+
+The \texttt{scripts/deployment/deploy-production.sh} script automates production deployments:
+
+\begin{lstlisting}[language=bash, caption=Production deployment script usage]
+# Deploy to staging
+./scripts/deployment/deploy-production.sh staging
+
+# Deploy to production
+./scripts/deployment/deploy-production.sh production
+
+# Check current status
+./scripts/deployment/deploy-production.sh status
+
+# Rollback to previous version
+./scripts/deployment/deploy-production.sh rollback
+\end{lstlisting}
+
+The script performs the following steps:
+\begin{enumerate}
+    \item Checks prerequisites (Docker, Docker Compose, \texttt{.env} file)
+    \item Creates backup of current state
+    \item Pulls latest images and rebuilds
+    \item Deploys new containers
+    \item Runs smoke tests to verify deployment
+    \item Prompts for rollback if verification fails
+\end{enumerate}
+
+\subsubsection{Pre-flight Checks}
+
+The \texttt{scripts/deployment/preflight\_checks.sh} script validates the deployment environment:
+
+\begin{lstlisting}[language=bash, caption=Pre-flight checks script]
+# Run pre-flight checks
+bash scripts/deployment/preflight_checks.sh
+
+# Checks performed:
+# 1. Build & start services
+# 2. Auth0 tokens script availability
+# 3. CPU-only verification (no GPU dependencies)
+# 4. MCP tools loaded (>=32 required)
+# 5. Ollama models reachable
+# 6. Intent keyword in test files
+# 7. Script permissions
+\end{lstlisting}
+
+\subsection{Authentication Scripts}
+
+\subsubsection{Token Fetching}
+
+The \texttt{scripts/auth/fetch\_tokens.py} script retrieves Auth0 tokens for different roles:
+
+\begin{lstlisting}[language=bash, caption=Token fetching script]
+# Fetch all tokens (admin, user, machine)
+python scripts/auth/fetch_tokens.py
+
+# Tokens saved to:
+# - /tmp/tokens.sh (shell export format)
+# - /tmp/tokens.json (JSON format)
+
+# Usage in tests
+source /tmp/tokens.sh
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+     http://localhost:8000/v1/health/ready
+\end{lstlisting}
+
+The script fetches three types of tokens:
+\begin{itemize}
+    \item \textbf{ADMIN\_TOKEN}: Full system access with \texttt{admin:all} scope
+    \item \textbf{USER\_TOKEN}: Standard user access with \texttt{tools:invoke:basic} scope
+    \item \textbf{MACHINE\_TOKEN}: Machine-to-machine access via client credentials
+\end{itemize}
+
+\subsection{Model Initialization}
+
+The \texttt{scripts/ollama/init\_default\_model.py} script initializes the default LLM model:
+
+\begin{lstlisting}[language=bash, caption=Model initialization script]
+# Initialize default model in database
+python scripts/ollama/init_default_model.py
+
+# Environment variables:
+# DEFAULT_MODEL_NAME: Model name (default: phi3:mini)
+# OLLAMA_BASE_URL: Ollama API URL (default: http://ollama:11434/v1)
+\end{lstlisting}
+
+The script performs:
+\begin{enumerate}
+    \item Checks for existing healthy default model
+    \item Creates Ollama provider if not exists
+    \item Creates model instance if not exists
+    \item Sets instance as global default
+    \item Warms up the model with a test call
+    \item Updates provider health status in Redis
+\end{enumerate}
+
+\subsection{Backup Scripts}
+
+\subsubsection{Comprehensive Backup Script}
+
+The \texttt{ops/backup/backup.sh} script provides automated backup for all databases:
+
+\begin{lstlisting}[language=bash, caption=Backup script usage]
+# Backup all databases
+./ops/backup/backup.sh
+
+# Backup specific database
+./ops/backup/backup.sh --type postgres
+./ops/backup/backup.sh --type redis
+./ops/backup/backup.sh --type memgraph
+
+# Backup and upload to S3
+./ops/backup/backup.sh --type all --upload
+\end{lstlisting}
+
+Features include:
+\begin{itemize}
+    \item PostgreSQL backup with \texttt{pg\_dump}
+    \item Redis backup via \texttt{BGSAVE}
+    \item Memgraph snapshot creation
+    \item Optional S3 upload for remote storage
+    \item Retention policy enforcement (default: 30 days)
+\end{itemize}
+
+\subsubsection{Database-Specific Scripts}
+
+\begin{lstlisting}[language=bash, caption=Database backup scripts]
+# PostgreSQL backup
+bash scripts/database/backup_database.sh
+
+# PostgreSQL restore
+bash scripts/database/restore_database.sh backup_file.sql.gz
+
+# Validate PostgreSQL migration
+bash scripts/database/validate_postgres_migration.sh
+\end{lstlisting}
+
+\subsection{OpenAPI Export}
+
+The \texttt{scripts/openapi/export\_openapi.py} script exports the OpenAPI specification:
+
+\begin{lstlisting}[language=bash, caption=OpenAPI export]
+# Export via Python
+python scripts/openapi/export_openapi.py
+
+# Export via Makefile
+make openapi
+
+# Export via Docker (no local dependencies)
+make openapi-docker
+
+# Output files:
+# - api/openapi.json (v1 endpoints)
+# - api/openapi_v2.json (v2 endpoints)
+\end{lstlisting}
+
+\subsection{Developer Tooling and Test Modes}
+\label{subsec:developer-tooling}
+
+The platform provides several developer-focused utilities:
+
+\subsubsection{Environment Doctor}
+
+The \texttt{doctor} target displays environment information:
+
+\begin{lstlisting}[language=bash, caption=Environment doctor target]
+make doctor
+
+# Output:
+# Python: Python 3.11.x
+# Pip:    pip 24.x
+# Ruff:   0.x.x
+# Black:  24.x.x
+# Mypy:   1.x.x
+# Bandit: 1.x.x
+# DC:     Docker Compose version v2.x.x
+\end{lstlisting}
+
+\subsubsection{Debug Scripts}
+
+The \texttt{scripts/debug/} directory contains debugging utilities:
+
+\begin{lstlisting}[language=bash, caption=Debug scripts]
+# Debug agent execution
+python scripts/debug/debug_agent_run.py
+
+# Debug JWT token
+python scripts/debug/debug_token.py
+
+# Test LLM configuration
+python scripts/debug/test_llm_config.py
+
+# Test Ollama directly
+python scripts/debug/test_ollama_simple.py
+\end{lstlisting}
+
+\subsubsection{Verification Scripts}
+
+The \texttt{scripts/verification/} directory contains verification utilities:
+
+\begin{lstlisting}[language=bash, caption=Verification scripts]
+# Verify default model configuration
+bash scripts/verification/verify_default_model.sh
+
+# Verify DMR (Default Model Resolver) system
+python scripts/verification/verify_dmr_system.py
+
+# Verify UI backend connectivity
+bash scripts/verification/verify_ui_backend.sh
+\end{lstlisting}
+
+\subsubsection{NL-to-Cypher Test Mode}
+
+For deterministic testing of the NL-to-Cypher pipeline:
+
+\begin{lstlisting}[language=bash, caption=Enabling NL-to-Cypher test mode]
+# Enable test mode with JSON hint file
+export MEMGRAPH_NL_TEST_MODE=true
+export MEMGRAPH_RESPONSE_MODE=fallback-only
+
+# The test mode uses a JSON mapping file to return
+# predetermined Cypher queries for given prompts,
+# bypassing LLM generation for reproducible tests
+\end{lstlisting}
+
+\subsection{Scripts Summary Table}
+
+Table~\ref{tab:scripts-summary} provides an overview of key operational scripts.
+
+\begin{table}[ht]
+\centering
+\caption{Key operational scripts summary.}
+\label{tab:scripts-summary}
+\small
+\begin{tabularx}{\textwidth}{lXl}
+\hline
+\textbf{Script} & \textbf{Purpose} & \textbf{Category} \\
+\hline
+deploy-production.sh & Automated production deployment with rollback & Deployment \\
+preflight\_checks.sh & Pre-deployment environment validation & Deployment \\
+production\_checklist.sh & Interactive production readiness checklist & Deployment \\
+fetch\_tokens.py & Fetch Auth0 tokens for testing & Authentication \\
+init\_default\_model.py & Initialize default LLM in database & Models \\
+backup.sh & Multi-database backup with S3 support & Backup \\
+export\_openapi.py & Export OpenAPI specification & Documentation \\
+validate\_postgres\_migration.sh & Verify migration status & Database \\
+\hline
+\end{tabularx}
+\end{table}
+

@@ -1,0 +1,226 @@
+% =============================================================================
+% SECTION: Large Language Models and AI Agents
+% Chapter: Background and Related Work
+% =============================================================================
+%
+% TODO Checklist (verified in codebase/docs):
+% [x] Reviewed Q&A.md Q1-Q7 for high-level agent concepts and platform positioning
+% [x] Reviewed README.md for LLM provider support (OpenAI, Ollama, Azure OpenAI)
+% [x] Reviewed src/adapters/llm.py for provider abstraction patterns
+% [x] Reviewed src/services/orchestrator.py for ReAct-style agent implementation
+% [x] Reviewed Q&A.md Q36-Q38 for agent run structure and step execution
+% [x] Cross-referenced with academic literature on LLM agents and tool use
+%
+% =============================================================================
+
+\section{Large Language Models and AI Agents}
+\label{sec:llm-agents}
+
+The emergence of Large Language Models (LLMs) has fundamentally transformed the landscape of artificial intelligence, enabling new paradigms for building intelligent software systems. This section provides the theoretical foundations necessary to understand how the Cineca Agentic Platform leverages these advances to create enterprise-grade AI agent orchestration capabilities.
+
+\subsection{Evolution of Large Language Models}
+
+Large Language Models represent a class of neural network architectures, predominantly based on the Transformer architecture introduced by Vaswani et al.\ in 2017~% TODO: add bibitem for Vaswani2017
+, that are trained on massive text corpora to predict the next token in a sequence. The scale of these models---measured in parameters, training data, and computational resources---has grown exponentially over the past several years, leading to emergent capabilities that were not explicitly programmed.
+
+\paragraph{Foundational Models and Scaling Laws}
+The modern era of LLMs began with the introduction of GPT (Generative Pre-trained Transformer) by OpenAI in 2018, which demonstrated that unsupervised pre-training on large text corpora followed by task-specific fine-tuning could achieve state-of-the-art results across diverse NLP benchmarks. Subsequent scaling studies established empirical ``scaling laws'' showing that model performance improves predictably with increases in model size, dataset size, and compute budget~% TODO: add bibitem for Kaplan2020
+.
+
+The GPT series evolved rapidly: GPT-2 (1.5B parameters, 2019) demonstrated coherent long-form text generation; GPT-3 (175B parameters, 2020) exhibited remarkable few-shot learning capabilities; and GPT-4 (2023) achieved human-level performance on professional and academic examinations while introducing multimodal capabilities. These developments established the foundation for using LLMs as reasoning engines in agentic systems.
+
+\paragraph{Open-Weight Models}
+Parallel to proprietary developments, the open-source community has produced increasingly capable models. Meta's LLaMA (Large Language Model Meta AI) family, released starting in 2023, demonstrated that smaller, efficiently trained models could approach the performance of much larger proprietary systems. LLaMA 2 (7B--70B parameters) and LLaMA 3 (8B--70B parameters) provided researchers and enterprises with high-quality foundation models that can be deployed on-premises, addressing data sovereignty and privacy concerns critical in enterprise environments.
+
+Microsoft's Phi series (Phi-1, Phi-2, Phi-3) explored the ``small language model'' paradigm, demonstrating that models with 1--14 billion parameters, when trained on carefully curated high-quality data, can achieve competitive performance on reasoning tasks. This is particularly relevant for deployment scenarios where computational resources are constrained or where low-latency inference is required.
+
+Other notable open-weight models include Mistral AI's Mistral and Mixtral series (utilizing mixture-of-experts architectures for efficient inference), Alibaba's Qwen series, and Google's Gemma models. The Cineca Agentic Platform is designed to be model-agnostic, supporting any OpenAI-compatible API endpoint, which enables deployment with both proprietary services (OpenAI, Azure OpenAI) and self-hosted open-weight models via inference servers such as Ollama, vLLM, or text-generation-inference.
+
+\paragraph{Emergent Capabilities}
+A defining characteristic of modern LLMs is the emergence of capabilities at scale that were not present in smaller models. These emergent capabilities include:
+
+\begin{itemize}
+    \item \textbf{In-context learning}: The ability to perform new tasks by conditioning on examples provided in the prompt, without updating model weights.
+    \item \textbf{Chain-of-thought reasoning}: When prompted to ``think step by step,'' LLMs can decompose complex problems into intermediate reasoning steps, significantly improving performance on arithmetic, commonsense, and symbolic reasoning tasks~% TODO: add bibitem for Wei2022
+    .
+    \item \textbf{Instruction following}: Models fine-tuned with reinforcement learning from human feedback (RLHF) or direct preference optimization (DPO) can follow natural language instructions with high fidelity.
+    \item \textbf{Tool use}: LLMs can learn to invoke external tools (APIs, databases, calculators) by generating structured function calls, extending their capabilities beyond pure text generation.
+\end{itemize}
+
+These emergent capabilities form the foundation for building AI agents that can reason about complex tasks and take actions in external environments.
+
+\subsection{Definition and Characteristics of AI Agents}
+
+An \textbf{AI agent} is an autonomous software entity that perceives its environment through observations, reasons about goals and constraints, and takes actions to achieve specified objectives. In the context of LLM-based systems, AI agents leverage the reasoning capabilities of language models to plan and execute multi-step tasks, often involving interaction with external tools and data sources.
+
+\paragraph{Agent Components}
+A typical LLM-based agent consists of several key components:
+
+\begin{enumerate}
+    \item \textbf{Language Model Core}: The LLM serves as the ``brain'' of the agent, providing natural language understanding, reasoning, and generation capabilities. The model processes observations and instructions to produce action decisions.
+    
+    \item \textbf{Memory Systems}: Agents require memory to maintain context across interactions. This includes:
+    \begin{itemize}
+        \item \emph{Short-term memory}: The conversation history and current context window maintained during a single session or run.
+        \item \emph{Long-term memory}: Persistent storage of past interactions, learned facts, or retrieved knowledge that persists across sessions.
+        \item \emph{Working memory}: Scratchpad-style storage for intermediate reasoning steps and partial results.
+    \end{itemize}
+    
+    \item \textbf{Tool Interface}: A mechanism for the agent to invoke external capabilities such as web search, database queries, code execution, or API calls. Tools extend the agent's abilities beyond what the language model can accomplish through pure text generation.
+    
+    \item \textbf{Planning and Control}: Logic that orchestrates the agent's behavior, deciding when to think, when to act, and when to request human input. This may be implicit (encoded in prompts) or explicit (implemented in code).
+    
+    \item \textbf{Observation Interface}: The means by which the agent perceives the results of its actions and the state of its environment, including tool outputs, user feedback, and environmental signals.
+\end{enumerate}
+
+\paragraph{Agent Autonomy Spectrum}
+AI agents exist on a spectrum of autonomy, from simple prompt-response systems to fully autonomous goal-pursuing entities:
+
+\begin{itemize}
+    \item \textbf{Level 0 -- Conversational}: Basic chatbots that respond to user messages without persistent state or tool access.
+    \item \textbf{Level 1 -- Tool-augmented}: Agents that can invoke predefined tools in response to user requests, typically with human approval for each action.
+    \item \textbf{Level 2 -- Task-oriented}: Agents that can plan and execute multi-step tasks autonomously, with human oversight at task boundaries.
+    \item \textbf{Level 3 -- Goal-oriented}: Agents that pursue high-level goals with minimal human intervention, adapting their strategies based on observations.
+    \item \textbf{Level 4 -- Fully autonomous}: Agents that operate independently over extended periods, managing their own resources and objectives.
+\end{itemize}
+
+The Cineca Agentic Platform primarily targets Level 1--2 agents: tool-augmented and task-oriented systems where the platform provides the infrastructure for tool invocation, session management, and execution oversight, while maintaining human control through approval workflows, rate limiting, and audit logging.
+
+\subsection{Agent Architectures and Reasoning Patterns}
+
+Several architectural patterns have emerged for structuring LLM-based agent behavior. Understanding these patterns is essential for appreciating the design decisions in the Cineca Agentic Platform's orchestrator.
+
+\paragraph{ReAct (Reasoning and Acting)}
+The ReAct framework, introduced by Yao et al.\ in 2022~% TODO: add bibitem for Yao2022
+, interleaves reasoning traces with action execution in a unified prompt format. At each step, the agent:
+\begin{enumerate}
+    \item \textbf{Thinks}: Generates a reasoning trace explaining its current understanding and planned action.
+    \item \textbf{Acts}: Selects and executes an action (typically a tool invocation).
+    \item \textbf{Observes}: Receives the result of the action and incorporates it into context.
+\end{enumerate}
+
+This think-act-observe loop continues until the agent determines that the task is complete or a termination condition is met. ReAct has proven effective for tasks requiring both knowledge retrieval and multi-step reasoning, as the explicit reasoning traces help the model maintain coherent plans and recover from errors.
+
+The Cineca Agentic Platform's orchestrator implements a ReAct-style execution loop, where each agent run consists of a sequence of steps (recorded in the \texttt{steps\_json} field of the \texttt{AgentRun} model), with each step capturing the agent's reasoning, the tool invoked (if any), and the observation received.
+
+\paragraph{Chain-of-Thought (CoT) Prompting}
+Chain-of-thought prompting~% TODO: add bibitem for Wei2022
+encourages the model to generate intermediate reasoning steps before producing a final answer. While not an agent architecture per se, CoT is frequently incorporated into agent systems to improve reasoning quality. Variants include:
+\begin{itemize}
+    \item \textbf{Zero-shot CoT}: Adding ``Let's think step by step'' to prompts.
+    \item \textbf{Few-shot CoT}: Providing examples with explicit reasoning chains.
+    \item \textbf{Self-consistency}: Sampling multiple reasoning paths and aggregating results.
+\end{itemize}
+
+\paragraph{Plan-and-Execute}
+In the plan-and-execute paradigm, the agent first generates a complete plan (a sequence of steps to achieve the goal) and then executes the plan step by step. This separation allows for:
+\begin{itemize}
+    \item Plan review and approval before execution
+    \item Parallel execution of independent steps
+    \item Re-planning when intermediate steps fail
+\end{itemize}
+
+While the Cineca Agentic Platform's current orchestrator uses a ReAct-style approach (planning and execution interleaved), the architecture supports extension to plan-and-execute patterns through the TODO-based task tracking mechanism, where agents can decompose tasks into subtasks before execution.
+
+\paragraph{Tree-of-Thought and Graph-of-Thought}
+More advanced architectures explore the space of possible reasoning paths more systematically. Tree-of-Thought~% TODO: add bibitem for Yao2023ToT
+maintains multiple reasoning branches and uses search algorithms (breadth-first, depth-first, or beam search) to find successful paths. Graph-of-Thought extends this to arbitrary graph structures of reasoning states.
+
+These approaches are computationally expensive but can improve performance on complex reasoning tasks. The Cineca Agentic Platform does not currently implement tree/graph-of-thought natively, but the extensible orchestrator design would allow such patterns to be added as alternative reasoning strategies.
+
+\paragraph{Multi-Agent Architectures}
+Some systems employ multiple specialized agents that collaborate to solve complex tasks:
+\begin{itemize}
+    \item \textbf{Hierarchical agents}: A manager agent delegates subtasks to worker agents.
+    \item \textbf{Debate and critique}: Multiple agents propose solutions and critique each other's reasoning.
+    \item \textbf{Role-playing}: Agents assume different personas or expertise areas.
+\end{itemize}
+
+Frameworks such as AutoGen and CrewAI are specifically designed for multi-agent collaboration. The Cineca Agentic Platform currently focuses on single-agent orchestration but provides the infrastructure (session management, tool invocation, persistent state) that would support multi-agent extensions.
+
+\subsection{Tool Use in LLM Agents}
+
+The ability to invoke external tools is what transforms a language model from a text generator into an agent capable of taking actions in the world. Tool use has become a central capability of modern LLM-based systems.
+
+\paragraph{Function Calling}
+Modern LLMs increasingly support ``function calling'' or ``tool use'' as a native capability. When provided with tool definitions (typically as JSON schemas), the model can:
+\begin{enumerate}
+    \item Recognize when a tool invocation is appropriate for the current task
+    \item Generate structured tool calls with the required parameters
+    \item Incorporate tool outputs into its subsequent reasoning
+\end{enumerate}
+
+OpenAI's function calling API, introduced in 2023, established a de facto standard format for tool definitions that has been adopted by many other providers. The Cineca Agentic Platform uses this format for its MCP tool definitions, enabling compatibility with a wide range of LLM backends.
+
+\paragraph{Tool Categories}
+Tools in agent systems can be categorized by their function:
+\begin{itemize}
+    \item \textbf{Information retrieval}: Web search, document lookup, database queries
+    \item \textbf{Computation}: Calculators, code interpreters, data analysis
+    \item \textbf{Action execution}: API calls, file operations, system commands
+    \item \textbf{Communication}: Email, messaging, notification services
+    \item \textbf{Memory management}: Reading/writing to persistent storage
+\end{itemize}
+
+The Cineca Agentic Platform provides 34 MCP tools across 17 categories, covering graph operations, caching, data management, security administration, and more. This comprehensive tool ecosystem enables agents to perform complex enterprise workflows.
+
+\paragraph{Tool Safety and Governance}
+Tool invocation in enterprise environments requires careful governance:
+\begin{itemize}
+    \item \textbf{Authorization}: Which users/roles can invoke which tools?
+    \item \textbf{Validation}: Are tool inputs properly sanitized and validated?
+    \item \textbf{Auditing}: Are all tool invocations logged for compliance?
+    \item \textbf{Rate limiting}: Are usage quotas enforced to prevent abuse?
+    \item \textbf{Sandboxing}: Are tool effects isolated and reversible when possible?
+\end{itemize}
+
+These governance concerns are first-class features of the Cineca Agentic Platform, implemented through its RBAC system, capability-based tool access control, comprehensive audit logging, and configurable rate limiting. This distinguishes the platform from research-oriented frameworks that often assume trusted users and benign environments.
+
+\subsection{Challenges in Production Agent Deployment}
+
+Deploying LLM-based agents in production environments presents unique challenges that motivate the design of the Cineca Agentic Platform:
+
+\paragraph{Reliability and Error Handling}
+LLMs can produce incorrect, inconsistent, or nonsensical outputs, particularly for edge cases or adversarial inputs. Production systems must:
+\begin{itemize}
+    \item Detect and gracefully handle model failures
+    \item Implement retry logic with appropriate backoff
+    \item Provide fallback behaviors when primary models are unavailable
+    \item Maintain circuit breakers to prevent cascade failures
+\end{itemize}
+
+The Cineca Agentic Platform implements a comprehensive LLM resilience framework including circuit breakers, provider health monitoring, and automatic fallback to alternative providers.
+
+\paragraph{Latency and Cost Management}
+LLM inference is computationally expensive and can introduce significant latency. Enterprise deployments must:
+\begin{itemize}
+    \item Monitor and optimize inference latency
+    \item Track and budget API costs
+    \item Cache responses where appropriate
+    \item Choose appropriately-sized models for different tasks
+\end{itemize}
+
+The platform provides detailed cost tracking, per-model and per-tenant usage metrics, and configurable model defaults to balance capability against cost.
+
+\paragraph{Security and Compliance}
+AI agents with tool access can potentially execute sensitive operations. Security requirements include:
+\begin{itemize}
+    \item Authentication and authorization for all operations
+    \item Audit trails for compliance and forensics
+    \item PII detection and protection
+    \item Prompt injection defense
+    \item Output validation and filtering
+\end{itemize}
+
+These security features are implemented throughout the Cineca Agentic Platform, as detailed in Chapter~\ref{ch:security}.
+
+\paragraph{Observability}
+Understanding agent behavior in production requires comprehensive observability:
+\begin{itemize}
+    \item Metrics: Request rates, latencies, error rates, token usage
+    \item Logs: Structured, correlated logs with request tracing
+    \item Traces: Distributed tracing across service boundaries
+    \item Health checks: Readiness and liveness probes for orchestration
+\end{itemize}
+
+The platform provides a production-grade observability stack with Prometheus metrics, OpenTelemetry tracing, and structured logging with request ID correlation, as discussed in Chapter~\ref{ch:observability}.

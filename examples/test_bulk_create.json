@@ -1,0 +1,12 @@
+[
+  {
+    "instanceId": "model-1",
+    "modelName": "gpt-4-turbo",
+    "providerId": "openai-prod"
+  },
+  {
+    "instanceId": "model-2", 
+    "modelName": "claude-3",
+    "providerId": "anthropic-prod"
+  }
+]

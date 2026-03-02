@@ -1,0 +1,352 @@
+% TODO checklist:
+% - [x] Inspected src/jobs/models.py (SSEEvent model)
+% - [x] Inspected src/jobs/interfaces.py (EventStore interface)
+% - [x] Inspected db/redis_cache/job_store.py (RedisEventStore implementation)
+% - [x] Inspected src/jobs/metrics.py (SSE metrics)
+% - [x] Inspected src/routers/jobs.py (SSE endpoint pattern)
+% - [x] Analyzed Q&A.md Q38 for event model details
+
+\section{Job Events and SSE Streaming}
+\label{sec:job-events}
+
+Real-time progress updates are essential for user experience when executing long-running jobs. The Cineca Agentic Platform implements Server-Sent Events (SSE) streaming with a ring buffer architecture that supports client reconnection and event replay. This section describes the event model, storage mechanism, and streaming protocol implementation.
+
+\subsection{Design Rationale}
+
+The SSE streaming subsystem addresses several requirements:
+
+\begin{itemize}
+    \item \textbf{Real-Time Updates}: Clients receive immediate notification of status transitions without polling.
+    
+    \item \textbf{Resume Capability}: Disconnected clients can resume from their last received event using the \texttt{Last-Event-ID} header.
+    
+    \item \textbf{Bounded Storage}: Event history is limited to prevent unbounded memory growth while retaining recent history for reconnection.
+    
+    \item \textbf{Protocol Compliance}: Events follow the W3C Server-Sent Events specification for broad client compatibility.
+\end{itemize}
+
+\subsection{SSE Event Model}
+
+The \texttt{SSEEvent} model in \texttt{src/jobs/models.py} represents a single event in the job event stream:
+
+\begin{lstlisting}[language=Python, caption={SSEEvent model definition.}]
+class SSEEvent(BaseModel):
+    """Server-Sent Event for job status updates."""
+
+    event_id: int = Field(..., description="Monotonic event sequence number")
+    event_type: str = Field(..., description="Event type: 'status', 'end', 'error'")
+    data: dict[str, Any] = Field(..., description="Event payload")
+    timestamp: datetime = Field(
+        default_factory=datetime.utcnow,
+        description="Event emission time (UTC)"
+    )
+
+    def to_sse_format(self) -> str:
+        """Format as SSE wire protocol."""
+        lines = [
+            f"id: {self.event_id}",
+            f"event: {self.event_type}",
+            f"data: {json.dumps(self.data)}",
+            "",  # SSE requires blank line terminator
+        ]
+        return "\n".join(lines)
+\end{lstlisting}
+
+\subsection{Event Types}
+
+The job system emits several event types throughout the job lifecycle:
+
+\begin{table}[ht]
+\centering
+\caption{SSE event types and their semantics.}
+\label{tab:sse-event-types}
+\small
+\begin{tabular}{llp{6cm}}
+\hline
+\textbf{Event Type} & \textbf{Trigger} & \textbf{Data Payload} \\
+\hline
+\texttt{status} & Status transition & \texttt{\{from, to, timestamp\}} \\
+\texttt{progress} & Progress update & \texttt{\{percent, step, message\}} \\
+\texttt{heartbeat} & Keep-alive & \texttt{\{timestamp\}} \\
+\texttt{end} & Terminal state reached & \texttt{\{status, result?, error?\}} \\
+\texttt{error} & Error during streaming & \texttt{\{message, code\}} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Ring Buffer Architecture}
+
+Events are stored in a ring buffer implemented using Redis LIST data structures. The ring buffer provides bounded storage with automatic eviction of oldest events:
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+    event/.style={rectangle, draw, minimum width=1.5cm, minimum height=0.8cm, font=\small},
+    arrow/.style={->, >=stealth, thick}
+]
+    % Ring buffer visualization
+    \node[event, fill=gray!30] (e1) at (0,0) {Event 1};
+    \node[event, fill=gray!30] (e2) at (2,0) {Event 2};
+    \node[event, fill=blue!20] (e3) at (4,0) {Event 3};
+    \node[event, fill=blue!20] (e4) at (6,0) {Event 4};
+    \node[event, fill=green!20] (e5) at (8,0) {Event 5};
+    
+    \node[above=0.3cm of e1, font=\scriptsize] {oldest};
+    \node[above=0.3cm of e5, font=\scriptsize] {newest};
+    
+    \draw[arrow] (9.5,0) -- node[right, font=\scriptsize] {LPUSH} (8.8,0);
+    \draw[arrow] (-0.8,0) -- node[left, font=\scriptsize] {LTRIM evicts} (-1.5,0);
+    
+    % Legend
+    \node[below=1cm of e3, font=\small] {Ring size = 5 (configurable via SSE\_RING\_SIZE)};
+\end{tikzpicture}
+\caption{Ring buffer event storage with LPUSH/LTRIM operations.}
+\label{fig:ring-buffer}
+\end{figure}
+
+The Redis implementation uses atomic LPUSH + LTRIM to maintain the ring buffer:
+
+\begin{lstlisting}[language=Python, caption={Ring buffer append with atomic trim.}]
+async def append(self, job_id: str, event: SSEEvent, ring_size: int) -> None:
+    """Append event to ring buffer, capping at ring_size."""
+    redis = await get_async_redis()
+    events_key = f"job:{job_id}:events"
+    event_json = event.to_storage_json()
+
+    async with redis.pipeline(transaction=True) as pipe:
+        # Prepend event (newest first)
+        pipe.lpush(events_key, event_json)
+        # Trim to ring_size (keeps indices 0 to ring_size-1)
+        pipe.ltrim(events_key, 0, ring_size - 1)
+        # Refresh TTL to match job expiry
+        pipe.expire(events_key, self._ttl_seconds)
+        await pipe.execute()
+\end{lstlisting}
+
+\subsection{Monotonic Event IDs}
+
+Each event receives a monotonically increasing ID within the job scope, enabling clients to detect gaps and request replay. The ID is generated using Redis INCR for atomic increment:
+
+\begin{lstlisting}[language=Python, caption={Monotonic event ID generation.}]
+async def get_next_event_id(self, job_id: str) -> int:
+    """Get next event ID (atomic increment)."""
+    redis = await get_async_redis()
+    seq_key = f"job:{job_id}:event_seq"
+
+    # INCR is atomic and returns the new value
+    event_id = await redis.incr(seq_key)
+
+    # Set TTL if this is the first event
+    if event_id == 1:
+        await redis.expire(seq_key, self._ttl_seconds)
+
+    return event_id
+\end{lstlisting}
+
+\subsection{Event Replay for Reconnection}
+
+When a client reconnects with a \texttt{Last-Event-ID} header, the server replays missed events from the ring buffer:
+
+\begin{lstlisting}[language=Python, caption={Event replay from Last-Event-ID.}]
+async def replay_from(self, job_id: str, last_event_id: int) -> list[SSEEvent]:
+    """Retrieve events with event_id > last_event_id."""
+    redis = await get_async_redis()
+    events_key = f"job:{job_id}:events"
+
+    # Get all events from LIST
+    event_jsons = await redis.lrange(events_key, 0, -1)
+
+    # Parse and filter to those after last_event_id
+    events = []
+    for event_json_bytes in reversed(event_jsons):  # Chronological order
+        event_json = event_json_bytes.decode("utf-8")
+        event_dict = json.loads(event_json)
+
+        event = SSEEvent(
+            event_id=event_dict["event_id"],
+            event_type=event_dict["event_type"],
+            data=event_dict["data"],
+        )
+
+        if event.event_id > last_event_id:
+            events.append(event)
+
+    return sorted(events, key=lambda e: e.event_id)
+\end{lstlisting}
+
+If the ring buffer has rotated past the requested \texttt{Last-Event-ID}, the server emits a comment indicating the gap:
+
+\begin{lstlisting}[language=Python, caption={Gap detection in SSE streaming.}]
+# If requested last_event_id is not in buffer, emit gap comment
+if last_event_id > 0 and not replayed_events:
+    yield ": gap detected, some events may have been lost\n\n"
+    record_sse_gap(backend="redis")
+\end{lstlisting}
+
+\subsection{SSE Endpoint Implementation}
+
+The SSE streaming endpoint in \texttt{src/routers/jobs.py} implements the full streaming protocol:
+
+\begin{lstlisting}[language=Python, caption={SSE streaming endpoint skeleton.}]
+@router.get("/{job_id}/events")
+async def job_events(
+    job_id: str,
+    request: Request,
+    last_event_id: int | None = Header(None, alias="Last-Event-ID"),
+):
+    """Stream job events via Server-Sent Events."""
+    
+    async def event_generator():
+        # Track active connection
+        with track_sse_connection(backend="redis"):
+            # Replay missed events if reconnecting
+            if last_event_id:
+                replayed = await event_store.replay_from(job_id, last_event_id)
+                for event in replayed:
+                    yield event.to_sse_format()
+                if replayed:
+                    record_sse_resume(backend="redis")
+
+            # Poll for new events until job terminates
+            while True:
+                job = await job_store.get(job_id)
+                if not job:
+                    yield 'event: end\ndata: {"status":"disappeared"}\n\n'
+                    break
+
+                if job.status.is_terminal:
+                    yield f'event: end\ndata: {{"status":"{job.status.value}"}}\n\n'
+                    record_sse_terminal(backend="redis", status=job.status.value)
+                    break
+
+                # Emit heartbeat to keep connection alive
+                yield f': heartbeat {datetime.utcnow().isoformat()}\n\n'
+                record_sse_heartbeat(backend="redis")
+                
+                await asyncio.sleep(1.0)  # Poll interval
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        },
+    )
+\end{lstlisting}
+
+\subsection{SSE Wire Protocol}
+
+The SSE wire protocol follows the W3C specification with the following format:
+
+\begin{verbatim}
+id: 42
+event: status
+data: {"job_id": "abc-123", "from": "queued", "to": "running"}
+
+id: 43
+event: progress
+data: {"percent": 50, "step": 5, "message": "Processing..."}
+
+id: 44
+event: end
+data: {"status": "finished", "result": {...}}
+\end{verbatim}
+
+Each event block is terminated by a double newline (\texttt{\textbackslash n\textbackslash n}), and comments (lines starting with \texttt{:}) are used for heartbeats and gap notifications.
+
+\subsection{SSE Metrics}
+
+Comprehensive metrics track SSE connection health and usage patterns:
+
+\begin{lstlisting}[language=Python, caption={SSE-specific Prometheus metrics.}]
+# Active connection tracking
+sse_connections_active = Gauge(
+    "sse_connections_active", "Active SSE connections", ["backend"]
+)
+
+# Resume functionality
+sse_resume_hits_total = Counter(
+    "sse_resume_hits_total", "Successful Last-Event-ID resumes", ["backend"]
+)
+
+# Gap detection
+sse_gap_events_total = Counter(
+    "sse_gap_events_total", "SSE ring buffer gaps (no backlog)", ["backend"]
+)
+
+# Keep-alive tracking
+sse_heartbeat_total = Counter(
+    "sse_heartbeat_total", "SSE heartbeats sent", ["backend"]
+)
+
+# Terminal event tracking
+sse_terminal_events_total = Counter(
+    "sse_terminal_events_total", "SSE terminal end events",
+    ["backend", "status"]  # finished, failed, cancelled, disappeared
+)
+\end{lstlisting}
+
+The \texttt{track\_sse\_connection} context manager maintains the active connection gauge:
+
+\begin{lstlisting}[language=Python, caption={SSE connection tracking context manager.}]
+def track_sse_connection(backend: str):
+    """Context manager to track SSE connection lifecycle."""
+    class SSEConnectionTracker:
+        def __enter__(self):
+            sse_connections_active.labels(backend=backend).inc()
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            sse_connections_active.labels(backend=backend).dec()
+
+    return SSEConnectionTracker()
+\end{lstlisting}
+
+\subsection{Client Integration}
+
+Clients can connect to the SSE stream using standard EventSource APIs or HTTP clients with streaming support:
+
+\begin{lstlisting}[language=JavaScript, caption={JavaScript EventSource client example.}]
+const eventSource = new EventSource('/v1/jobs/abc-123/events', {
+    headers: { 'Authorization': 'Bearer <token>' }
+});
+
+eventSource.addEventListener('status', (event) => {
+    const data = JSON.parse(event.data);
+    console.log(`Job transitioned: ${data.from} -> ${data.to}`);
+});
+
+eventSource.addEventListener('end', (event) => {
+    const data = JSON.parse(event.data);
+    console.log(`Job finished with status: ${data.status}`);
+    eventSource.close();
+});
+
+eventSource.onerror = (error) => {
+    // Browser automatically reconnects with Last-Event-ID
+    console.log('Connection error, reconnecting...');
+};
+\end{lstlisting}
+
+\subsection{Configuration Parameters}
+
+Table~\ref{tab:sse-config} summarizes SSE-related configuration parameters.
+
+\begin{table}[ht]
+\centering
+\caption{SSE streaming configuration parameters.}
+\label{tab:sse-config}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Parameter} & \textbf{Default} & \textbf{Description} \\
+\hline
+\texttt{SSE\_RING\_SIZE} & 100 & Maximum events retained per job \\
+\texttt{SSE\_POLL\_INTERVAL} & 1.0 & Polling interval for new events (seconds) \\
+\texttt{SSE\_HEARTBEAT\_INTERVAL} & 15.0 & Keep-alive heartbeat interval (seconds) \\
+\hline
+\end{tabular}
+\end{table}
+

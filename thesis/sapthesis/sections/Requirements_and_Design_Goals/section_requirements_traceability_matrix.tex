@@ -1,0 +1,454 @@
+% TODO checklist - Files inspected for this section:
+% - README.md (lines 1-2050): Feature descriptions, API endpoints
+% - Q&A.md (lines 1-7907): All sections for requirement-to-implementation mapping
+% - tests/: Test file structure for verification method mapping
+% - src/routers/: Router modules for endpoint mapping
+% - src/mcp/tools/: Tool implementations for FR-TL requirements
+% - src/security/: Security implementations for NFR-SE requirements
+% - sapthesis-doc.tex: Chapter structure for evaluation section references
+
+\section{Requirements Traceability Matrix}
+\label{sec:traceability-matrix}
+
+This section provides a comprehensive traceability matrix linking requirements from Sections~\ref{sec:functional-requirements} and~\ref{sec:nonfunctional-requirements} to their implementation artifacts and verification methods. This matrix serves as an auditable record ensuring that all requirements are addressed and validated.
+
+%------------------------------------------------------------------------------
+\subsection{Traceability Matrix Structure}
+\label{subsec:traceability-structure}
+
+Each entry in the traceability matrix contains:
+
+\begin{description}
+    \item[Requirement ID:] Unique identifier from the requirements tables
+    \item[Requirement Summary:] Brief description of the requirement
+    \item[Implementation Reference:] Source code file(s) or module(s) implementing the requirement
+    \item[Verification Method:] Testing approach used to validate the requirement
+    \item[Evaluation Section:] Chapter and section where the requirement is evaluated
+    \item[Status:] Current implementation status (Implemented, Partial, Planned)
+\end{description}
+
+%------------------------------------------------------------------------------
+\subsection{Functional Requirements Traceability}
+\label{subsec:fr-traceability}
+
+\subsubsection{Agent Execution Requirements}
+
+\begin{longtable}{|>{\raggedright\arraybackslash}p{1.4cm}|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{3cm}|>{\raggedright\arraybackslash}p{3cm}|>{\raggedright\arraybackslash}p{1.5cm}|}
+\caption{Agent Execution Requirements Traceability} \label{tab:trace-agent} \\
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification Eval.} & \textbf{Status} \\
+\hline
+\endfirsthead
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification Eval.} & \textbf{Status} \\
+\hline
+\endhead
+\hline
+\endfoot
+FR-AE-01 & Accept NL prompts, multi-step runs & \texttt{src/services/orchestrator.py}, \texttt{src/routers/agent\_runs.py} & E2E workflow test (12.2) & Implemented \\
+\hline
+FR-AE-02 & Configurable execution params & \texttt{src/schemas/agent\_runs.py} & Unit test (schema) (12.2) & Implemented \\
+\hline
+FR-AE-03 & Session context continuity & \texttt{src/routers/sessions.py}, \texttt{src/services/session.py} & Integration test (12.2) & Implemented \\
+\hline
+FR-AE-04 & Record execution steps & \texttt{db/postgres\_control/models/} & Audit log test (12.2) & Implemented \\
+\hline
+FR-AE-05 & Intent classification & \texttt{src/services/intent.py} & Unit test (12.2) & Implemented \\
+\hline
+FR-AE-06 & Task list generation & \texttt{src/services/orchestrator.py} & E2E test (12.2) & Implemented \\
+\hline
+FR-AE-07 & Execution metrics & \texttt{src/metrics/agent\_metrics.py} & Metrics test (12.3) & Implemented \\
+\hline
+FR-AE-08 & Graceful degradation & \texttt{src/adapters/llm.py} (circuit breaker) & Fault injection (12.5) & Implemented \\
+\hline
+FR-AE-09 & Run cancellation & \texttt{src/routers/agent\_runs.py} & Integration test (12.2) & Implemented \\
+\hline
+FR-AE-10 & Polling endpoints & \texttt{src/routers/agent\_runs.py} & E2E test (12.2) & Implemented \\
+\hline
+\end{longtable}
+
+\subsubsection{Model Management Requirements}
+
+\begin{longtable}{|>{\raggedright\arraybackslash}p{1.4cm}|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{3cm}|>{\raggedright\arraybackslash}p{2cm}|>{\raggedright\arraybackslash}p{1.2cm}|>{\raggedright\arraybackslash}p{2cm}|}
+\caption{Model Management Requirements Traceability} \label{tab:trace-model} \\
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification} & \textbf{Eval.} & \textbf{Status} \\
+\hline
+\endfirsthead
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification} & \textbf{Eval.} & \textbf{Status} \\
+\hline
+\endhead
+\hline
+\endfoot
+FR-MM-01 & Multi-provider support & \texttt{src/adapters/llm.py} & Integration test & 12.2 & Impl. \\
+\hline
+FR-MM-02 & Model instance registry & \texttt{src/routers/models\_instances.py} & CRUD test & 12.2 & Impl. \\
+\hline
+FR-MM-03 & Default Model Resolver & \texttt{src/services/dmr.py} & Unit test & 12.2 & Impl. \\
+\hline
+FR-MM-04 & Usage metrics tracking & \texttt{src/metrics/prometheus.py} & Metrics test & 12.3 & Impl. \\
+\hline
+FR-MM-05 & Hot-swap defaults & \texttt{src/routers/models\_instances.py} & Integration test & 12.2 & Impl. \\
+\hline
+FR-MM-06 & Availability validation & \texttt{src/health/components.py} & Health probe test & 12.5 & Impl. \\
+\hline
+FR-MM-07 & Model warmup & \texttt{src/adapters/llm.py} & Performance test & 12.3 & Partial \\
+\hline
+FR-MM-08 & Capability metadata & \texttt{src/schemas/models.py} & Schema test & 12.2 & Impl. \\
+\hline
+\end{longtable}
+
+\subsubsection{Tool Ecosystem Requirements}
+
+\begin{longtable}{|>{\raggedright\arraybackslash}p{1.4cm}|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{3cm}|>{\raggedright\arraybackslash}p{2cm}|>{\raggedright\arraybackslash}p{1.2cm}|>{\raggedright\arraybackslash}p{2cm}|}
+\caption{Tool Ecosystem Requirements Traceability} \label{tab:trace-tools} \\
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification} & \textbf{Eval.} & \textbf{Status} \\
+\hline
+\endfirsthead
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification} & \textbf{Eval.} & \textbf{Status} \\
+\hline
+\endhead
+\hline
+\endfoot
+FR-TL-01 & Tool discovery endpoint & \texttt{src/routers/tools.py} & API test & 12.2 & Impl. \\
+\hline
+FR-TL-02 & Dotted name invocation & \texttt{src/mcp/tools/\_\_init\_\_.py} & Unit test & 12.2 & Impl. \\
+\hline
+FR-TL-03 & Capability-based access & \texttt{src/mcp/runtime.py} & Security test & 12.4 & Impl. \\
+\hline
+FR-TL-04 & 34+ tools, 17 categories & \texttt{src/mcp/tools/*} & Inventory count & 12.2 & Impl. \\
+\hline
+FR-TL-05 & Tool invocation audit & \texttt{src/audit\_logger.py} & Audit log test & 12.4 & Impl. \\
+\hline
+FR-TL-06 & Per-tool timeouts & \texttt{src/mcp/runtime.py} & Timeout test & 12.3 & Impl. \\
+\hline
+FR-TL-07 & Tool-level rate limiting & \texttt{src/mcp/runtime.py} & Rate limit test & 12.4 & Partial \\
+\hline
+FR-TL-08 & Safe mode (read-only) & \texttt{src/mcp/tools/graph/query.py} & Security test & 12.4 & Impl. \\
+\hline
+FR-TL-09 & Tool metrics & \texttt{src/observability/metrics.py} & Metrics test & 12.6 & Impl. \\
+\hline
+\end{longtable}
+
+\subsubsection{Graph Query Requirements}
+
+\begin{longtable}{|>{\raggedright\arraybackslash}p{1.4cm}|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{3cm}|>{\raggedright\arraybackslash}p{2cm}|>{\raggedright\arraybackslash}p{1.2cm}|>{\raggedright\arraybackslash}p{2cm}|}
+\caption{Graph Query Requirements Traceability} \label{tab:trace-graph} \\
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification} & \textbf{Eval.} & \textbf{Status} \\
+\hline
+\endfirsthead
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification} & \textbf{Eval.} & \textbf{Status} \\
+\hline
+\endhead
+\hline
+\endfoot
+FR-GQ-01 & NL to Cypher translation & \texttt{src/mcp/tools/graph/generate\_cypher.py} & NL test suite & 12.2 & Impl. \\
+\hline
+FR-GQ-02 & Schema introspection & \texttt{src/mcp/tools/graph/schema.py} & Integration test & 12.2 & Impl. \\
+\hline
+FR-GQ-03 & Write operation detection & \texttt{src/mcp/tools/graph/query.py} & Security test & 12.4 & Impl. \\
+\hline
+FR-GQ-04 & Parameterized queries & \texttt{src/mcp/tools/graph/secure\_query.py} & Injection test & 12.4 & Impl. \\
+\hline
+FR-GQ-05 & CALL procedure allowlist & \texttt{src/mcp/tools/graph/secure\_query.py} & Security test & 12.4 & Impl. \\
+\hline
+FR-GQ-06 & Tenant isolation predicates & \texttt{src/mcp/tools/graph/secure\_query.py} & Isolation test & 12.4 & Impl. \\
+\hline
+FR-GQ-07 & Query explain & \texttt{src/mcp/tools/graph/query.py} & Unit test & 12.2 & Impl. \\
+\hline
+FR-GQ-08 & Query caching & \texttt{db/redis\_cache/} & Cache test & 12.3 & Partial \\
+\hline
+FR-GQ-09 & Bulk graph operations & \texttt{src/mcp/tools/graph/bulk.py} & Integration test & 12.2 & Impl. \\
+\hline
+\end{longtable}
+
+\subsubsection{Background Job Requirements}
+
+\begin{longtable}{|>{\raggedright\arraybackslash}p{1.4cm}|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{3cm}|>{\raggedright\arraybackslash}p{2cm}|>{\raggedright\arraybackslash}p{1.2cm}|>{\raggedright\arraybackslash}p{2cm}|}
+\caption{Background Job Requirements Traceability} \label{tab:trace-jobs} \\
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification} & \textbf{Eval.} & \textbf{Status} \\
+\hline
+\endfirsthead
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification} & \textbf{Eval.} & \textbf{Status} \\
+\hline
+\endhead
+\hline
+\endfoot
+FR-JB-01 & Async job creation & \texttt{src/routers/jobs.py} & API test & 12.2 & Impl. \\
+\hline
+FR-JB-02 & PostgreSQL persistence & \texttt{db/postgres\_control/models/job.py} & Integration test & 12.2 & Impl. \\
+\hline
+FR-JB-03 & Idempotency key support & \texttt{src/services/jobs\_service.py} & Idempotency test & 12.2 & Impl. \\
+\hline
+FR-JB-04 & SSE event streaming & \texttt{src/routers/job\_events.py} & SSE test & 12.2 & Impl. \\
+\hline
+FR-JB-05 & Job cancellation & \texttt{src/routers/jobs.py} & Lifecycle test & 12.2 & Impl. \\
+\hline
+FR-JB-06 & Worker heartbeats & \texttt{src/workers/jobs\_worker.py} & Worker test & 12.5 & Impl. \\
+\hline
+FR-JB-07 & Result retrieval & \texttt{src/routers/jobs.py} & API test & 12.2 & Impl. \\
+\hline
+FR-JB-08 & Queue depth metrics & \texttt{src/health/components.py} & Metrics test & 12.6 & Impl. \\
+\hline
+FR-JB-09 & Configurable job types & \texttt{src/workers/jobs\_worker.py} & Config test & 12.2 & Impl. \\
+\hline
+\end{longtable}
+
+\subsubsection{API Design Requirements}
+
+\begin{longtable}{|>{\raggedright\arraybackslash}p{1.4cm}|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{3cm}|>{\raggedright\arraybackslash}p{2cm}|>{\raggedright\arraybackslash}p{1.2cm}|>{\raggedright\arraybackslash}p{2cm}|}
+\caption{API Design Requirements Traceability} \label{tab:trace-api} \\
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification} & \textbf{Eval.} & \textbf{Status} \\
+\hline
+\endfirsthead
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification} & \textbf{Eval.} & \textbf{Status} \\
+\hline
+\endhead
+\hline
+\endfoot
+FR-AP-01 & Versioned endpoints & \texttt{src/app.py} & API test & 12.2 & Impl. \\
+\hline
+FR-AP-02 & Pydantic validation & \texttt{src/schemas/*} & Fuzz test & 12.4 & Impl. \\
+\hline
+FR-AP-03 & Cursor pagination & \texttt{src/routers/*} & Pagination test & 12.2 & Impl. \\
+\hline
+FR-AP-04 & ETag support & \texttt{src/middleware/*} & Conditional test & 12.2 & Partial \\
+\hline
+FR-AP-05 & RFC 7807 errors & \texttt{src/errors/} & Error format test & 12.2 & Impl. \\
+\hline
+FR-AP-06 & Request correlation & \texttt{src/observability/middleware.py} & Header test & 12.6 & Impl. \\
+\hline
+FR-AP-07 & Deprecation headers & \texttt{src/middleware/*} & Header test & 12.2 & Partial \\
+\hline
+FR-AP-08 & 76+ endpoints & \texttt{src/routers/*}, \texttt{api/openapi.json} & OpenAPI analysis & 12.2 & Impl. \\
+\hline
+\end{longtable}
+
+%------------------------------------------------------------------------------
+\subsection{Non-Functional Requirements Traceability}
+\label{subsec:nfr-traceability}
+
+\subsubsection{Security Requirements}
+
+\begin{longtable}{|>{\raggedright\arraybackslash}p{1.4cm}|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{3cm}|>{\raggedright\arraybackslash}p{2cm}|>{\raggedright\arraybackslash}p{1.2cm}|>{\raggedright\arraybackslash}p{2cm}|}
+\caption{Security Requirements Traceability} \label{tab:trace-security} \\
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification} & \textbf{Eval.} & \textbf{Status} \\
+\hline
+\endfirsthead
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification} & \textbf{Eval.} & \textbf{Status} \\
+\hline
+\endhead
+\hline
+\endfoot
+NFR-SE-01 & OAuth 2.0/OIDC auth & \texttt{src/security/jwt.py} & Auth test & 12.4 & Impl. \\
+\hline
+NFR-SE-02 & JWKS validation & \texttt{src/security/jwt.py} & Token test & 12.4 & Impl. \\
+\hline
+NFR-SE-03 & Scope-based RBAC & \texttt{src/security/permissions.py} & RBAC test & 12.4 & Impl. \\
+\hline
+NFR-SE-04 & Configurable scopes & \texttt{src/security/scopes.py} & Scope test & 12.4 & Impl. \\
+\hline
+NFR-SE-05 & PII scrubbing & \texttt{src/mcp/tools/privacy/scrub.py} & PII test & 12.4 & Impl. \\
+\hline
+NFR-SE-06 & SSRF prevention & \texttt{src/utils/http.py} & SSRF test & 12.4 & Impl. \\
+\hline
+NFR-SE-07 & Cypher injection prevent & \texttt{src/mcp/tools/graph/secure\_query.py} & Injection test & 12.4 & Impl. \\
+\hline
+NFR-SE-08 & Credential masking & \texttt{src/logging\_setup.py} & Log inspection & 12.4 & Impl. \\
+\hline
+NFR-SE-09 & HTTPS enforcement & \texttt{ops/nginx/} & Config audit & 12.4 & Impl. \\
+\hline
+NFR-SE-10 & Defense in depth & Architecture review & Security audit & 12.4 & Impl. \\
+\hline
+\end{longtable}
+
+\subsubsection{Multi-Tenancy Requirements}
+
+\begin{longtable}{|>{\raggedright\arraybackslash}p{1.4cm}|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{3cm}|>{\raggedright\arraybackslash}p{2cm}|>{\raggedright\arraybackslash}p{1.2cm}|>{\raggedright\arraybackslash}p{2cm}|}
+\caption{Multi-Tenancy Requirements Traceability} \label{tab:trace-tenant} \\
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification} & \textbf{Eval.} & \textbf{Status} \\
+\hline
+\endfirsthead
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification} & \textbf{Eval.} & \textbf{Status} \\
+\hline
+\endhead
+\hline
+\endfoot
+NFR-MT-01 & Logical tenant isolation & \texttt{db/postgres\_control/models/} & Isolation test & 12.4 & Impl. \\
+\hline
+NFR-MT-02 & Tenant context resolution & \texttt{src/middleware/tenant.py} & Middleware test & 12.4 & Impl. \\
+\hline
+NFR-MT-03 & Query tenant scoping & \texttt{db/postgres\_control/repositories/} & Query test & 12.4 & Impl. \\
+\hline
+NFR-MT-04 & Per-tenant config & \texttt{src/routers/admin\_tenants.py} & Config test & 12.2 & Impl. \\
+\hline
+NFR-MT-05 & Per-tenant quotas & \texttt{src/middleware/rate\_limit.py} & Quota test & 12.4 & Partial \\
+\hline
+NFR-MT-06 & Tenant-scoped metrics & \texttt{src/observability/metrics.py} & Metrics test & 12.6 & Impl. \\
+\hline
+NFR-MT-07 & Tenant ID validation & \texttt{src/security/jwt.py} & Validation test & 12.4 & Impl. \\
+\hline
+NFR-MT-08 & Tenant lifecycle API & \texttt{src/routers/admin\_tenants.py} & CRUD test & 12.2 & Impl. \\
+\hline
+\end{longtable}
+
+\subsubsection{Reliability Requirements}
+
+\begin{longtable}{|>{\raggedright\arraybackslash}p{1.4cm}|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{3cm}|>{\raggedright\arraybackslash}p{2cm}|>{\raggedright\arraybackslash}p{1.2cm}|>{\raggedright\arraybackslash}p{2cm}|}
+\caption{Reliability Requirements Traceability} \label{tab:trace-reliability} \\
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification} & \textbf{Eval.} & \textbf{Status} \\
+\hline
+\endfirsthead
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification} & \textbf{Eval.} & \textbf{Status} \\
+\hline
+\endhead
+\hline
+\endfoot
+NFR-RE-01 & Circuit breakers & \texttt{src/resilience/circuit\_breaker.py} & Fault injection & 12.5 & Impl. \\
+\hline
+NFR-RE-02 & Graceful degradation & \texttt{src/adapters/llm.py} & Degradation test & 12.5 & Impl. \\
+\hline
+NFR-RE-03 & Redis unavailability & \texttt{src/health/components.py} & Availability test & 12.5 & Partial \\
+\hline
+NFR-RE-04 & Retry with backoff & \texttt{src/resilience/retry.py} & Retry test & 12.5 & Impl. \\
+\hline
+NFR-RE-05 & Graceful shutdown & \texttt{src/app.py} & Shutdown test & 12.5 & Impl. \\
+\hline
+NFR-RE-06 & Worker heartbeats & \texttt{src/workers/jobs\_worker.py} & Heartbeat test & 12.5 & Impl. \\
+\hline
+NFR-RE-07 & 99.5\% availability & Monitoring & Uptime tracking & 12.7 & Target \\
+\hline
+NFR-RE-08 & DB reconnection & \texttt{db/postgres\_control/database.py} & Reconnect test & 12.5 & Impl. \\
+\hline
+\end{longtable}
+
+\subsubsection{Observability Requirements}
+
+\begin{longtable}{|>{\raggedright\arraybackslash}p{1.4cm}|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{3cm}|>{\raggedright\arraybackslash}p{2cm}|>{\raggedright\arraybackslash}p{1.2cm}|>{\raggedright\arraybackslash}p{2cm}|}
+\caption{Observability Requirements Traceability} \label{tab:trace-observability} \\
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification} & \textbf{Eval.} & \textbf{Status} \\
+\hline
+\endfirsthead
+\hline
+\textbf{ID} & \textbf{Summary} & \textbf{Implementation} & \textbf{Verification} & \textbf{Eval.} & \textbf{Status} \\
+\hline
+\endhead
+\hline
+\endfoot
+NFR-OB-01 & Prometheus metrics & \texttt{src/observability/metrics.py} & Metrics audit & 12.6 & Impl. \\
+\hline
+NFR-OB-02 & Structured logging & \texttt{src/logging\_setup.py} & Log format test & 12.6 & Impl. \\
+\hline
+NFR-OB-03 & Trace propagation & \texttt{src/observability/tracing.py} & Trace test & 12.6 & Impl. \\
+\hline
+NFR-OB-04 & Request ID correlation & \texttt{src/observability/middleware.py} & Correlation test & 12.6 & Impl. \\
+\hline
+NFR-OB-05 & Component health checks & \texttt{src/health/components.py} & Health test & 12.6 & Impl. \\
+\hline
+NFR-OB-06 & Grafana dashboards & \texttt{monitoring/grafana/} & Dashboard review & 12.6 & Impl. \\
+\hline
+NFR-OB-07 & Configurable log format & \texttt{src/logging\_setup.py} & Config test & 12.6 & Impl. \\
+\hline
+NFR-OB-08 & Latency histograms & \texttt{src/observability/metrics.py} & Bucket audit & 12.6 & Impl. \\
+\hline
+\end{longtable}
+
+%------------------------------------------------------------------------------
+\subsection{Traceability Summary}
+\label{subsec:traceability-summary}
+
+\begin{table}[htbp]
+\centering
+\caption{Requirements Traceability Summary}
+\label{tab:trace-summary}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Category} & \textbf{Total} & \textbf{Implemented} & \textbf{Partial} & \textbf{Planned} \\
+\hline
+Agent Execution (FR-AE) & 10 & 10 & 0 & 0 \\
+\hline
+Model Management (FR-MM) & 8 & 7 & 1 & 0 \\
+\hline
+Tool Ecosystem (FR-TL) & 9 & 8 & 1 & 0 \\
+\hline
+Graph Query (FR-GQ) & 9 & 8 & 1 & 0 \\
+\hline
+Background Jobs (FR-JB) & 9 & 9 & 0 & 0 \\
+\hline
+API Design (FR-AP) & 8 & 6 & 2 & 0 \\
+\hline
+Security (NFR-SE) & 10 & 10 & 0 & 0 \\
+\hline
+Multi-Tenancy (NFR-MT) & 8 & 7 & 1 & 0 \\
+\hline
+Reliability (NFR-RE) & 8 & 7 & 1 & 0 \\
+\hline
+Observability (NFR-OB) & 8 & 8 & 0 & 0 \\
+\hline
+\textbf{Total} & \textbf{87} & \textbf{80} & \textbf{7} & \textbf{0} \\
+\hline
+\end{tabular}
+\end{table}
+
+The traceability analysis reveals:
+\begin{itemize}
+    \item \textbf{92\% of requirements are fully implemented} (80 out of 87)
+    \item \textbf{8\% are partially implemented} (7 out of 87), primarily in areas of caching, ETag support, and advanced rate limiting
+    \item \textbf{No requirements are unaddressed} (0 planned/not started)
+\end{itemize}
+
+The partially implemented requirements are lower-priority items (``Should'' or ``Could'' in MoSCoW prioritization) that do not impact core functionality. They are candidates for future enhancement.
+
+%------------------------------------------------------------------------------
+\subsection{Verification Method Legend}
+\label{subsec:verification-legend}
+
+\begin{table}[htbp]
+\centering
+\caption{Verification Method Descriptions}
+\label{tab:verification-legend}
+\small
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Method} & \textbf{Description} \\
+\hline
+Unit test & Isolated test of individual function/class with mocked dependencies \\
+\hline
+Integration test & Test verifying interaction between components with real/simulated external systems \\
+\hline
+E2E test & Full workflow test through HTTP API, simulating real user scenarios \\
+\hline
+Security test & Targeted test for security control verification (auth, authz, injection) \\
+\hline
+Metrics test & Verification that expected metrics are emitted with correct labels \\
+\hline
+Fault injection & Test simulating failure conditions to verify resilience behavior \\
+\hline
+Performance test & Load/stress test measuring latency and throughput characteristics \\
+\hline
+Config audit & Review of configuration files for compliance with requirements \\
+\hline
+OpenAPI analysis & Automated analysis of OpenAPI specification for API coverage \\
+\hline
+Log inspection & Manual or automated review of log output for compliance \\
+\hline
+\end{tabularx}
+\end{table}
+
+% TODO: Update evaluation section references (12.x) once evaluation chapter is written

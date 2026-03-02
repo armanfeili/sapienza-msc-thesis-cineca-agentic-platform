@@ -1,0 +1,332 @@
+% TODO checklist: Inspected files for this section:
+% - Q&A.md (questions 46, 50 - recommendations, roadmap priorities)
+% - comparison.md (integration patterns, what leaders offer)
+% - README.md (roadmap hints, architecture extensibility)
+% - sapthesis-doc.tex (future work topics list)
+
+\section{Future Work}
+\label{sec:future-work}
+
+The Cineca Agentic Platform provides a solid foundation for enterprise AI agent orchestration, but significant opportunities exist for enhancement and extension. This section outlines prioritized directions for future development, organized by impact and feasibility.
+
+\subsection{High-Priority Enhancements}
+
+\paragraph{1. Real-Time Streaming Responses}
+
+The current polling-based architecture for agent run updates introduces latency and increases backend load. Implementing true push-based streaming would significantly improve user experience:
+
+\begin{itemize}
+    \item \textbf{WebSocket integration}: Persistent connections for bidirectional communication
+    \item \textbf{Step-by-step streaming}: Real-time emission of orchestration steps as they complete
+    \item \textbf{Token streaming}: Character-by-character LLM output for responsive chat interfaces
+    \item \textbf{Progress indicators}: Fine-grained progress updates for long-running operations
+\end{itemize}
+
+Implementation considerations:
+\begin{itemize}
+    \item WebSocket connection management at scale (connection pooling, load balancing)
+    \item Fallback to SSE/polling for clients that don't support WebSockets
+    \item Authentication and tenant isolation for persistent connections
+    \item Integration with existing observability infrastructure
+\end{itemize}
+
+\paragraph{2. Conversation Memory Systems}
+
+Extending beyond session-based state to implement sophisticated memory systems would enable more capable long-running agent interactions:
+
+\begin{itemize}
+    \item \textbf{Summary memory}: Automatic compression of conversation history to fit context windows
+    \item \textbf{Semantic memory}: Embedding-based storage and retrieval of important conversation points
+    \item \textbf{Entity memory}: Tracking and recall of entities mentioned across sessions
+    \item \textbf{Episodic memory}: Structured recall of past interactions for continuity
+\end{itemize}
+
+This enhancement would leverage the existing Memgraph infrastructure, storing memory as graph nodes and relationships with temporal metadata.
+
+\paragraph{3. Document Ingestion and RAG Pipeline}
+
+Complementing the graph-native NL-to-Cypher pipeline with document-based retrieval would significantly expand the platform's applicability:
+
+\begin{itemize}
+    \item \textbf{Document loaders}: Support for PDF, Word, HTML, Markdown, and structured data formats
+    \item \textbf{Chunking strategies}: Semantic, sentence-based, and recursive chunking with overlap
+    \item \textbf{Embedding generation}: Integration with embedding providers (OpenAI, Cohere, local models)
+    \item \textbf{Vector storage}: PostgreSQL pgvector extension or dedicated vector database integration
+    \item \textbf{Hybrid retrieval}: Combining vector similarity with graph traversal for comprehensive answers
+\end{itemize}
+
+The multi-tenant architecture would naturally extend to vector storage, with per-tenant embedding namespaces.
+
+\subsection{Agent Capability Extensions}
+
+\paragraph{4. Multi-Agent Collaboration Framework}
+
+Enabling multiple agents to collaborate on complex tasks would significantly expand the platform's capabilities:
+
+\begin{itemize}
+    \item \textbf{Agent-to-agent communication}: Message passing between specialized agents
+    \item \textbf{Task delegation}: Hierarchical agent structures with manager and worker agents
+    \item \textbf{Shared context}: Common knowledge base accessible to all collaborating agents
+    \item \textbf{Coordination protocols}: Turn-taking, voting, and consensus mechanisms
+\end{itemize}
+
+Implementation approaches:
+\begin{itemize}
+    \item Extend the orchestrator to manage agent teams rather than single agents
+    \item Define agent role specifications (planner, researcher, executor, critic)
+    \item Implement conversation routing between agents
+    \item Maintain audit trails showing agent interactions
+\end{itemize}
+
+\paragraph{5. Additional Agent Reasoning Patterns}
+
+Beyond the current ReAct-style orchestration, implementing alternative reasoning patterns would enable more sophisticated problem-solving:
+
+\begin{itemize}
+    \item \textbf{Plan-and-Execute}: Separate planning and execution phases with plan revision
+    \item \textbf{Tree-of-Thought}: Exploration of multiple reasoning paths with backtracking
+    \item \textbf{Self-Ask}: Decomposition into sub-questions with independent resolution
+    \item \textbf{Reflexion}: Self-critique and iterative refinement of responses
+    \item \textbf{ReWOO}: Reasoning without observation for reduced LLM calls
+\end{itemize}
+
+The orchestrator would become a pattern dispatcher, selecting the appropriate reasoning strategy based on task characteristics.
+
+\paragraph{6. Enhanced NL-to-Cypher Capabilities}
+
+Extending the NL-to-Cypher pipeline to support more complex query types:
+
+\begin{itemize}
+    \item \textbf{Multi-hop reasoning}: Complex queries requiring multiple graph traversals
+    \item \textbf{Temporal queries}: Time-based filtering and trend analysis
+    \item \textbf{Aggregation combinations}: Nested GROUP BY with multiple aggregation functions
+    \item \textbf{Subgraph extraction}: Returning connected subgraphs rather than tabular results
+    \item \textbf{Write operations}: Controlled, audited graph modifications through natural language
+\end{itemize}
+
+Safety considerations for write operations would require additional validation layers and approval workflows.
+
+\subsection{Infrastructure and Operations}
+
+\paragraph{7. Distributed Worker Architecture}
+
+Scaling the job processing infrastructure for high-volume deployments:
+
+\begin{itemize}
+    \item \textbf{Distributed locking}: Redis SETNX or Redlock for multi-worker coordination
+    \item \textbf{Worker pools}: Dynamic scaling of worker processes based on queue depth
+    \item \textbf{Job priority queues}: Multiple priority levels with fair scheduling
+    \item \textbf{Dead letter queues}: Automatic routing of repeatedly failed jobs for investigation
+    \item \textbf{Job retry strategies}: Configurable exponential backoff with jitter
+\end{itemize}
+
+\paragraph{8. Event Sourcing Architecture}
+
+Implementing event sourcing for complete audit trails and operational flexibility:
+
+\begin{itemize}
+    \item \textbf{Event store}: Append-only log of all state changes
+    \item \textbf{State reconstruction}: Ability to rebuild current state from event history
+    \item \textbf{Temporal queries}: Query historical states at any point in time
+    \item \textbf{Event replay}: Debugging and testing by replaying production events
+    \item \textbf{Integration hooks}: External system integration via event consumption
+\end{itemize}
+
+This architecture would enhance compliance capabilities and enable sophisticated debugging scenarios.
+
+\paragraph{9. Microservices Decomposition}
+
+For larger deployments, decomposing the monolithic backend into specialized services:
+
+\begin{itemize}
+    \item \textbf{Agent service}: Orchestration and run management
+    \item \textbf{Tool service}: MCP tool registry and invocation
+    \item \textbf{Auth service}: Authentication and authorization
+    \item \textbf{Graph service}: Memgraph operations and NL-to-Cypher
+    \item \textbf{Job service}: Background job processing
+    \item \textbf{Metrics service}: Observability aggregation
+\end{itemize}
+
+This decomposition would enable:
+\begin{itemize}
+    \item Independent scaling of high-demand components
+    \item Technology diversity (different languages/frameworks per service)
+    \item Smaller deployment units for faster iteration
+    \item Team ownership boundaries
+\end{itemize}
+
+\subsection{LLM Provider Enhancements}
+
+\paragraph{10. Additional LLM Provider Integrations}
+
+Expanding the provider ecosystem beyond Ollama and OpenAI-compatible APIs:
+
+\begin{itemize}
+    \item \textbf{Anthropic Claude}: Direct API integration with Claude models
+    \item \textbf{Google Gemini}: Integration with Gemini API
+    \item \textbf{AWS Bedrock}: Multi-model access through AWS
+    \item \textbf{Azure OpenAI}: Enterprise Azure deployments
+    \item \textbf{Cohere}: Command and Embed model families
+    \item \textbf{Local inference}: vLLM, text-generation-inference for self-hosted deployment
+\end{itemize}
+
+Each provider integration would include:
+\begin{itemize}
+    \item Authentication configuration
+    \item Rate limiting adaptation
+    \item Cost tracking calibration
+    \item Circuit breaker thresholds
+    \item Model-specific prompt formatting
+\end{itemize}
+
+\paragraph{11. Advanced Cost Governance}
+
+Extending the cost tracking framework for enterprise budget management:
+
+\begin{itemize}
+    \item \textbf{Budget hierarchies}: Organization $\rightarrow$ department $\rightarrow$ team $\rightarrow$ user
+    \item \textbf{Soft and hard limits}: Warnings vs. enforcement thresholds
+    \item \textbf{Cost allocation}: Chargeback reports for internal billing
+    \item \textbf{Predictive alerts}: Forecasting budget exhaustion based on trends
+    \item \textbf{Provider cost optimization}: Automatic routing to cost-effective providers
+\end{itemize}
+
+\paragraph{12. Model Warm-up and Preloading}
+
+Reducing cold-start latency for local LLM deployments:
+
+\begin{itemize}
+    \item \textbf{Startup warm-up}: Automatic model loading on service initialization
+    \item \textbf{Model preloading}: Keep frequently-used models in memory
+    \item \textbf{Predictive loading}: Anticipate model needs based on usage patterns
+    \item \textbf{Memory management}: Intelligent model eviction based on usage recency
+\end{itemize}
+
+\subsection{Security and Compliance}
+
+\paragraph{13. Enhanced PII Protection}
+
+Extending data protection capabilities:
+
+\begin{itemize}
+    \item \textbf{ML-based detection}: Named entity recognition for PII beyond regex patterns
+    \item \textbf{Contextual redaction}: Preserve meaning while removing identifiers
+    \item \textbf{Reversible tokenization}: Secure tokens for authorized re-identification
+    \item \textbf{Cross-border compliance}: Region-aware data handling (GDPR, CCPA)
+    \item \textbf{Differential privacy}: Aggregate query protection for analytics
+\end{itemize}
+
+\paragraph{14. Advanced Audit and Compliance}
+
+Strengthening audit capabilities for regulated environments:
+
+\begin{itemize}
+    \item \textbf{Tamper-evident logs}: Cryptographic chaining of audit records
+    \item \textbf{Compliance reports}: Automated generation of compliance documentation
+    \item \textbf{Access certification}: Periodic review and attestation workflows
+    \item \textbf{Data lineage}: Tracking of information flow through the system
+    \item \textbf{Retention policies}: Automated enforcement of data retention requirements
+\end{itemize}
+
+\subsection{User Experience}
+
+\paragraph{15. Unified UI Framework}
+
+Addressing the dual-UI maintenance burden:
+
+\begin{itemize}
+    \item \textbf{Shared component library}: Common UI components for both interfaces
+    \item \textbf{API SDK generation}: Auto-generated clients for TypeScript and Python
+    \item \textbf{Design system}: Consistent visual language across interfaces
+    \item \textbf{Embedded panels}: Integration of control panel features into chat UI
+\end{itemize}
+
+\paragraph{16. Agent Debugging and Visualization}
+
+Enhanced tooling for understanding agent behavior:
+
+\begin{itemize}
+    \item \textbf{Step visualization}: Graphical representation of orchestration flow
+    \item \textbf{Decision tree display}: Visualization of intent classification paths
+    \item \textbf{Token usage analysis}: Per-step token consumption breakdown
+    \item \textbf{Replay functionality}: Re-execute past runs with modified inputs
+    \item \textbf{Comparison views}: Side-by-side analysis of different run configurations
+\end{itemize}
+
+\subsection{Research Directions}
+
+\paragraph{17. Benchmark Development}
+
+Creating standardized benchmarks for enterprise agent platforms:
+
+\begin{itemize}
+    \item \textbf{Security benchmarks}: Tenant isolation, injection resistance, authorization correctness
+    \item \textbf{Performance benchmarks}: Latency, throughput, scalability characteristics
+    \item \textbf{Reliability benchmarks}: Failure recovery, degradation behavior
+    \item \textbf{Capability benchmarks}: Task completion rates across domain-specific scenarios
+\end{itemize}
+
+\paragraph{18. Federated Multi-Cluster Deployment}
+
+Supporting distributed deployments across multiple data centers:
+
+\begin{itemize}
+    \item \textbf{Data sovereignty}: Tenant data restricted to specific regions
+    \item \textbf{Cross-cluster routing}: Request routing based on tenant affinity
+    \item \textbf{Replicated configuration}: Synchronized tenant and model configuration
+    \item \textbf{Global observability}: Unified metrics and logging across clusters
+\end{itemize}
+
+\subsection{Integration Ecosystem}
+
+\paragraph{19. External Workflow Engine Integration}
+
+Connecting with enterprise workflow systems:
+
+\begin{itemize}
+    \item \textbf{Temporal integration}: Long-running workflows with Temporal
+    \item \textbf{Airflow operators}: Agent runs as Airflow tasks
+    \item \textbf{Prefect tasks}: Agent orchestration within Prefect flows
+    \item \textbf{Kubernetes Jobs}: Native Kubernetes job integration
+\end{itemize}
+
+\paragraph{20. MCP Protocol Interoperability}
+
+Full compliance with the Model Context Protocol specification:
+
+\begin{itemize}
+    \item \textbf{MCP server adapter}: Expose platform tools through standard MCP interface
+    \item \textbf{MCP client integration}: Consume external MCP servers as tool providers
+    \item \textbf{Tool discovery}: Dynamic discovery of MCP servers in the network
+    \item \textbf{Schema translation}: Automatic mapping between MCP schemas and internal formats
+\end{itemize}
+
+This would enable the platform to participate in the broader MCP ecosystem, both as a provider and consumer of MCP-compliant tools.
+
+\subsection{Roadmap Prioritization}
+
+Based on impact and feasibility, the following prioritization is recommended:
+
+\begin{table}[ht]
+\centering
+\caption{Future work prioritization matrix.}
+\label{tab:roadmap-priority}
+\small
+\begin{tabular}{p{5cm}cc}
+\hline
+\textbf{Enhancement} & \textbf{Impact} & \textbf{Effort} \\
+\hline
+Real-time streaming & High & Medium \\
+Conversation memory & High & Medium \\
+Distributed workers & High & Low \\
+Multi-agent collaboration & High & High \\
+Document RAG pipeline & Medium & High \\
+Additional LLM providers & Medium & Low \\
+Event sourcing & Medium & High \\
+MCP interoperability & Medium & Medium \\
+\hline
+\end{tabular}
+\end{table}
+
+The recommended sequence prioritizes high-impact, lower-effort enhancements (streaming, distributed workers, LLM providers) before tackling larger architectural changes (multi-agent, event sourcing, microservices decomposition).
+

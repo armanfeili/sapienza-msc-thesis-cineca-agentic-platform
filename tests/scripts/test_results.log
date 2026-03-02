@@ -1,0 +1,8 @@
+[1;33mNo token provided. Attempting to get admin token...[0m
+[0;34mℹ INFO:[0m Using token from run/admin-token.txt
+
+[0;34m============================================================[0m
+[0;34mA) Feature Flag Verification[0m
+[0;34m============================================================[0m
+
+[1;33mTEST:[0m Check if USE_POSTGRES_JOBS is enabled in container

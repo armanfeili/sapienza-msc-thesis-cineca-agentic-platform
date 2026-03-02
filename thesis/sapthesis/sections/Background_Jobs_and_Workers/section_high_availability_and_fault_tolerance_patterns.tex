@@ -1,0 +1,192 @@
+% TODO checklist:
+% - [x] Inspected src/workers/jobs_worker.py (heartbeat, signal handling)
+% - [x] Inspected db/redis_cache/job_store.py (atomic operations, orphan cleanup)
+% - [x] Inspected src/background.py (scheduler resilience)
+% - [x] Analyzed Q&A.md Q41 for operational strengths/weaknesses
+% - [x] Reviewed health probe integration patterns
+
+\section{High Availability and Fault-Tolerance Patterns}
+\label{sec:ha-ft}
+
+Enterprise deployments require the job system to operate reliably under adverse conditions: worker crashes, network partitions, database unavailability, and infrastructure restarts. This section describes the fault-tolerance patterns implemented in the Cineca Agentic Platform's job and worker subsystems.
+
+\subsection{Worker Heartbeat and Dead-Worker Detection}
+
+Workers maintain liveness signals through periodic heartbeat updates to the job's \texttt{updated\_at} timestamp:
+
+\begin{lstlisting}[language=Python, caption={Heartbeat mechanism for liveness detection.}]
+async def _heartbeat_loop(self, job_uuid: UUID, jobs_service: JobsService):
+    """Periodically update job timestamp to indicate worker is alive."""
+    while True:
+        await asyncio.sleep(self.heartbeat_interval)
+        try:
+            jobs_service.repo.touch_job(job_uuid)
+            logger.debug(f"Heartbeat for job {job_uuid}")
+        except Exception as e:
+            logger.warning(f"Heartbeat failed: {e}")
+\end{lstlisting}
+
+Dead workers can be detected by monitoring jobs in RUNNING status whose \texttt{updated\_at} exceeds a threshold (e.g., 3× heartbeat interval). A monitoring process or background task can identify such jobs for recovery.
+
+\subsection{Orphaned Job Recovery}
+
+Jobs left in RUNNING status after a worker crash require recovery. The recovery process:
+
+\begin{enumerate}
+    \item \textbf{Detection}: Query for RUNNING jobs with stale heartbeats.
+    \item \textbf{Requeue}: Transition job back to QUEUED status.
+    \item \textbf{Execution}: Normal worker picks up the requeued job.
+\end{enumerate}
+
+\begin{lstlisting}[language=Python, caption={Orphaned job recovery (conceptual).}]
+async def recover_orphaned_jobs(threshold_seconds: int = 60):
+    """Recover jobs stuck in RUNNING with stale heartbeats."""
+    cutoff = datetime.utcnow() - timedelta(seconds=threshold_seconds)
+    
+    orphaned = await jobs_service.find_stale_running_jobs(cutoff)
+    
+    for job in orphaned:
+        logger.warning(f"Recovering orphaned job {job.id}")
+        # Transition back to queued for retry
+        await jobs_service.transition_status(
+            job.id, from_status="running", to_status="queued"
+        )
+        # Re-enqueue to Redis
+        await jobs_cache.queue_push_job(job.type, job.id)
+\end{lstlisting}
+
+\subsection{Retry and Backoff Strategies}
+
+The current implementation does not include automatic retry for failed jobs. Table~\ref{tab:retry-recommendations} outlines recommended patterns for production deployments.
+
+\begin{table}[ht]
+\centering
+\caption{Recommended retry patterns for job failures.}
+\label{tab:retry-recommendations}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Failure Type} & \textbf{Strategy} & \textbf{Configuration} \\
+\hline
+Transient errors & Exponential backoff & Base: 1s, Max: 60s, Factor: 2 \\
+Resource exhaustion & Fixed delay retry & 30s delay, max 3 retries \\
+Permanent failures & No retry & Move to dead-letter queue \\
+Cancellation & No retry & Final state, no recovery \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Graceful Degradation}
+
+The system implements graceful degradation when dependencies become unavailable:
+
+\subsubsection{Redis Unavailability}
+
+When Redis is unavailable, the job system:
+\begin{itemize}
+    \item Falls back to in-memory storage (development/testing mode)
+    \item Returns 503 Service Unavailable for job operations
+    \item Health probes report DEGRADED status
+\end{itemize}
+
+\subsubsection{PostgreSQL Unavailability}
+
+When PostgreSQL is unavailable:
+\begin{itemize}
+    \item Workers pause job processing
+    \item In-flight jobs continue but cannot persist results
+    \item Health probes report UNHEALTHY status
+    \item API endpoints return 503 for database-dependent operations
+\end{itemize}
+
+\subsection{Health Probe Integration}
+
+The job system integrates with Kubernetes health probes for automated recovery:
+
+\begin{lstlisting}[language=Python, caption={Health probe integration for job system.}]
+async def check_job_system_health() -> ComponentCheck:
+    """Check job system health for readiness probe."""
+    checks = {}
+    
+    # Check Redis connectivity
+    try:
+        redis = await get_async_redis()
+        await redis.ping()
+        checks["redis"] = "ok"
+    except Exception as e:
+        checks["redis"] = f"error: {e}"
+        return ComponentCheck(ok=False, status="error", details=checks)
+    
+    # Check queue depths
+    for job_type in allowed_types:
+        depth = await redis.llen(f"jobs:queue:{job_type}")
+        checks[f"queue_{job_type}"] = depth
+    
+    # Check for stuck jobs (optional)
+    stuck_count = await count_stale_running_jobs()
+    if stuck_count > 0:
+        checks["stuck_jobs"] = stuck_count
+        return ComponentCheck(ok=True, status="degraded", details=checks)
+    
+    return ComponentCheck(ok=True, status="ok", details=checks)
+\end{lstlisting}
+
+\subsection{Index Consistency Maintenance}
+
+Redis ZSET indexes can become inconsistent when job HASH keys expire but index entries remain. The orphan cleanup task (Section~\ref{subsec:scheduled-task-categories}) maintains index consistency by periodically scanning indexes and removing entries for non-existent jobs.
+
+\subsection{Transaction Boundaries}
+
+Critical operations use appropriate transaction boundaries:
+
+\begin{itemize}
+    \item \textbf{Job Creation}: Atomic creation of HASH + ZSET entries via Redis pipeline.
+    \item \textbf{Status Updates}: Lua scripts for atomic compare-and-swap operations.
+    \item \textbf{PostgreSQL Updates}: SQLAlchemy session transactions with rollback on failure.
+\end{itemize}
+
+\subsection{Operational Recommendations}
+
+Based on the implemented patterns, Table~\ref{tab:ha-recommendations} provides operational recommendations for high-availability deployments.
+
+\begin{table}[ht]
+\centering
+\caption{High availability operational recommendations.}
+\label{tab:ha-recommendations}
+\small
+\begin{tabular}{lp{7cm}}
+\hline
+\textbf{Component} & \textbf{Recommendation} \\
+\hline
+Workers & Run 2+ worker replicas for redundancy \\
+Redis & Use Redis Sentinel or Cluster for HA \\
+PostgreSQL & Use managed service with automatic failover \\
+Monitoring & Alert on queue backlog $>$ threshold \\
+Recovery & Schedule orphan job recovery every 5 minutes \\
+Backups & Enable daily backups with 7-day retention \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Known Limitations}
+
+The current implementation has several limitations that should be addressed for mission-critical deployments:
+
+\begin{enumerate}
+    \item \textbf{No Automatic Retry}: Failed jobs remain in FAILED status; manual intervention or custom recovery is required.
+    
+    \item \textbf{Single Worker Assumption}: No distributed locking for multi-worker deployments; duplicate processing possible without Redis SETNX guards.
+    
+    \item \textbf{No Dead-Letter Queue}: Permanently failed jobs are not segregated for manual review.
+    
+    \item \textbf{Basic Priority Support}: Priority field exists but is not fully utilized in queue polling logic.
+\end{enumerate}
+
+Future enhancements should address these limitations through:
+\begin{itemize}
+    \item Configurable retry policies with exponential backoff
+    \item Distributed locking via Redis SETNX or Redlock algorithm
+    \item Dead-letter queue routing for failed jobs
+    \item Priority-weighted queue polling
+\end{itemize}
+

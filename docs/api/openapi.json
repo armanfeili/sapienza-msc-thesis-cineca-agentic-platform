@@ -1,0 +1,264 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Agentic Platform MCP API",
+    "version": "1.0.0",
+    "description": "OpenAPI specification for the Machine Composable Protocol (MCP) API provided by the Agentic Platform. This API enables clients to interact with the orchestrator and underlying Memgraph database via modular tools."
+  },
+  "servers": [
+    {
+      "url": "https://api.agentic-platform.example.com",
+      "description": "Production server"
+    },
+    {
+      "url": "http://localhost:8000",
+      "description": "Local development server"
+    }
+  ],
+  "paths": {
+    "/mcp/tools/generate_cypher": {
+      "post": {
+        "summary": "Generate Cypher query from natural language",
+        "description": "Translates a natural language question or instruction into an executable Cypher query for Memgraph.",
+        "operationId": "generateCypher",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "input": {
+                    "type": "string",
+                    "description": "Natural language query text."
+                  }
+                },
+                "required": ["input"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cypher query generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "success" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "cypher": {
+                          "type": "string",
+                          "description": "Generated Cypher query"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
+      }
+    },
+    "/mcp/tools/crud_create_node": {
+      "post": {
+        "summary": "Create a node",
+        "description": "Creates a new labeled node in the Memgraph database with specified properties.",
+        "operationId": "crudCreateNode",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": { "type": "string", "description": "Node label" },
+                  "properties": {
+                    "type": "object",
+                    "description": "Key-value pairs for node properties"
+                  }
+                },
+                "required": ["label", "properties"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Node created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "node_id": { "type": "string" },
+                    "label": { "type": "string" },
+                    "properties": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp/tools/query_read": {
+      "post": {
+        "summary": "Execute a Cypher read query",
+        "description": "Executes a read-only Cypher query and returns the result set.",
+        "operationId": "queryRead",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cypher": { "type": "string", "description": "Cypher query string" }
+                },
+                "required": ["cypher"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query executed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "records": {
+                      "type": "array",
+                      "items": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp/tools/schema_discover": {
+      "get": {
+        "summary": "Discover database schema",
+        "description": "Retrieves graph schema, including labels, relationships, and properties.",
+        "operationId": "schemaDiscover",
+        "responses": {
+          "200": {
+            "description": "Schema retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "labels": { "type": "array", "items": { "type": "string" } },
+                    "relationships": { "type": "array", "items": { "type": "string" } },
+                    "properties": { "type": "array", "items": { "type": "string" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp/tools/search_semantic": {
+      "post": {
+        "summary": "Semantic search",
+        "description": "Performs a semantic search against stored graph data.",
+        "operationId": "searchSemantic",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "query": { "type": "string", "description": "Search phrase" },
+                  "limit": { "type": "integer", "default": 10 }
+                },
+                "required": ["query"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Search completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "node_id": { "type": "integer" },
+                          "label": { "type": "string" },
+                          "score": { "type": "number" },
+                          "properties": { "type": "object" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp/tools/system_health": {
+      "get": {
+        "summary": "System health check",
+        "description": "Returns operational status of the MCP service and its dependencies.",
+        "operationId": "systemHealth",
+        "responses": {
+          "200": {
+            "description": "System health status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string" },
+                    "components": {
+                      "type": "object",
+                      "additionalProperties": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}

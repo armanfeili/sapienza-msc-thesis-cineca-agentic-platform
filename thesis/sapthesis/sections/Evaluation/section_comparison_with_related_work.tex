@@ -1,0 +1,378 @@
+% TODO checklist:
+% - [x] Inspected: comparison.md (detailed SOTA comparison)
+% - [x] Inspected: Q&A.md (Q50: consolidated comparison with SOTA)
+% - [x] Inspected: README.md (platform capabilities)
+% - [x] Inspected: sapthesis-doc.tex (Background chapter SOTA matrix)
+
+\section{Comparison with Related Work}
+\label{sec:comparison}
+
+This section provides a detailed comparison of the Cineca Agentic Platform with state-of-the-art agent orchestration frameworks and related tools. The comparison is both feature-based (capability matrices) and qualitative (trade-off analysis), positioning the platform within the current ecosystem.
+
+\subsection{Comparison Against Baselines (Experimental and Operational)}
+\label{subsec:comparison-baselines}
+
+This subsection provides an empirical and operational comparison, complementing the conceptual survey in Chapter~\ref{ch:background}. The comparison focuses on production-readiness, enterprise features, and operational characteristics.
+
+\subsubsection{Framework Classification}
+
+Before comparing features, it is important to classify the compared systems by their primary role:
+
+\begin{table}[ht]
+\centering
+\caption{Classification of compared systems.}
+\label{tab:system-classification}
+\small
+\begin{tabular}{llp{6cm}}
+\hline
+\textbf{System} & \textbf{Category} & \textbf{Primary Role} \\
+\hline
+Cineca Agentic Platform & Full Platform & End-to-end backend with governance \\
+LangChain & Library & Composable chains and agents \\
+LlamaIndex & Library & Data indexing and retrieval \\
+Semantic Kernel & Library & Multi-language skills/plugins \\
+OpenAI Assistants & SaaS API & Hosted agent runtime \\
+AutoGen & Framework & Multi-agent conversations \\
+crewAI & Framework & Role-based agent teams \\
+GitHub MCP Server & Tool Server & GitHub operations via MCP \\
+Neo4j MCP Servers & Tool Servers & Graph database operations \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Feature Comparison Matrix}
+
+The following matrix compares key capabilities across systems. Legend: \textbf{Y} = Yes (built-in), \textbf{P} = Partial (requires integration), \textbf{N} = Not in scope.
+
+\begin{table}[ht]
+\centering
+\caption{Feature comparison matrix: Cineca vs SOTA frameworks.}
+\label{tab:feature-comparison}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lcccccccc}
+\hline
+\textbf{Capability} & \textbf{Cineca} & \textbf{LangChain} & \textbf{LlamaIndex} & \textbf{SK} & \textbf{OpenAI} & \textbf{AutoGen} & \textbf{crewAI} \\
+\hline
+Multi-tenancy (native) & Y & N & N & P & P & N & N \\
+RBAC/scopes & Y & N & N & P & P & N & N \\
+Audit logging & Y & P & P & P & N & N & N \\
+Rate limiting & Y & N & N & N & Y & N & N \\
+Background jobs & Y & N & N & N & N & N & N \\
+SSE streaming & Y & Y & Y & Y & Y & P & P \\
+Graph DB integration & Y & P & P & N & N & N & N \\
+NL-to-Cypher & Y & N & P & N & N & N & N \\
+MCP tools & Y & N & N & P & N & N & N \\
+Prometheus metrics & Y & P & P & P & N & N & N \\
+OpenTelemetry & Y & P & P & P & N & N & N \\
+Health probes (K8s) & Y & N & N & N & N & N & N \\
+Dual UI & Y & N & N & N & Y & N & N \\
+Multi-agent & P & Y & N & Y & N & Y & Y \\
+RAG pipeline & P & Y & Y & Y & Y & P & P \\
+Memory systems & P & Y & Y & Y & Y & P & P \\
+\hline
+\end{tabular}
+\caption*{SK = Semantic Kernel; OpenAI = OpenAI Assistants API}
+\end{table}
+
+\subsubsection{Detailed Comparisons}
+
+\paragraph{vs. LangChain}
+
+\begin{table}[ht]
+\centering
+\caption{Cineca vs LangChain detailed comparison.}
+\label{tab:vs-langchain}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Aspect} & \textbf{Cineca} & \textbf{LangChain} \\
+\hline
+Deployment model & Self-hosted backend service & Library in application \\
+Agent types & ReAct-style only & ReAct, Plan-and-Execute, many more \\
+Tool ecosystem & 34 first-party tools & 100+ community integrations \\
+Memory systems & Session-based & Buffer, Summary, Entity, KG \\
+Enterprise features & Built-in & Requires custom implementation \\
+Observability & Native Prometheus/OTel & Via LangSmith (paid) or custom \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Summary}: LangChain offers greater flexibility and agent variety; Cineca provides stronger enterprise governance out-of-box.
+
+\paragraph{vs. LlamaIndex}
+
+\begin{table}[ht]
+\centering
+\caption{Cineca vs LlamaIndex detailed comparison.}
+\label{tab:vs-llamaindex}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Aspect} & \textbf{Cineca} & \textbf{LlamaIndex} \\
+\hline
+Primary focus & Agent orchestration + governance & Data indexing + retrieval \\
+Index types & Graph-based only & Vector, List, Tree, KG, Property \\
+Data ingestion & Not implemented & 160+ data loaders \\
+Query engines & NL-to-Cypher pipeline & Sophisticated routing engines \\
+Enterprise auth & Built-in OIDC/RBAC & Application responsibility \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Summary}: LlamaIndex excels at data indexing and RAG; Cineca excels at governance and graph-native querying.
+
+\paragraph{vs. OpenAI Assistants API}
+
+\begin{table}[ht]
+\centering
+\caption{Cineca vs OpenAI Assistants API detailed comparison.}
+\label{tab:vs-openai}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Aspect} & \textbf{Cineca} & \textbf{OpenAI Assistants} \\
+\hline
+Deployment & Self-hosted & SaaS (OpenAI infrastructure) \\
+Setup complexity & Multi-container orchestration & Instant API access \\
+Model choice & Multi-provider (Ollama, OpenAI, etc.) & OpenAI models only \\
+Data sovereignty & Any region (self-hosted) & US-based (OpenAI servers) \\
+Cost model & Infrastructure cost & Usage-based pricing \\
+Customization & Full source access & Limited to API parameters \\
+File search & Not implemented & Built-in vector search \\
+Code interpreter & Not implemented & Built-in sandbox \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Summary}: OpenAI Assistants is easier to start; Cineca offers more control, privacy, and multi-provider flexibility.
+
+\paragraph{vs. AutoGen and crewAI}
+
+\begin{table}[ht]
+\centering
+\caption{Cineca vs multi-agent frameworks (AutoGen, crewAI).}
+\label{tab:vs-multiagent}
+\small
+\begin{tabular}{llll}
+\hline
+\textbf{Aspect} & \textbf{Cineca} & \textbf{AutoGen} & \textbf{crewAI} \\
+\hline
+Multi-agent & Not implemented & Native conversations & Native teams/roles \\
+Human-in-loop & Via UI/jobs & Built-in approval & Delegation patterns \\
+Persistence & PostgreSQL + Redis & In-memory & File-based \\
+Production features & Comprehensive & Minimal & Minimal \\
+Observability & Native stack & Logging only & Basic logging \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Summary}: AutoGen and crewAI lead in multi-agent scenarios; Cineca leads in production-readiness and persistence.
+
+\subsubsection{MCP Ecosystem Comparison}
+
+The platform's relationship to the Model Context Protocol ecosystem:
+
+\begin{table}[ht]
+\centering
+\caption{Cineca vs MCP servers comparison.}
+\label{tab:vs-mcp}
+\small
+\begin{tabular}{llll}
+\hline
+\textbf{Aspect} & \textbf{Cineca} & \textbf{GitHub MCP} & \textbf{Neo4j MCP} \\
+\hline
+Role & Full platform & Tool server & Tool server \\
+Interface & REST API (MCP-style) & MCP JSON-RPC & MCP JSON-RPC \\
+Graph DB & Memgraph & None & Neo4j \\
+Orchestration & Built-in & External & External \\
+Governance & Full stack & Host-dependent & Host-dependent \\
+Interoperability & Adapter needed & MCP-native & MCP-native \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Key insight}: Cineca can \textit{consume} MCP servers as external tool providers, or expose its tools via an MCP adapter for consumption by MCP hosts.
+
+\subsubsection{Consolidated Comparison Matrix}
+
+\begin{table}[ht]
+\centering
+\caption{Consolidated capability comparison (green = strong, yellow = partial, red = weak/missing).}
+\label{tab:consolidated-comparison}
+\small
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{lccccccc}
+\hline
+\textbf{Capability} & \textbf{Cineca} & \textbf{LangChain} & \textbf{LlamaIndex} & \textbf{SK} & \textbf{OpenAI} & \textbf{AutoGen} & \textbf{crewAI} \\
+\hline
+Multi-Agent & \textcolor{red}{$\bullet$} & \textcolor{yellow}{$\bullet$} & \textcolor{red}{$\bullet$} & \textcolor{red}{$\bullet$} & \textcolor{red}{$\bullet$} & \textcolor{green}{$\bullet$} & \textcolor{green}{$\bullet$} \\
+RAG Pipeline & \textcolor{red}{$\bullet$} & \textcolor{green}{$\bullet$} & \textcolor{green}{$\bullet$} & \textcolor{yellow}{$\bullet$} & \textcolor{green}{$\bullet$} & \textcolor{red}{$\bullet$} & \textcolor{red}{$\bullet$} \\
+Memory Systems & \textcolor{red}{$\bullet$} & \textcolor{green}{$\bullet$} & \textcolor{green}{$\bullet$} & \textcolor{green}{$\bullet$} & \textcolor{green}{$\bullet$} & \textcolor{yellow}{$\bullet$} & \textcolor{yellow}{$\bullet$} \\
+Streaming & \textcolor{red}{$\bullet$} & \textcolor{green}{$\bullet$} & \textcolor{green}{$\bullet$} & \textcolor{green}{$\bullet$} & \textcolor{green}{$\bullet$} & \textcolor{yellow}{$\bullet$} & \textcolor{yellow}{$\bullet$} \\
+Multi-Tenancy & \textcolor{green}{$\bullet$} & \textcolor{red}{$\bullet$} & \textcolor{red}{$\bullet$} & \textcolor{yellow}{$\bullet$} & \textcolor{yellow}{$\bullet$} & \textcolor{red}{$\bullet$} & \textcolor{red}{$\bullet$} \\
+Enterprise Auth & \textcolor{green}{$\bullet$} & \textcolor{red}{$\bullet$} & \textcolor{red}{$\bullet$} & \textcolor{green}{$\bullet$} & \textcolor{yellow}{$\bullet$} & \textcolor{red}{$\bullet$} & \textcolor{red}{$\bullet$} \\
+Observability & \textcolor{green}{$\bullet$} & \textcolor{yellow}{$\bullet$} & \textcolor{yellow}{$\bullet$} & \textcolor{yellow}{$\bullet$} & \textcolor{red}{$\bullet$} & \textcolor{red}{$\bullet$} & \textcolor{red}{$\bullet$} \\
+Graph Integration & \textcolor{green}{$\bullet$} & \textcolor{red}{$\bullet$} & \textcolor{yellow}{$\bullet$} & \textcolor{red}{$\bullet$} & \textcolor{red}{$\bullet$} & \textcolor{red}{$\bullet$} & \textcolor{red}{$\bullet$} \\
+Self-Hosted & \textcolor{green}{$\bullet$} & \textcolor{green}{$\bullet$} & \textcolor{green}{$\bullet$} & \textcolor{yellow}{$\bullet$} & \textcolor{red}{$\bullet$} & \textcolor{green}{$\bullet$} & \textcolor{green}{$\bullet$} \\
+Production Ready & \textcolor{green}{$\bullet$} & \textcolor{yellow}{$\bullet$} & \textcolor{yellow}{$\bullet$} & \textcolor{green}{$\bullet$} & \textcolor{green}{$\bullet$} & \textcolor{red}{$\bullet$} & \textcolor{red}{$\bullet$} \\
+\hline
+\end{tabular}
+\caption*{Legend: \textcolor{green}{$\bullet$} Strong | \textcolor{yellow}{$\bullet$} Partial | \textcolor{red}{$\bullet$} Weak/Missing}
+\end{table}
+
+\subsection{Qualitative Comparison and Trade-offs}
+\label{subsec:qualitative-comparison}
+
+This subsection synthesizes practical trade-offs and provides guidance for system selection.
+
+\subsubsection{Strategic Positioning}
+
+Based on the evaluation, the Cineca Agentic Platform is positioned as follows:
+
+\paragraph{Areas Where Cineca is Ahead}
+\begin{enumerate}
+    \item \textbf{Enterprise-grade multi-tenancy and security}: Native tenant isolation, OIDC/JWT authentication, RBAC with fine-grained scopes, and comprehensive audit logging.
+    
+    \item \textbf{Self-hosted observability}: Open-source Prometheus metrics and OpenTelemetry tracing without requiring paid services.
+    
+    \item \textbf{Graph database integration}: Native Memgraph integration with NL-to-Cypher pipeline and multi-layer safety validation.
+    
+    \item \textbf{Production deployment architecture}: Docker Compose orchestration, health probes, graceful shutdown, and worker management.
+    
+    \item \textbf{Model provider flexibility}: Multi-provider support with circuit breakers, fallback, and cost tracking.
+\end{enumerate}
+
+\paragraph{Areas Where Cineca is On Par}
+\begin{enumerate}
+    \item \textbf{Tool/plugin extensibility}: Decorator-based tool definition, JSON Schema validation, comparable to LangChain tools.
+    
+    \item \textbf{Basic agent orchestration}: Multi-step execution with planning and tool invocation.
+    
+    \item \textbf{API-first design}: RESTful API with OpenAPI documentation.
+\end{enumerate}
+
+\paragraph{Areas Where Cineca is Behind}
+\begin{enumerate}
+    \item \textbf{Multi-agent collaboration}: No native support for agent-to-agent communication (AutoGen, crewAI lead).
+    
+    \item \textbf{RAG and document processing}: No built-in document ingestion, chunking, or vector search (LlamaIndex leads).
+    
+    \item \textbf{Advanced memory systems}: Session-based only; no semantic memory or summary memory (LangChain leads).
+    
+    \item \textbf{Real-time streaming}: Polling-based updates; no native WebSocket/SSE for step-by-step output (most frameworks support).
+    
+    \item \textbf{Agent type variety}: ReAct-style only; no Plan-and-Execute, Tree-of-Thought variants (LangChain leads).
+\end{enumerate}
+
+\subsubsection{Trade-off Analysis}
+
+\begin{table}[ht]
+\centering
+\caption{Trade-off analysis: Cineca vs library-based approaches.}
+\label{tab:tradeoffs}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Dimension} & \textbf{Cineca (Platform)} & \textbf{Libraries (LangChain, etc.)} \\
+\hline
+Complexity & Higher (multi-service) & Lower (single process) \\
+Control & Full (source access) & High (code-level) \\
+Time-to-value & Longer (setup) & Shorter (pip install) \\
+Governance & Built-in & Must implement \\
+Scalability & Designed for scale & Application responsibility \\
+Flexibility & Framework-constrained & Maximum flexibility \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Decision Guide}
+
+Based on the comparison, the following selection criteria are recommended:
+
+\begin{table}[ht]
+\centering
+\caption{System selection guide by requirement.}
+\label{tab:selection-guide}
+\small
+\begin{tabular}{p{6cm}l}
+\hline
+\textbf{If You Need...} & \textbf{Choose} \\
+\hline
+Governed, multi-tenant, auditable runtime & Cineca \\
+Maximum agent flexibility and variety & LangChain \\
+Data indexing and RAG from documents & LlamaIndex \\
+Microsoft ecosystem integration & Semantic Kernel \\
+Instant hosted solution & OpenAI Assistants \\
+Multi-agent conversations & AutoGen \\
+Role-based agent teams & crewAI \\
+Graph database tools via MCP & Neo4j MCP servers \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Integration Patterns}
+
+The compared systems are not mutually exclusive. Possible integration patterns:
+
+\begin{enumerate}
+    \item \textbf{Cineca + MCP servers}: Use Cineca as governed platform, integrate GitHub MCP and Neo4j MCP as external tool providers.
+    
+    \item \textbf{Cineca + LangGraph}: Use LangGraph for complex workflow orchestration within Cineca's governance wrapper.
+    
+    \item \textbf{Cineca as MCP provider}: Export Cineca tools via MCP adapter for consumption by other MCP hosts.
+\end{enumerate}
+
+\subsubsection{Key Differentiators Summary}
+
+The Cineca Agentic Platform's key differentiators are:
+
+\begin{enumerate}
+    \item \textbf{Enterprise-First Design}: Built-in multi-tenancy, RBAC, audit logging, rate limiting---features that require significant custom development with library-based approaches.
+    
+    \item \textbf{Graph-Native AI}: Integrated Memgraph with NL-to-Cypher pipeline, safety validation, and schema-aware query generation.
+    
+    \item \textbf{MCP Protocol Adoption}: 34 tools following MCP patterns with tool discovery and invocation APIs.
+    
+    \item \textbf{Background Processing}: Long-running job support with persistence, SSE streaming, heartbeats, and cancellation.
+    
+    \item \textbf{Operational Completeness}: Health probes, metrics, tracing, and dual UI (chat + admin) in a single deployable system.
+\end{enumerate}
+
+\subsubsection{Limitations Relative to SOTA}
+
+Honest acknowledgment of limitations:
+
+\begin{enumerate}
+    \item \textbf{Multi-agent collaboration}: Not yet implemented; planned for future roadmap.
+    
+    \item \textbf{RAG pipeline}: Document ingestion would require integration with LlamaIndex or similar.
+    
+    \item \textbf{Community size}: Smaller ecosystem than LangChain; fewer third-party integrations.
+    
+    \item \textbf{Learning curve}: Platform complexity may slow initial adoption compared to library approaches.
+    
+    \item \textbf{MCP interoperability}: REST-based tool interface requires adapter for strict MCP JSON-RPC compliance.
+\end{enumerate}
+
+\subsection{Comparison Summary}
+
+The evaluation demonstrates that the Cineca Agentic Platform occupies a distinct position in the AI agent ecosystem:
+
+\begin{itemize}
+    \item \textbf{Not a competitor to}: LlamaIndex (data indexing), AutoGen/crewAI (multi-agent), OpenAI Assistants (hosted SaaS).
+    
+    \item \textbf{Complementary to}: MCP servers (can integrate as tool providers), LangGraph (can wrap for complex workflows).
+    
+    \item \textbf{Alternative to}: Custom LangChain deployments requiring enterprise features, in-house platforms built for governance.
+\end{itemize}
+
+The platform is best suited for organizations that:
+\begin{enumerate}
+    \item Require multi-tenant deployment with strict data isolation
+    \item Need comprehensive audit trails and compliance reporting
+    \item Have graph-based knowledge requiring natural language querying
+    \item Value self-hosted deployment for data sovereignty
+    \item Prefer production-ready infrastructure over rapid prototyping
+\end{enumerate}
+

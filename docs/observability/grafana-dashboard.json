@@ -1,0 +1,239 @@
+{
+  "title": "Global Observability Dashboard",
+  "dashboard": {
+    "id": null,
+    "uid": "global-observability",
+    "title": "Global Observability Dashboard",
+    "tags": ["observability", "infrastructure", "application"],
+    "timezone": "browser",
+    "schemaVersion": 37,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "type": "stat",
+        "title": "Total HTTP Requests",
+        "id": 1,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(http_requests_total)",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "calcs": ["lastNotNull"]
+          },
+          "orientation": "horizontal",
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "center"
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "HTTP Request Rate (RPS)",
+        "id": 2,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total[1m]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "req/s"
+          }
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "HTTP Error Rate (%)",
+        "id": 3,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "(sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "95th Percentile Request Duration",
+        "id": 4,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "type": "gauge",
+        "title": "CPU Usage (%)",
+        "id": 5,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "(sum(rate(container_cpu_usage_seconds_total{image!=\"\"}[5m])) by (instance) / sum(machine_cpu_cores) by (instance)) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "type": "gauge",
+        "title": "Memory Usage (%)",
+        "id": 6,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "(sum(container_memory_usage_bytes{image!=\"\"}) by (instance) / sum(machine_memory_bytes) by (instance)) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Disk I/O (Bytes/sec)",
+        "id": 7,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(rate(node_disk_read_bytes_total[5m]) + rate(node_disk_written_bytes_total[5m])) by (instance)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes"
+          }
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Network Traffic (Bytes/sec)",
+        "id": 8,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(rate(node_network_receive_bytes_total[5m]) + rate(node_network_transmit_bytes_total[5m])) by (instance)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes"
+          }
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Application-Level Errors",
+        "id": 9,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(rate(app_errors_total[5m])) by (service)",
+            "refId": "A"
+          }
+        ],
+        "legend": {
+          "show": true
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Database Query Latency (p95)",
+        "id": 10,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(db_query_duration_seconds_bucket[5m])) by (le))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Database Query Error Rate (%)",
+        "id": 11,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "(sum(rate(db_query_errors_total[5m])) / sum(rate(db_query_total[5m]))) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Background Job Queue Depth",
+        "id": 12,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(background_jobs_queue_depth) by (queue)",
+            "refId": "A"
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "instance",
+          "type": "query",
+          "datasource": "Prometheus",
+          "query": "label_values(up, instance)",
+          "refresh": 1
+        },
+        {
+          "name": "service",
+          "type": "query",
+          "datasource": "Prometheus",
+          "query": "label_values(app_errors_total, service)",
+          "refresh": 1
+        }
+      ]
+    },
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    }
+  },
+  "overwrite": true
+}

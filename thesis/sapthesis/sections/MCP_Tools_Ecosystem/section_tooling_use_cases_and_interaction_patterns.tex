@@ -1,0 +1,392 @@
+% TODO checklist:
+% - [x] Inspected README.md for primary use cases and stakeholders
+% - [x] Inspected Q&A.md Q36-Q41 for agent, tool, job workflows
+% - [x] Inspected src/mcp/tools/README_mcp_tools.md for tool API patterns
+% - [x] Inspected src/routers/tools.py for API endpoint structure
+% - [x] Inspected src/mcp/tools/graph/secure_query.py for NL-to-Cypher workflow
+% - [x] Inspected src/mcp/tools/system/health.py for health check pattern
+
+\section{Tooling Use Cases and Interaction Patterns}
+\label{sec:tooling-use-cases}
+
+The MCP tools ecosystem serves as the programmatic interface through which agents, operators, and external systems interact with the Cineca Agentic Platform. This section describes the primary use cases addressed by the tooling layer and the interaction patterns that govern tool discovery, invocation, and error handling.
+
+\subsection{Primary Use Cases}
+\label{subsec:tool-use-cases}
+
+The 34 MCP tools are designed to support five distinct categories of use cases, each targeting specific stakeholders and operational requirements.
+
+\subsubsection{Graph Question-Answering}
+
+The most prominent use case involves natural language queries over the Memgraph knowledge graph. Users pose questions in natural language, which are converted to Cypher queries through the NL-to-Cypher pipeline and executed against the graph database.
+
+\paragraph{Workflow.}
+\begin{enumerate}
+    \item User submits a natural language question via the Chat UI or API.
+    \item The orchestrator invokes \texttt{graph.secure\_query} or \texttt{graph.generate\_cypher} to translate the question.
+    \item The generated Cypher is validated for safety (no write operations, bounded complexity).
+    \item The validated query is executed via \texttt{graph.query}.
+    \item Results are formatted and returned to the user.
+\end{enumerate}
+
+\paragraph{Involved Tools.}
+\begin{itemize}
+    \item \texttt{graph.generate\_cypher}: NL-to-Cypher translation with LLM
+    \item \texttt{graph.secure\_query}: Validated query execution with safety checks
+    \item \texttt{graph.query}: Direct Cypher execution for advanced users
+    \item \texttt{graph.schema}: Schema introspection for query generation context
+    \item \texttt{output.format}: Result formatting (JSON, CSV, Markdown)
+\end{itemize}
+
+\subsubsection{System Health and Monitoring}
+
+Operators and automated systems use monitoring tools to assess platform health, diagnose issues, and integrate with infrastructure monitoring solutions.
+
+\paragraph{Workflow.}
+\begin{enumerate}
+    \item Monitoring system or operator invokes health check tools.
+    \item Tools probe individual components (PostgreSQL, Redis, Memgraph, LLM providers).
+    \item Results are aggregated into a health summary with latency metrics.
+    \item For failed checks, detailed diagnostics are returned for troubleshooting.
+\end{enumerate}
+
+\paragraph{Involved Tools.}
+\begin{itemize}
+    \item \texttt{system.health}: Liveness and readiness probes
+    \item \texttt{system.status}: High-level service status snapshot
+    \item \texttt{system.metrics}: Prometheus metrics access
+    \item \texttt{system.backup}: Backup status and triggers
+\end{itemize}
+
+\subsubsection{Administrative Operations}
+
+Platform administrators use administrative tools for tenant management, user administration, and operational tasks that require elevated privileges.
+
+\paragraph{Workflow.}
+\begin{enumerate}
+    \item Administrator authenticates with \texttt{admin:all} scope.
+    \item Administrative tool is invoked with appropriate parameters.
+    \item The operation is executed with full audit logging.
+    \item Results and any side effects are returned.
+\end{enumerate}
+
+\paragraph{Involved Tools.}
+\begin{itemize}
+    \item \texttt{tenancy.manage}: Tenant lifecycle (create, update, delete)
+    \item \texttt{security.audit}: Audit log queries and exports
+    \item \texttt{ratelimit.manage}: Rate limit configuration
+    \item \texttt{db.switch}: Database context switching
+    \item \texttt{data.archive}: Data archival and restoration
+\end{itemize}
+
+\subsubsection{Graph Data Management}
+
+Data engineers and applications use graph management tools to populate, update, and maintain the knowledge graph.
+
+\paragraph{Workflow.}
+\begin{enumerate}
+    \item Client prepares node/edge data in bulk format.
+    \item The \texttt{graph.bulk} tool processes data in transactional batches.
+    \item Idempotency keys prevent duplicate entries on retry.
+    \item Progress is reported via SSE for long-running operations.
+\end{enumerate}
+
+\paragraph{Involved Tools.}
+\begin{itemize}
+    \item \texttt{graph.crud}: Single-entity CRUD operations
+    \item \texttt{graph.bulk}: Batch operations with idempotency
+    \item \texttt{graph.analytics}: Centrality, paths, community detection
+    \item \texttt{data.quality}: Data integrity validation
+\end{itemize}
+
+\subsubsection{Session and Context Management}
+
+Agents require persistent context across multi-turn conversations. Context management tools provide session lifecycle and preference storage.
+
+\paragraph{Workflow.}
+\begin{enumerate}
+    \item Agent run begins, and \texttt{session.manage} creates or resumes a session.
+    \item During execution, \texttt{agent.context} assembles execution context from various sources.
+    \item User preferences from \texttt{user.profile} are merged into the context.
+    \item Session state is persisted for future turns.
+\end{enumerate}
+
+\paragraph{Involved Tools.}
+\begin{itemize}
+    \item \texttt{session.manage}: Session lifecycle with TTL enforcement
+    \item \texttt{agent.context}: Context assembly and merging
+    \item \texttt{user.profile}: User preferences and settings
+    \item \texttt{cache.manage}: Ephemeral data caching
+\end{itemize}
+
+\subsection{Interaction Patterns}
+\label{subsec:interaction-patterns}
+
+All tools follow consistent interaction patterns that ensure predictability, debuggability, and integration compatibility.
+
+\subsubsection{Tool Discovery}
+
+Before invoking a tool, clients discover available tools and their schemas through the catalog endpoints.
+
+\paragraph{Discovery Endpoints.}
+\begin{itemize}
+    \item \texttt{GET /v1/tools}: List all available tools with metadata
+    \item \texttt{GET /v1/tools/\{name\}/schema}: Get JSON schema for tool payload
+    \item \texttt{POST /v1/tools/\{name\}/invocations}: Invoke the tool
+\end{itemize}
+
+\paragraph{Discovery Response.}
+\begin{lstlisting}[language=Python, caption={Tool discovery response structure}, label={lst:tool-discovery-response}]
+{
+    "tools": [
+        {
+            "name": "graph.query",
+            "category": "graph",
+            "summary": "Execute read-only Cypher queries",
+            "actions": ["run", "explain", "profile"],
+            "required_scopes": ["graph:read"],
+            "capabilities": ["reads_db"]
+        },
+        ...
+    ],
+    "total": 34,
+    "categories": ["agent", "cache", "catalog", "data", ...]
+}
+\end{lstlisting}
+
+The \texttt{catalog.discover} tool provides programmatic access to tool metadata from within agent runs:
+
+\begin{lstlisting}[language=Python, caption={Using catalog.discover tool}, label={lst:catalog-discover}]
+# Discover all graph tools
+result = invoke_tool("catalog.discover", {
+    "action": "list",
+    "category": "graph",
+    "include_schema": True
+})
+
+# Get specific tool details
+result = invoke_tool("catalog.discover", {
+    "action": "describe",
+    "tool_name": "graph.query",
+    "include_examples": True
+})
+\end{lstlisting}
+
+\subsubsection{Authorization Flow}
+
+Tool invocation requires appropriate authorization, verified through the MCP runtime's RBAC integration.
+
+\paragraph{Authorization Sequence.}
+\begin{enumerate}
+    \item Client includes JWT token in \texttt{Authorization} header.
+    \item MCP runtime extracts principal and scopes from token.
+    \item Tool's \texttt{required\_scope} is checked against principal's scopes.
+    \item Tenant isolation is verified via \texttt{X-Tenant-ID} header match.
+    \item If all checks pass, the tool is invoked; otherwise, \texttt{E\_PERMISSION} is returned.
+\end{enumerate}
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        node distance=0.5cm and 1cm,
+        box/.style={rectangle, draw, rounded corners, minimum width=2.5cm, minimum height=0.7cm, text centered, font=\small},
+        decision/.style={diamond, draw, aspect=2, minimum width=2cm, font=\small},
+        arrow/.style={->, thick}
+    ]
+        \node[box] (request) {API Request};
+        \node[decision, below=of request] (jwt) {JWT Valid?};
+        \node[decision, below=of jwt] (scope) {Scope OK?};
+        \node[decision, below=of scope] (tenant) {Tenant OK?};
+        \node[box, below=of tenant] (invoke) {Invoke Tool};
+        \node[box, right=2cm of jwt] (e401) {401 Unauthorized};
+        \node[box, right=2cm of scope] (e403a) {403 Forbidden};
+        \node[box, right=2cm of tenant] (e403b) {403 Forbidden};
+        
+        \draw[arrow] (request) -- (jwt);
+        \draw[arrow] (jwt) -- node[left] {yes} (scope);
+        \draw[arrow] (jwt) -- node[above] {no} (e401);
+        \draw[arrow] (scope) -- node[left] {yes} (tenant);
+        \draw[arrow] (scope) -- node[above] {no} (e403a);
+        \draw[arrow] (tenant) -- node[left] {yes} (invoke);
+        \draw[arrow] (tenant) -- node[above] {no} (e403b);
+    \end{tikzpicture}
+    \caption{Tool authorization decision flow.}
+    \label{fig:tool-auth-flow}
+\end{figure}
+
+\subsubsection{Invocation Pattern}
+
+All tool invocations follow a consistent request-response pattern with action-based routing.
+
+\paragraph{Request Structure.}
+\begin{lstlisting}[language=Python, caption={Standard tool invocation request}, label={lst:tool-invocation-request}]
+POST /v1/tools/graph.query/invocations
+Authorization: Bearer <jwt_token>
+X-Tenant-ID: tenant_123
+Content-Type: application/json
+
+{
+    "action": "run",
+    "cypher": "MATCH (p:Person) RETURN p.name LIMIT 10",
+    "params": {},
+    "read_only": true,
+    "timeout_ms": 5000
+}
+\end{lstlisting}
+
+\paragraph{Response Structure.}
+All tools return a consistent response shape with \texttt{ok}, \texttt{action}, and result fields:
+
+\begin{lstlisting}[language=Python, caption={Standard tool response shape}, label={lst:tool-response-shape}]
+# Success response
+{
+    "ok": true,
+    "action": "run",
+    "columns": ["p.name"],
+    "rows": [{"p.name": "Alice"}, {"p.name": "Bob"}],
+    "rowcount": 2,
+    "execution_time_ms": 45,
+    "truncated": false
+}
+
+# Error response
+{
+    "ok": false,
+    "action": "run",
+    "code": "E_VALIDATION",
+    "message": "Input validation failed",
+    "details": {
+        "errors": [{"loc": "cypher", "msg": "field required"}]
+    }
+}
+\end{lstlisting}
+
+\subsubsection{Error Handling Pattern}
+
+Errors are categorized and returned with machine-readable codes for client handling.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Tool error codes and HTTP status mappings}
+    \label{tab:tool-error-codes}
+    \begin{tabularx}{\textwidth}{llcX}
+        \toprule
+        \textbf{Error Code} & \textbf{Category} & \textbf{HTTP} & \textbf{Description} \\
+        \midrule
+        \texttt{E\_VALIDATION} & Client & 400 & Payload validation failed \\
+        \texttt{E\_PERMISSION} & Client & 403 & Insufficient permissions \\
+        \texttt{E\_NOT\_FOUND} & Client & 404 & Resource not found \\
+        \texttt{E\_RATE\_LIMIT} & Client & 429 & Rate limit exceeded \\
+        \texttt{E\_TIMEOUT} & Server & 504 & Operation timed out \\
+        \texttt{E\_TOOL\_ERROR} & Server & 500 & Internal tool error \\
+        \texttt{E\_DEPENDENCY} & Server & 503 & Backend dependency unavailable \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\paragraph{Error Recovery.}
+Clients should implement the following error handling strategies:
+
+\begin{itemize}
+    \item \textbf{Validation errors} (\texttt{E\_VALIDATION}): Fix payload and retry.
+    \item \textbf{Rate limits} (\texttt{E\_RATE\_LIMIT}): Respect \texttt{Retry-After} header.
+    \item \textbf{Timeouts} (\texttt{E\_TIMEOUT}): Retry with increased timeout or reduced scope.
+    \item \textbf{Dependency errors} (\texttt{E\_DEPENDENCY}): Implement exponential backoff.
+\end{itemize}
+
+\subsubsection{Audit Trail Pattern}
+
+All tool invocations generate audit events for compliance and debugging.
+
+\paragraph{Audit Event Structure.}
+\begin{lstlisting}[language=Python, caption={Audit event structure for tool invocation}, label={lst:audit-event}]
+{
+    "event_type": "tool_invocation",
+    "timestamp": "2025-01-15T10:30:00Z",
+    "correlation_id": "trace_abc123",
+    "principal": {
+        "sub": "user_456",
+        "tenant": "tenant_123",
+        "scopes": ["graph:read", "tools:basic"]
+    },
+    "tool": "graph.query",
+    "action": "run",
+    "payload_hash": "sha256:abc...",
+    "result": {
+        "ok": true,
+        "latency_ms": 45,
+        "rowcount": 2
+    }
+}
+\end{lstlisting}
+
+\subsection{Workflow Example: NL-to-Cypher Query}
+\label{subsec:nl-cypher-workflow}
+
+To illustrate the interaction patterns in practice, this subsection traces a complete NL-to-Cypher query through the tool ecosystem.
+
+\paragraph{Scenario.}
+A user asks: ``How many researchers are affiliated with each university?''
+
+\paragraph{Step 1: Orchestrator Assembles Context.}
+\begin{lstlisting}[language=Python, caption={Context assembly via agent.context}, label={lst:context-assembly}]
+context_result = invoke_tool("agent.context", {
+    "action": "assemble",
+    "user_id": "user_456",
+    "session_id": "session_789",
+    "include_preferences": True
+})
+# Returns: {"ok": true, "context": {...}, "sources": ["redis", "database"]}
+\end{lstlisting}
+
+\paragraph{Step 2: Schema Introspection.}
+\begin{lstlisting}[language=Python, caption={Schema retrieval for NL-to-Cypher context}, label={lst:schema-introspection}]
+schema_result = invoke_tool("graph.schema", {
+    "action": "get_schema",
+    "include_properties": True,
+    "include_counts": True
+})
+# Returns: {"ok": true, "schema": {"labels": ["Researcher", "University"], ...}}
+\end{lstlisting}
+
+\paragraph{Step 3: NL-to-Cypher Generation.}
+\begin{lstlisting}[language=Python, caption={NL-to-Cypher generation with safety checks}, label={lst:nl-to-cypher}]
+cypher_result = invoke_tool("graph.secure_query", {
+    "action": "query",
+    "question": "How many researchers are affiliated with each university?",
+    "validate_safety": True,
+    "max_results": 100
+})
+# Returns: {
+#   "ok": true,
+#   "cypher": "MATCH (r:Researcher)-[:AFFILIATED_WITH]->(u:University) 
+#              RETURN u.name, count(r) ORDER BY count(r) DESC",
+#   "results": [{"u.name": "MIT", "count(r)": 150}, ...]
+# }
+\end{lstlisting}
+
+\paragraph{Step 4: Result Formatting.}
+\begin{lstlisting}[language=Python, caption={Result formatting for user display}, label={lst:result-formatting}]
+format_result = invoke_tool("output.format", {
+    "action": "markdown",
+    "data": cypher_result["results"],
+    "title": "Researcher Affiliations by University"
+})
+# Returns: {"ok": true, "content": "| University | Count | ..."}
+\end{lstlisting}
+
+\subsection{Summary}
+\label{subsec:use-cases-summary}
+
+The MCP tools ecosystem supports diverse use cases through consistent interaction patterns:
+
+\begin{itemize}
+    \item \textbf{Five primary use cases}: Graph Q\&A, system monitoring, administration, data management, and context management.
+    \item \textbf{Discovery-first approach}: Clients discover tool capabilities before invocation.
+    \item \textbf{Layered authorization}: JWT validation, scope checking, and tenant isolation.
+    \item \textbf{Consistent contracts}: All tools use the \texttt{\{ok, action, ...\}} response shape.
+    \item \textbf{Comprehensive error handling}: Typed error codes with recovery guidance.
+    \item \textbf{Full auditability}: Every invocation is logged with correlation IDs.
+\end{itemize}
+
+These patterns ensure that the tool ecosystem can be reliably integrated into agent workflows, external systems, and administrative interfaces.

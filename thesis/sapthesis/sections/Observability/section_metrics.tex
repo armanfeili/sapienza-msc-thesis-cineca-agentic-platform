@@ -1,0 +1,311 @@
+% TODO checklist:
+% - [x] Inspected src/observability/metrics.py (core Prometheus metrics wiring)
+% - [x] Inspected src/observability/agent_metrics.py (agent-specific metrics)
+% - [x] Inspected src/observability/rate_limit_metrics.py (rate limiting metrics)
+% - [x] Inspected src/observability/middleware.py (HTTP observability middleware)
+% - [x] Inspected ops/prometheus/prometheus.yml (Prometheus configuration)
+% - [x] Reviewed Q&A.md sections on metrics and observability
+% - [x] Reviewed README.md for metrics overview
+
+\section{Metrics}
+\label{sec:metrics}
+
+The Cineca Agentic Platform implements a comprehensive metrics collection framework built on Prometheus, the industry-standard open-source monitoring and alerting toolkit. The metrics subsystem is designed to provide actionable insights into system behavior, support Service Level Objectives (SLOs), and enable data-driven capacity planning and incident response.
+
+\subsection{Metrics Architecture Overview}
+
+The platform's metrics architecture follows a layered design that separates metric definition, collection, and exposition:
+
+\begin{enumerate}
+    \item \textbf{Metric Definition Layer}: Metrics are defined using the \texttt{prometheus\_client} Python library, organized into logical groups based on the domain they measure (HTTP requests, agent runs, LLM calls, tools, jobs, rate limiting).
+    
+    \item \textbf{Collection Layer}: Metrics are collected through instrumentation points distributed across the codebase---middleware for HTTP metrics, service methods for business logic metrics, and adapters for external system interactions.
+    
+    \item \textbf{Exposition Layer}: The \texttt{/metrics} endpoint, mounted on the FastAPI application, exposes all collected metrics in Prometheus text format for scraping.
+\end{enumerate}
+
+The metrics system is initialized through the \texttt{setup\_metrics()} function in \texttt{src/observability/metrics.py}, which creates a dedicated Prometheus registry, registers default collectors (process, platform, garbage collection), and mounts the metrics endpoint:
+
+\begin{lstlisting}[language=Python, caption={Metrics initialization in the FastAPI application}]
+def setup_metrics(app: FastAPI) -> None:
+    """
+    Initialize Prometheus metrics for the provided FastAPI app.
+    - Creates/attaches app.state.prometheus_registry
+    - Registers default collectors (Process/Platform/GC)
+    - Creates/attaches app.state.metrics (MetricStore instance)
+    - Mounts /metrics endpoint (GET), excluded from OpenAPI schema
+    """
+    registry = _build_registry()
+    _register_default_collectors(registry)
+    store = _MetricStore(registry=registry)
+    
+    router = APIRouter()
+    @router.get("/metrics", include_in_schema=False)
+    async def metrics_endpoint() -> Response:
+        data = generate_latest(registry)
+        return Response(content=data, media_type=CONTENT_TYPE_LATEST)
+    
+    app.include_router(router)
+    app.state.prometheus_registry = registry
+    app.state.metrics = store
+\end{lstlisting}
+
+\subsection{Multiprocess Mode Support}
+
+The metrics system supports Prometheus multiprocess mode, which is essential when running multiple Uvicorn worker processes behind a process manager like Gunicorn. When the \texttt{PROMETHEUS\_MULTIPROC\_DIR} environment variable is set, the system configures a \texttt{MultiProcessCollector} that aggregates metrics from a shared directory:
+
+\begin{lstlisting}[language=Python, caption={Multiprocess registry configuration}]
+def _build_registry() -> CollectorRegistry:
+    registry = CollectorRegistry()
+    multiproc_dir = os.getenv("PROMETHEUS_MULTIPROC_DIR")
+    if multiproc_dir:
+        multiprocess.MultiProcessCollector(registry)
+        log.info("observability.metrics.multiprocess_enabled", dir=multiproc_dir)
+    return registry
+\end{lstlisting}
+
+This design ensures accurate metric aggregation in production deployments where horizontal scaling is common.
+
+\subsection{Comprehensive Metrics Catalog}
+\label{subsec:metrics-catalog}
+
+The platform exposes a rich set of metrics organized into seven distinct categories, each designed to provide visibility into specific aspects of system behavior.
+
+\subsubsection{HTTP Request Metrics}
+
+HTTP request metrics provide the foundation for understanding API usage patterns, latency distributions, and error rates. These metrics are collected by the \texttt{ObservabilityMiddleware}:
+
+\begin{table}[ht]
+\centering
+\caption{HTTP request metrics exposed by the platform.}
+\label{tab:http-metrics}
+\small
+\begin{tabularx}{\textwidth}{lllX}
+\hline
+\textbf{Metric Name} & \textbf{Type} & \textbf{Labels} & \textbf{Description} \\
+\hline
+\texttt{http\_requests\_total} & Counter & method, path, status & Total HTTP requests processed \\
+\texttt{http\_request\_duration\_seconds} & Histogram & method, path, status & Request latency distribution \\
+\hline
+\end{tabularx}
+\end{table}
+
+The duration histogram uses carefully chosen buckets optimized for API latencies: 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, and 10s. The \texttt{path} label uses parameterized route templates (e.g., \texttt{/items/\{item\_id\}}) rather than actual paths to avoid high-cardinality label explosion.
+
+\subsubsection{Agent Run Metrics}
+
+Agent-specific metrics track the execution of multi-step agent workflows, providing insights into orchestration performance and resource consumption:
+
+\begin{table}[ht]
+\centering
+\caption{Agent orchestration metrics.}
+\label{tab:agent-metrics}
+\small
+\begin{tabularx}{\textwidth}{lllX}
+\hline
+\textbf{Metric Name} & \textbf{Type} & \textbf{Labels} & \textbf{Description} \\
+\hline
+\texttt{agent\_runs\_total} & Counter & agent\_type, status, tenant\_id & Total agent runs initiated \\
+\texttt{agent\_run\_duration\_seconds} & Histogram & agent\_type, status & End-to-end run duration \\
+\texttt{agent\_active\_runs} & Gauge & agent\_type, tenant\_id & Currently active runs \\
+\texttt{agent\_phase\_duration\_seconds} & Histogram & agent\_type, phase & Duration per execution phase \\
+\texttt{agent\_errors\_total} & Counter & agent\_type, error\_type, phase & Errors by type and phase \\
+\texttt{agent\_retries\_total} & Counter & agent\_type, reason & Retry attempts \\
+\texttt{agent\_queue\_depth} & Gauge & priority & Execution queue depth \\
+\texttt{agent\_concurrency\_limit} & Gauge & tenant\_id & Max concurrent runs allowed \\
+\texttt{agent\_concurrency\_throttled\_total} & Counter & tenant\_id & Throttled run requests \\
+\hline
+\end{tabularx}
+\end{table}
+
+The agent metrics are particularly valuable for understanding multi-tenant resource consumption patterns and identifying performance bottlenecks in the orchestration pipeline.
+
+\subsubsection{LLM Call Metrics}
+
+LLM call metrics provide visibility into interactions with language model providers, including latency, token consumption, and error tracking:
+
+\begin{table}[ht]
+\centering
+\caption{LLM provider interaction metrics.}
+\label{tab:llm-metrics}
+\small
+\begin{tabularx}{\textwidth}{lllX}
+\hline
+\textbf{Metric Name} & \textbf{Type} & \textbf{Labels} & \textbf{Description} \\
+\hline
+\texttt{llm\_calls\_total} & Counter & model, provider, status & Total LLM API calls \\
+\texttt{llm\_call\_duration\_seconds} & Histogram & model, provider, status & API call latency \\
+\texttt{llm\_tokens\_total} & Counter & model, provider, type & Tokens consumed (prompt/completion/total) \\
+\texttt{llm\_errors\_total} & Counter & model, provider, error\_type & LLM API errors \\
+\texttt{model\_requests\_total} & Counter & route, provider, instance, status\_class & Model runtime calls \\
+\texttt{model\_request\_latency\_ms} & Histogram & route, provider, instance, status\_class & Model latency (milliseconds) \\
+\hline
+\end{tabularx}
+\end{table}
+
+These metrics enable cost attribution across tenants, capacity planning for LLM infrastructure, and early detection of provider degradation.
+
+\subsubsection{Tool Invocation Metrics}
+
+MCP tool invocation metrics track the execution of the platform's 34 integrated tools:
+
+\begin{table}[ht]
+\centering
+\caption{Tool invocation metrics.}
+\label{tab:tool-metrics}
+\small
+\begin{tabularx}{\textwidth}{lllX}
+\hline
+\textbf{Metric Name} & \textbf{Type} & \textbf{Labels} & \textbf{Description} \\
+\hline
+\texttt{tools\_invocations\_total} & Counter & tool\_name, status, tenant\_id & Total tool invocations \\
+\texttt{tools\_invocation\_duration\_seconds} & Histogram & tool\_name, status & Invocation duration \\
+\texttt{tools\_queue\_depth} & Gauge & tool\_name & Pending invocations \\
+\texttt{tools\_cache\_operations\_total} & Counter & operation, result & Redis cache operations \\
+\texttt{tools\_idempotency\_conflicts\_total} & Counter & tool\_name & Idempotency key conflicts (409) \\
+\texttt{agent\_tool\_calls\_total} & Counter & agent\_type, tool\_name, status & Tool calls within agent context \\
+\texttt{agent\_tool\_call\_duration\_seconds} & Histogram & tool\_name, status & Tool duration in agent context \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Job Metrics}
+
+Background job metrics track the asynchronous job processing system:
+
+\begin{table}[ht]
+\centering
+\caption{Background job processing metrics.}
+\label{tab:job-metrics}
+\small
+\begin{tabularx}{\textwidth}{lllX}
+\hline
+\textbf{Metric Name} & \textbf{Type} & \textbf{Labels} & \textbf{Description} \\
+\hline
+\texttt{background\_jobs\_total} & Counter & job, status & Jobs executed by outcome \\
+\texttt{background\_job\_duration\_seconds} & Histogram & job, status & Job execution duration \\
+\texttt{job\_create\_total} & Counter & backend, status & Job creation operations \\
+\texttt{job\_create\_duration\_seconds} & Histogram & backend & Job creation latency \\
+\texttt{job\_get\_duration\_seconds} & Histogram & backend & Job retrieval latency \\
+\texttt{sse\_connections\_active} & Gauge & --- & Active SSE connections \\
+\texttt{sse\_gap\_events\_total} & Counter & --- & SSE ring buffer evictions \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Intent Classification Metrics}
+
+Intent classification metrics track the performance and accuracy of the intent classification pipeline:
+
+\begin{table}[ht]
+\centering
+\caption{Intent classification metrics.}
+\label{tab:intent-metrics}
+\small
+\begin{tabularx}{\textwidth}{lllX}
+\hline
+\textbf{Metric Name} & \textbf{Type} & \textbf{Labels} & \textbf{Description} \\
+\hline
+\texttt{intent\_classification\_total} & Counter & mode, source, adjusted & Classifications performed \\
+\texttt{intent\_classification\_duration\_seconds} & Histogram & mode, source & Classification latency \\
+\texttt{intent\_classification\_confidence} & Histogram & mode, source & Confidence score distribution \\
+\texttt{intent\_pattern\_matches\_total} & Counter & pattern\_group & Pattern matches by group \\
+\texttt{intent\_llm\_fallback\_total} & Counter & success & LLM fallback attempts \\
+\texttt{intent\_rbac\_adjustments\_total} & Counter & original\_mode, adjusted\_mode, role & RBAC intent adjustments \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Rate Limiting Metrics}
+
+Rate limiting metrics provide visibility into quota enforcement and abuse detection:
+
+\begin{table}[ht]
+\centering
+\caption{Rate limiting metrics.}
+\label{tab:rate-limit-metrics}
+\small
+\begin{tabularx}{\textwidth}{lllX}
+\hline
+\textbf{Metric Name} & \textbf{Type} & \textbf{Labels} & \textbf{Description} \\
+\hline
+\texttt{rate\_limit\_requests\_total} & Counter & action, scope, result & Rate limit checks (allowed/blocked) \\
+\texttt{rate\_limit\_exceeded\_total} & Counter & action, scope & Rate limit violations \\
+\texttt{tenant\_quota\_exceeded\_total} & Counter & action, tenant\_id & Tenant quota violations \\
+\texttt{rate\_limit\_usage\_ratio} & Histogram & action, scope & Usage ratio (current/limit) \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Metrics Recording Patterns}
+
+The platform provides a set of helper functions that encapsulate the complexity of metric recording while ensuring consistent labeling and error handling:
+
+\begin{lstlisting}[language=Python, caption={Example of defensive metric recording}]
+def record_tool_invocation(
+    tool_name: str,
+    status: str,
+    duration_seconds: float | None = None,
+    tenant_id: str = "default-tenant",
+    app: FastAPI | None = None,
+) -> None:
+    """Update tool invocation counters/histograms if metrics were set up."""
+    store = _get_store(app)
+    if not store:
+        return  # No-op if metrics not configured
+    try:
+        store.tools_invocations_total.labels(tool_name, status, tenant_id).inc()
+        if duration_seconds is not None:
+            store.tools_invocation_duration_seconds.labels(
+                tool_name, status
+            ).observe(max(0.0, float(duration_seconds)))
+    except Exception as e:
+        log.warning("observability.metrics.record_tool_invocation_failed", 
+                    error=str(e))
+\end{lstlisting}
+
+This defensive pattern ensures that metric recording failures never impact request processing, while still logging any issues for debugging.
+
+\subsection{Service Information Metric}
+
+The platform exposes a static \texttt{service\_info} gauge that provides version information as metric labels:
+
+\begin{lstlisting}[language=Python, caption={Service information metric}]
+self.service_info = Gauge(
+    "service_info",
+    "Static service information (value is always 1).",
+    ["version"],
+    registry=registry,
+)
+self.service_info.labels(version=__version__).set(1)
+\end{lstlisting}
+
+This pattern allows operators to query deployment versions across instances and track rolling deployments through Prometheus queries.
+
+\subsection{Prometheus Scraping Configuration}
+
+The platform ships with a production-ready Prometheus configuration that scrapes the FastAPI application's \texttt{/metrics} endpoint:
+
+\begin{lstlisting}[language=yaml, caption={Prometheus scrape configuration (ops/prometheus/prometheus.yml)}]
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 30s
+  external_labels:
+    service: cineca-agentic-platform
+    env: dev
+
+scrape_configs:
+  - job_name: "app"
+    honor_labels: true
+    scheme: http
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["app:8000"]
+        labels:
+          instance: "app"
+          component: "fastapi"
+\end{lstlisting}
+
+The configuration is tuned for development deployments with 15-second scrape intervals; production deployments may adjust these intervals based on metric cardinality and storage constraints.
+

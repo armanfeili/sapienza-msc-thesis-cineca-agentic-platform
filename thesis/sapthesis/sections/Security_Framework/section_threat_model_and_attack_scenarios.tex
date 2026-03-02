@@ -1,0 +1,261 @@
+% TODO checklist:
+% - [x] Reviewed all security modules for threat coverage
+% - [x] Inspected src/security/intent_filter.py (Attack pattern detection)
+% - [x] Inspected src/security/output_guard.py (Query injection prevention)
+% - [x] Reviewed Q&A.md (Threat scenarios and mitigations)
+% - [x] Reviewed README.md (Security architecture overview)
+% - [x] Considered multi-tenant isolation requirements
+
+\section{Threat Model and Attack Scenarios}
+\label{sec:threat-model}
+
+The Cineca Agentic Platform operates in an enterprise environment where multiple threat actors may attempt to compromise the system. This section presents a comprehensive threat model that identifies potential attackers, their capabilities, attack vectors, and the platform's defensive measures.
+
+\subsection{Attacker Profiles}
+\label{subsec:attacker-profiles}
+
+The platform considers three primary attacker profiles:
+
+\subsubsection{Malicious Tenant}
+
+A legitimate tenant who attempts to abuse their access or breach isolation boundaries.
+
+\paragraph{Capabilities:}
+\begin{itemize}
+    \item Valid authentication credentials for their tenant
+    \item Knowledge of API endpoints and data structures
+    \item Ability to craft sophisticated queries and tool invocations
+    \item Access to LLM-generated content within their tenant
+\end{itemize}
+
+\paragraph{Goals:}
+\begin{itemize}
+    \item Access other tenants' data
+    \item Exhaust shared resources (denial of service)
+    \item Extract sensitive information from the knowledge graph
+    \item Escalate privileges within the platform
+\end{itemize}
+
+\subsubsection{Compromised User}
+
+A legitimate user account that has been taken over by an attacker.
+
+\paragraph{Capabilities:}
+\begin{itemize}
+    \item Valid session token for the compromised account
+    \item All permissions assigned to the compromised user
+    \item Access to session history and context
+    \item Ability to invoke tools within permission scope
+\end{itemize}
+
+\paragraph{Goals:}
+\begin{itemize}
+    \item Exfiltrate data accessible to the user
+    \item Perform destructive operations within user's scope
+    \item Pivot to higher-privilege accounts
+    \item Establish persistence for future access
+\end{itemize}
+
+\subsubsection{External Attacker}
+
+An unauthenticated attacker probing the system from outside the trust boundary.
+
+\paragraph{Capabilities:}
+\begin{itemize}
+    \item Network access to public API endpoints
+    \item Knowledge of common API vulnerabilities
+    \item Automated scanning and fuzzing tools
+    \item No valid credentials initially
+\end{itemize}
+
+\paragraph{Goals:}
+\begin{itemize}
+    \item Bypass authentication to gain access
+    \item Exploit API vulnerabilities for code execution
+    \item Denial of service attacks
+    \item Information disclosure from error messages
+\end{itemize}
+
+\subsection{Threat Categories and Attack Scenarios}
+\label{subsec:threat-categories}
+
+\subsubsection{Data Exfiltration}
+
+\paragraph{Threat:} Unauthorized extraction of sensitive data from the knowledge graph or other data stores.
+
+\paragraph{Attack Scenarios:}
+\begin{itemize}
+    \item \textbf{Cross-Tenant Query}: Crafting Cypher queries that bypass tenant filters to access other tenants' nodes and relationships.
+    \item \textbf{Bulk Export}: Using legitimate graph tools to extract large volumes of data incrementally.
+    \item \textbf{LLM Prompt Injection}: Manipulating prompts to coerce the LLM into revealing training data or system information.
+\end{itemize}
+
+\paragraph{Mitigations:}
+\begin{itemize}
+    \item Mandatory tenant ID filtering in all graph queries (enforced at the query generation layer)
+    \item Result size limits enforced by the output guard (\texttt{LIMIT 100} default)
+    \item Rate limiting to prevent high-volume extraction
+    \item Intent filter detection of bulk export patterns (``dump all'', ``export everything'')
+    \item Audit logging of all data access operations
+\end{itemize}
+
+\subsubsection{Privilege Escalation}
+
+\paragraph{Threat:} Gaining access beyond the permissions granted to the authenticated user.
+
+\paragraph{Attack Scenarios:}
+\begin{itemize}
+    \item \textbf{Role Confusion}: Exploiting JWT claim handling to inject admin roles.
+    \item \textbf{Scope Injection}: Manipulating token payloads to include additional scopes.
+    \item \textbf{Tool Permission Bypass}: Invoking tools without proper authorization checks.
+\end{itemize}
+
+\paragraph{Mitigations:}
+\begin{itemize}
+    \item Cryptographic JWT signature verification using JWKS public keys
+    \item Server-side role-to-scope expansion (never trusting client-provided scopes directly)
+    \item Per-tool authorization checks before invocation
+    \item Audit logging of all authorization decisions
+    \item Clear separation between role assignment (IdP) and scope expansion (platform)
+\end{itemize}
+
+\subsubsection{NL-to-Cypher Injection}
+
+\paragraph{Threat:} Manipulating natural language inputs to generate malicious Cypher queries.
+
+\paragraph{Attack Scenarios:}
+\begin{itemize}
+    \item \textbf{Destructive Queries}: Prompts designed to generate DELETE, DROP GRAPH, or TRUNCATE statements.
+    \item \textbf{Schema Discovery}: Queries to expose the full graph schema for planning further attacks.
+    \item \textbf{Unbounded Traversals}: Prompts that generate resource-exhausting path queries.
+\end{itemize}
+
+\paragraph{Mitigations:}
+\begin{itemize}
+    \item \textbf{Layer 1: Syntax Validation}: All generated Cypher is parsed before execution.
+    \item \textbf{Layer 2: Read-Only Enforcement}: Write verbs (CREATE, MERGE, SET, DELETE, REMOVE) are blocked unless explicitly allowed.
+    \item \textbf{Layer 3: Tenant Boundary Injection}: Tenant filters are automatically inserted into queries.
+    \item \textbf{Layer 4: Depth Limits}: Path traversal depth is bounded (\texttt{-[*1..5]->} instead of \texttt{-[*]->}).
+    \item \textbf{Layer 5: Timeout Guards}: Query execution has strict time limits.
+    \item \textbf{Layer 6: Result Size Caps}: Maximum nodes and relationships per result set.
+\end{itemize}
+
+\subsubsection{Tool Abuse}
+
+\paragraph{Threat:} Misusing MCP tools to perform unauthorized operations.
+
+\paragraph{Attack Scenarios:}
+\begin{itemize}
+    \item \textbf{System Tool Exploitation}: Using system.backup or system.metrics to extract configuration.
+    \item \textbf{Graph CRUD Abuse}: Bulk creating or deleting nodes to corrupt the knowledge graph.
+    \item \textbf{Rate Limit Evasion}: Distributing requests across tools to bypass per-tool limits.
+\end{itemize}
+
+\paragraph{Mitigations:}
+\begin{itemize}
+    \item Per-tool required scopes enforced before invocation
+    \item Role-based tool allow/deny lists in \texttt{roles.yaml}
+    \item Per-tool rate limits (\texttt{tool\_rpm\_overrides})
+    \item Input validation via JSON Schema for all tool parameters
+    \item Audit logging of all tool invocations with input/output hashes
+\end{itemize}
+
+\subsubsection{Budget Abuse}
+
+\paragraph{Threat:} Exploiting LLM capabilities to generate excessive API costs.
+
+\paragraph{Attack Scenarios:}
+\begin{itemize}
+    \item \textbf{Token Exhaustion}: Submitting extremely long prompts to maximize token consumption.
+    \item \textbf{Expensive Model Selection}: Choosing high-cost models for simple tasks.
+    \item \textbf{Parallel Request Floods}: Overwhelming the system with concurrent LLM calls.
+\end{itemize}
+
+\paragraph{Mitigations:}
+\begin{itemize}
+    \item Per-tenant token limits (\texttt{tpm} in role configuration)
+    \item Per-request maximum tokens (\texttt{max\_output\_tokens})
+    \item Concurrent job limits (\texttt{concurrent\_jobs})
+    \item Cost tracking and alerting per tenant
+    \item Model access restrictions by role
+\end{itemize}
+
+\subsubsection{Session and State Attacks}
+
+\paragraph{Threat:} Exploiting session management to gain unauthorized access or corrupt state.
+
+\paragraph{Attack Scenarios:}
+\begin{itemize}
+    \item \textbf{Session Hijacking}: Stealing or replaying session tokens.
+    \item \textbf{Session Fixation}: Forcing a known session ID on a victim.
+    \item \textbf{Context Poisoning}: Injecting malicious content into session history.
+\end{itemize}
+
+\paragraph{Mitigations:}
+\begin{itemize}
+    \item Short JWT expiration times (configurable, enforced for internal endpoints)
+    \item Cryptographic token signing (RS256/ES256 via JWKS)
+    \item Session binding to tenant and user identity
+    \item Session history stored server-side (Redis) not in client tokens
+    \item PII scrubbing applied to session context before storage
+\end{itemize}
+
+\subsection{Defense Mapping}
+\label{subsec:defense-mapping}
+
+Table~\ref{tab:threat-defense-mapping} summarizes the mapping between threats and defensive controls.
+
+\begin{table}[ht]
+\centering
+\caption{Threat-to-Defense Mapping}
+\label{tab:threat-defense-mapping}
+\small
+\begin{tabular}{lp{7cm}}
+\hline
+\textbf{Threat} & \textbf{Primary Defenses} \\
+\hline
+Data Exfiltration & Tenant isolation, rate limits, result caps, audit logging \\
+Privilege Escalation & JWT validation, RBAC, per-tool auth, scope expansion \\
+NL-to-Cypher Injection & 6-layer validation pipeline, read-only mode, timeout guards \\
+Tool Abuse & Required scopes, role-based allow/deny, per-tool rate limits \\
+Budget Abuse & Token limits, cost tracking, concurrent job limits \\
+Session Attacks & Short TTL, cryptographic signing, server-side state \\
+Cross-Tenant Access & Mandatory tenant filters, key namespacing, allowlists \\
+DoS/Resource Exhaustion & Rate limiting, circuit breakers, health probes \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Trust Boundaries}
+\label{subsec:trust-boundaries}
+
+The platform defines clear trust boundaries:
+
+\begin{enumerate}
+    \item \textbf{External Network $\rightarrow$ API Gateway}: All external traffic passes through authentication.
+    \item \textbf{API Layer $\rightarrow$ Service Layer}: Authorization is enforced before service access.
+    \item \textbf{Service Layer $\rightarrow$ Data Layer}: Tenant isolation is enforced at query time.
+    \item \textbf{Platform $\rightarrow$ External LLM}: Circuit breakers and timeouts protect against provider issues.
+    \item \textbf{Platform $\rightarrow$ Identity Provider}: JWKS validation ensures token integrity.
+\end{enumerate}
+
+\subsection{Residual Risks}
+\label{subsec:residual-risks}
+
+Despite comprehensive defenses, some residual risks remain:
+
+\begin{itemize}
+    \item \textbf{Zero-Day Vulnerabilities}: Unknown vulnerabilities in dependencies (FastAPI, python-jose, etc.).
+    \item \textbf{LLM Unpredictability}: LLM outputs may occasionally bypass safety filters.
+    \item \textbf{Insider Threats}: Operators with infrastructure access could bypass application-level controls.
+    \item \textbf{Sophisticated Prompt Attacks}: Novel prompt injection techniques not yet recognized by filters.
+\end{itemize}
+
+\paragraph{Risk Acceptance:} These residual risks are managed through:
+\begin{itemize}
+    \item Regular dependency updates and security scanning
+    \item Defense-in-depth with multiple overlapping controls
+    \item Comprehensive audit logging for forensic analysis
+    \item Incident response procedures for rapid mitigation
+\end{itemize}
+

@@ -1,0 +1,18 @@
+======================================================================================================
+                                RUN SUMMARY (Memgraph NL: p01 - admin)                                
+======================================================================================================
+Question                                                       | Answer
+--------------------------------------------------------------|---------------------------------------
+What prompt was executed?                                      | How many :Blast nodes are there?
+How many LLM calls were made in this run?                      | 1
+For what purpose was the LLM called each time?                 | #1: todo_list_creation
+Which LLM model instance was used?                             | phi3-mini (model=phi3:mini, provider=ollama-local)
+How many TODOs were created by the orchestrator?               | 2 (open TODOs: 0)
+How many execution steps/tasks were run in total?              | 9
+What was the outcome of each step/task?                        | [1] Create TODO list - success (46.40s (46397 ms)); [2] graph.generate_cypher - success (9 ms); [3] graph.secure_query - success (11 ms); [4] memgraph.summary - success (0 ms); [5] output - success (46.40s (46397 ms)); [6] output - success (8 ms); [7] output - success (11 ms); [8] output - success (0 ms); [9] output - success (0 ms)
+What was the final status/result of the prompt?                | succeeded (Output=dict, result: b_count=39)
+How long did the entire command/run take?                      | 46.42s (46422 ms)
+How many tool invocations were performed in this run?          | 2
+Warmup/first-call latency observed in this run?                | First-call latency recorded in this run: 46394 ms.
+Were MCP tools loaded before this run, or discovered during this run? | Loaded at startup from manifest
+======================================================================================================

@@ -1,0 +1,531 @@
+% TODO checklist:
+% - [x] Inspected tests/ directory structure via list_dir
+% - [x] Read tests/conftest.py for fixtures and configuration
+% - [x] Inspected pyproject.toml for pytest markers and coverage config
+% - [x] Read src/memgraph/test_mode.py for NL test mode
+% - [x] Referenced Q&A.md Q44 for comprehensive testing details
+% - [x] Inspected tests/fixtures/ for fake implementations
+% - [x] Reviewed tests/e2e/playwright/ for E2E testing approach
+
+\section{Testing Strategy}
+\label{sec:testing}
+
+The Cineca Agentic Platform employs a comprehensive multi-layer testing strategy to ensure correctness, reliability, and security across all platform components. This section documents the testing categories, infrastructure, and specialized testing approaches.
+
+\subsection{Testing Categories and Markers}
+
+The test suite is organized using pytest markers that classify tests by purpose, dependencies, and execution characteristics:
+
+\begin{table}[ht]
+\centering
+\caption{Pytest markers and test categories.}
+\label{tab:pytest-markers}
+\small
+\begin{tabular}{llll}
+\hline
+\textbf{Marker} & \textbf{Purpose} & \textbf{Speed} & \textbf{Dependencies} \\
+\hline
+\texttt{unit} & Pure Python logic & Fast ($<$1s each) & None \\
+\texttt{integration} & Service interaction & Variable & Fakes or real services \\
+\texttt{e2e} & Full workflow tests & Variable & App or live server \\
+\texttt{security} & Auth/RBAC/rate limits & Variable & Auth fixtures \\
+\texttt{performance} & Latency benchmarks & Slow & None (skipped by default) \\
+\texttt{slow} & Long-running tests & Slow & Various \\
+\texttt{memgraph\_nl} & NL$\rightarrow$Cypher smoke tests & $\sim$20 min & Memgraph, LLM \\
+\texttt{memgraph\_nl\_full} & Full NL catalog tests & $\sim$90 min & Memgraph, LLM \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Running Tests by Category}
+
+\begin{lstlisting}[language=bash, caption={Test execution commands by category.}]
+# Full test suite
+pytest -q
+
+# Unit tests only (fast)
+pytest -m "unit"
+
+# Integration tests
+pytest -m "integration"
+
+# End-to-end tests
+pytest -m "e2e"
+
+# Security-focused tests
+pytest -m "security"
+
+# Performance tests (requires --runslow flag)
+pytest -m "performance" --runslow
+
+# Exclude slow tests for rapid iteration
+pytest -m "not slow"
+\end{lstlisting}
+
+\subsection{Test Suite Statistics}
+
+The test suite demonstrates comprehensive coverage of platform functionality:
+
+\begin{table}[ht]
+\centering
+\caption{Test suite statistics.}
+\label{tab:test-stats}
+\small
+\begin{tabular}{lr}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+Total test files & 272 \\
+Test categories (directories) & 27 \\
+Total lines of test code & $\sim$64,500 \\
+Test functions & 2,700+ \\
+Coverage threshold (minimum) & 60\% \\
+Core module coverage target & 80\% \\
+Router module coverage target & 70\% \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Testing Infrastructure Details}
+\label{subsec:testing-infrastructure}
+
+The testing infrastructure provides fixtures for isolated test execution and dependency mocking.
+
+\subsubsection{Session-Scoped Event Loop}
+
+Async tests share a session-scoped event loop for efficiency:
+
+\begin{lstlisting}[language=Python, caption={Event loop fixture from \texttt{tests/conftest.py}.}]
+import pytest
+import asyncio
+
+@pytest.fixture(scope="session")
+def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
+    """Session-scoped event loop for async tests."""
+    loop = asyncio.new_event_loop()
+    yield loop
+    loop.close()
+\end{lstlisting}
+
+\subsubsection{FastAPI Test Client}
+
+Both synchronous and asynchronous test clients are provided:
+
+\begin{lstlisting}[language=Python, caption={Test client fixtures.}]
+@pytest.fixture
+def client(app):
+    """Synchronous TestClient for simple tests."""
+    from fastapi.testclient import TestClient
+    with TestClient(app) as tc:
+        yield tc
+
+@pytest_asyncio.fixture
+async def async_client(app) -> AsyncGenerator[Any, None]:
+    """Async HTTP client with ASGI transport and lifespan."""
+    import httpx
+    
+    transport = httpx.ASGITransport(app=app, lifespan="on")
+    async with httpx.AsyncClient(
+        transport=transport, 
+        base_url="http://test"
+    ) as ac:
+        yield ac
+\end{lstlisting}
+
+\subsubsection{Settings Patching}
+
+Tests can override configuration settings:
+
+\begin{lstlisting}[language=Python, caption={Settings patch fixture.}]
+@pytest.fixture
+def settings_patch(monkeypatch) -> Callable[..., None]:
+    """Patch src.config.settings for test duration."""
+    from src.config import settings
+    
+    def _apply(**kwargs: Any) -> None:
+        for k, v in kwargs.items():
+            monkeypatch.setattr(settings, k, v, raising=False)
+    
+    return _apply
+
+# Usage in tests:
+def test_rate_limiting(settings_patch):
+    settings_patch(
+        RATE_LIMIT_ENABLED=True,
+        RATE_LIMIT_DEFAULT_LIMIT=5
+    )
+    # Test rate limiting behavior...
+\end{lstlisting}
+
+\subsubsection{OIDC Token Fixtures}
+
+Authentication tests use generated RSA keypairs and JWT tokens:
+
+\begin{lstlisting}[language=Python, caption={OIDC fixtures for authentication testing.}]
+@pytest.fixture(scope="session")
+def oidc_keys(tmp_path_factory) -> Dict[str, Any]:
+    """Generate test RSA keypair and JWKS file."""
+    from tests.fixtures.oidc import generate_rsa_keypair, write_jwks
+    
+    pair = generate_rsa_keypair()
+    jwks_dir = tmp_path_factory.mktemp("jwks")
+    jwks_path = jwks_dir / "jwks.json"
+    write_jwks(jwks_path, pair["public_jwk"])
+    
+    return {
+        "kid": pair["kid"],
+        "private_pem": pair["private_pem"],
+        "public": pair["public_jwk"],
+        "jwks_path": jwks_path,
+        "issuer": "https://test-issuer.local/",
+        "audience": "cineca-api",
+    }
+\end{lstlisting}
+
+\subsection{Database Handling in Tests}
+
+Tests use appropriate strategies for each database type to ensure isolation and reproducibility.
+
+\subsubsection{PostgreSQL Testing}
+
+PostgreSQL tests use session rollback for isolation:
+
+\begin{lstlisting}[language=Python, caption={PostgreSQL test session fixture.}]
+@pytest.fixture
+def db_session():
+    """Create isolated database session with rollback."""
+    from db.postgres_control.database import SessionLocal
+    
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.rollback()
+        session.close()
+\end{lstlisting}
+
+\subsubsection{Redis Testing}
+
+Redis tests can use either real Redis or an in-memory fake:
+
+\begin{lstlisting}[language=Python, caption={Redis test fixture with fallback.}]
+@pytest.fixture
+def redis_fake():
+    """In-memory Redis stub when REDIS_URL not reachable."""
+    if _can_reach_redis():
+        # Use real Redis with unique namespace prefix
+        return RealRedisWithNamespace(prefix=f"test:{uuid.uuid4().hex}")
+    return FakeRedis()
+
+class FakeRedis:
+    """Deterministic in-memory Redis double."""
+    
+    def __init__(self):
+        self._data: dict[str, Any] = {}
+        self._expiry: dict[str, float] = {}
+    
+    async def get(self, key: str) -> Any:
+        if key in self._expiry and time.time() > self._expiry[key]:
+            del self._data[key]
+            del self._expiry[key]
+            return None
+        return self._data.get(key)
+    
+    async def set(self, key: str, value: Any, ex: int | None = None):
+        self._data[key] = value
+        if ex:
+            self._expiry[key] = time.time() + ex
+\end{lstlisting}
+
+\subsubsection{Memgraph Testing}
+
+Memgraph tests use a fake adapter for deterministic behavior:
+
+\begin{lstlisting}[language=Python, caption={Fake Memgraph adapter from \texttt{tests/fixtures/fake\_memgraph.py}.}]
+class FakeMemgraphAdapter:
+    """Deterministic in-memory Memgraph double."""
+    
+    def __init__(self):
+        self._nodes: dict[str, dict] = {}
+        self._edges: list[dict] = []
+    
+    def execute(self, query: str, params: dict = None) -> list[dict]:
+        """Parse Cypher-like queries and return mock results."""
+        if "RETURN 1" in query:
+            return [{"ok": 1}]
+        
+        # Pattern matching for common test queries
+        if "MATCH (u:User)" in query:
+            return self._mock_user_results(params)
+        
+        return []
+    
+    def _mock_user_results(self, params: dict) -> list[dict]:
+        # Return deterministic test data
+        return [{"name": "Test User", "id": "test-001"}]
+\end{lstlisting}
+
+\subsubsection{Switching to Real Services}
+
+Tests can use real external services when available:
+
+\begin{lstlisting}[language=bash, caption={Running tests with real services.}]
+# Use real Memgraph
+export MG_HOST=localhost MG_PORT=7687
+pytest -m "integration" --run-real-memgraph
+
+# Use real Redis
+export REDIS_URL=redis://localhost:6379/0
+pytest -m "integration"
+
+# Use real Auth0 tokens
+export AUTH0_DOMAIN=your-domain.auth0.com
+pytest -m "e2e" --use-auth0
+\end{lstlisting}
+
+\subsection{Memgraph NL Test Mode}
+\label{subsec:memgraph-nl-test-mode}
+
+The platform provides a deterministic testing mode for the NL$\rightarrow$Cypher pipeline that eliminates LLM output variability.
+
+\subsubsection{Test Mode Configuration}
+
+Test mode is controlled via environment variables:
+
+\begin{lstlisting}[language=Python, caption={NL test mode configuration from \texttt{src/memgraph/test\_mode.py}.}]
+# Environment variables for NL test mode
+_TEST_MODE_ENV = "LLM_MEMGRAPH_NL_TEST_MODE"
+_PROMPT_PATH_ENV = "LLM_MEMGRAPH_NL_PROMPTS_PATH"
+_DEFAULT_PROMPTS_REL = Path("tests/integration/resources/memgraph_nl_prompts.json")
+
+def _is_enabled() -> bool:
+    """Check if NL test mode is enabled."""
+    value = os.getenv(_TEST_MODE_ENV)
+    if value is None:
+        # Default enabled for integration tests
+        return True
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+\end{lstlisting}
+
+\subsubsection{Prompt Catalog}
+
+Test prompts are defined in a JSON catalog that maps natural language to expected Cypher:
+
+\begin{lstlisting}[language=json, caption={Sample NL prompt catalog entry.}]
+[
+  {
+    "id": "user-count-001",
+    "text": "How many users are in the system?",
+    "category": "aggregation",
+    "expected_cypher": "MATCH (u:User) RETURN count(u) AS total",
+    "expected_result_shape": {"total": "number"},
+    "todo_mode": "single_query"
+  },
+  {
+    "id": "user-institution-002",
+    "text": "Which users work at CINECA?",
+    "category": "relationship",
+    "expected_cypher": "MATCH (u:User)-[:WORKS_AT]->(i:Institution {name: 'CINECA'}) RETURN u.name",
+    "expected_result_shape": {"u.name": "string[]"}
+  }
+]
+\end{lstlisting}
+
+\subsubsection{Hint Retrieval}
+
+During test execution, prompts are matched to their expected outputs:
+
+\begin{lstlisting}[language=Python, caption={Prompt hint retrieval function.}]
+def get_prompt_hints(prompt: str | None) -> Optional[Dict[str, Any]]:
+    """Return prompt metadata when NL test mode is enabled."""
+    if not _is_enabled() or not prompt:
+        return None
+    
+    prompt_path = os.getenv(_PROMPT_PATH_ENV)
+    if not prompt_path:
+        prompt_path = str(_default_prompt_path())
+    
+    index = _load_prompt_index(prompt_path)
+    normalized = _normalize(prompt)
+    
+    entry = index.get(normalized)
+    if entry:
+        log.debug(
+            "memgraph.prompts.match",
+            prompt_preview=prompt[:80],
+            prompt_id=entry.get("id"),
+            category=entry.get("category"),
+        )
+    return entry
+\end{lstlisting}
+
+\subsubsection{Benefits of NL Test Mode}
+
+\begin{enumerate}
+    \item \textbf{Deterministic Results}: Tests produce consistent outputs independent of LLM variability
+    \item \textbf{Fast Execution}: No LLM API calls required for matched prompts
+    \item \textbf{Offline Testing}: Tests can run without network connectivity
+    \item \textbf{Regression Detection}: Changes to prompt handling are immediately visible
+    \item \textbf{Coverage Tracking}: Catalog documents supported query patterns
+\end{enumerate}
+
+\subsection{Continuous Integration and Quality Gates}
+\label{subsec:ci-quality-gates}
+
+The project enforces quality gates through automated checks in the CI pipeline.
+
+\subsubsection{Test Execution in CI}
+
+\begin{lstlisting}[language=bash, caption={CI test execution configuration.}]
+# CI runs subset for speed, local runs full suite
+pytest --maxfail=1 --disable-warnings -q \
+    --cov=src --cov-report=term-missing:skip-covered
+
+# Parallel execution for faster CI
+pytest -n auto  # Requires pytest-xdist
+\end{lstlisting}
+
+\subsubsection{Coverage Requirements}
+
+Coverage thresholds are enforced per module category:
+
+\begin{lstlisting}[language=Python, caption={Coverage configuration from \texttt{pyproject.toml}.}]
+[tool.coverage.run]
+branch = true
+source = ["src"]
+omit = ["*/tests/*", "*/test_*.py", "*/__pycache__/*"]
+
+[tool.coverage.report]
+fail_under = 60  # Overall threshold
+
+# Per-module thresholds (enforced via custom rules)
+# Core modules: 80% (src/mcp/core/*, src/security/*)
+# Router modules: 70% (src/routers/*)
+# Service modules: 65% (src/services/*)
+
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@(abc\\.)?abstractmethod",
+]
+\end{lstlisting}
+
+\subsubsection{Quality Gate Checks}
+
+\begin{table}[ht]
+\centering
+\caption{CI quality gate checks.}
+\label{tab:ci-gates}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Check} & \textbf{Tool} & \textbf{Failure Condition} \\
+\hline
+Code formatting & Black & Any formatting differences \\
+Linting & Ruff & Any linting errors \\
+Type checking & mypy & Any type errors \\
+Security scan & Bandit & High severity findings \\
+Unit tests & pytest & Any test failures \\
+Coverage & coverage.py & Below 60\% overall \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Test Examples by Category}
+
+\subsubsection{Unit Test Example}
+
+\begin{lstlisting}[language=Python, caption={Unit test for PII scrubbing.}]
+@pytest.mark.unit
+def test_scrub_email():
+    """Test that email addresses are properly redacted."""
+    from src.security.pii_scrubber import scrub
+    
+    text = "Contact jane.doe@example.com for help"
+    cleaned, findings = scrub(text)
+    
+    assert "example.com" not in cleaned
+    assert any(f["type"] == "EMAIL" for f in findings)
+    assert "[EMAIL_REDACTED]" in cleaned
+\end{lstlisting}
+
+\subsubsection{Integration Test Example}
+
+\begin{lstlisting}[language=Python, caption={Integration test for archive service.}]
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_archive_round_trip(tmp_backups_dir, memgraph_fake):
+    """Test backup and restore cycle."""
+    from src.services.archive import ArchiveService
+    
+    svc = ArchiveService(
+        etl=memgraph_fake.etl, 
+        base_dir=tmp_backups_dir
+    )
+    
+    # Create snapshot
+    snap = await svc.snapshot_graph()
+    assert snap.ok
+    assert snap.data["file"].endswith(".json.gz")
+    
+    # Restore from snapshot
+    res = await svc.restore_graph(snap.data["file"])
+    assert res.ok
+\end{lstlisting}
+
+\subsubsection{Security Test Example}
+
+\begin{lstlisting}[language=Python, caption={Security test for role-based access.}]
+@pytest.mark.security
+def test_admin_endpoint_requires_admin_role(client, user_token):
+    """Test that admin endpoints reject non-admin users."""
+    response = client.get(
+        "/v1/admin/stats",
+        headers={"Authorization": f"Bearer {user_token}"}
+    )
+    
+    assert response.status_code == 403
+    assert "admin" in response.json().get("detail", "").lower()
+\end{lstlisting}
+
+\subsubsection{E2E Test Example}
+
+\begin{lstlisting}[language=Python, caption={End-to-end health check test.}]
+@pytest.mark.e2e
+def test_health_endpoints_up(client):
+    """Verify all health endpoints return 200."""
+    endpoints = ["/health", "/health/live", "/health/ready"]
+    
+    for endpoint in endpoints:
+        response = client.get(endpoint)
+        assert response.status_code == 200, f"{endpoint} failed"
+\end{lstlisting}
+
+\subsection{Common Test Fixtures Summary}
+
+\begin{table}[ht]
+\centering
+\caption{Common test fixtures and their purposes.}
+\label{tab:common-fixtures}
+\small
+\begin{tabular}{ll}
+\hline
+\textbf{Fixture} & \textbf{Purpose} \\
+\hline
+\texttt{event\_loop} & Session-scoped async event loop \\
+\texttt{app} & FastAPI application instance \\
+\texttt{client} & Synchronous test client \\
+\texttt{async\_client} & Async HTTPX client with lifespan \\
+\texttt{db\_session} & PostgreSQL session with rollback \\
+\texttt{redis\_fake} & In-memory Redis or namespaced real Redis \\
+\texttt{memgraph\_fake} & Deterministic Memgraph adapter \\
+\texttt{oidc\_keys} & RSA keypair and JWKS for auth testing \\
+\texttt{settings\_patch} & Configuration override helper \\
+\texttt{auth\_headers} & JWT tokens for different roles \\
+\texttt{test\_tenant} & Isolated tenant for testing \\
+\texttt{mock\_llm\_provider} & Stubbed LLM responses \\
+\hline
+\end{tabular}
+\end{table}
+

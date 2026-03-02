@@ -1,0 +1,269 @@
+% TODO checklist - Files inspected for this section:
+% - README.md (lines 1-2050): Technology stack, infrastructure requirements, deployment patterns
+% - Q&A.md (lines 1-7907): Q1-7 (project context), Q8-15 (architecture constraints), Q46 (technical debt)
+% - docker-compose.yml: Container orchestration and service dependencies
+% - docker-compose.gpu.yml: GPU-enabled deployment configuration
+% - pyproject.toml: Python dependencies and version constraints
+% - requirements.txt: Runtime dependencies
+% - Dockerfile: Build and runtime environment
+% - ops/: Operational configurations (nginx, prometheus, grafana)
+
+\section{Constraints and Assumptions}
+\label{sec:constraints-assumptions}
+
+This section documents the constraints that bound the design space and the assumptions upon which the architecture depends. Understanding these factors is essential for evaluating design decisions and identifying potential risks.
+
+%------------------------------------------------------------------------------
+\subsection{Institutional Constraints}
+\label{subsec:institutional-constraints}
+
+The Cineca Agentic Platform is developed within the context of CINECA, Italy's national supercomputing center, which imposes specific institutional constraints:
+
+\begin{description}
+    \item[Research Environment:] The platform serves research institutions, universities, and scientific consortia. This mandates strong emphasis on data provenance, reproducibility, and compliance with research ethics requirements.
+    
+    \item[Multi-Institutional Access:] CINECA provides computing services to numerous Italian and European research institutions. The platform must accommodate diverse organizational structures, authentication federations, and access policies.
+    
+    \item[Long-Running Workloads:] HPC environments commonly execute jobs spanning hours to days. The platform must support asynchronous operations with robust state persistence and recovery mechanisms.
+    
+    \item[Sensitive Data Handling:] Biomedical research data, genomic sequences, and patient-derived information require stringent access controls, audit trails, and compliance with data protection regulations.
+    
+    \item[Open Science Alignment:] As a public research infrastructure, the platform aligns with open science principles, favoring open-source components and avoiding vendor lock-in where possible.
+\end{description}
+
+%------------------------------------------------------------------------------
+\subsection{Technical Infrastructure Constraints}
+\label{subsec:infrastructure-constraints}
+
+The following technical constraints shape infrastructure decisions:
+
+\begin{table}[htbp]
+\centering
+\caption{Infrastructure Constraints}
+\label{tab:infrastructure-constraints}
+\small
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{1.2cm}|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
+\hline
+\textbf{ID} & \textbf{Constraint Description} & \textbf{Impact} \\
+\hline
+IC-01 & Container orchestration via Docker Compose or Kubernetes is mandatory for deployment. & Architecture must be container-native with 12-factor app principles. \\
+\hline
+IC-02 & On-premises deployment must be supported alongside cloud options (no cloud-only dependencies). & All components must run on standard Linux servers without mandatory cloud services. \\
+\hline
+IC-03 & Network policies may restrict outbound internet access from production clusters. & LLM provider integration must support both cloud APIs and local model serving (Ollama). \\
+\hline
+IC-04 & GPU resources are shared across HPC workloads; dedicated GPU allocation for AI inference is limited. & Model serving must support CPU-only execution with optional GPU acceleration. \\
+\hline
+IC-05 & Storage quotas apply; persistent data must be efficiently managed with retention policies. & Automatic cleanup of expired jobs, logs, and cached data is required. \\
+\hline
+IC-06 & Authentication must integrate with institutional identity providers (SAML, LDAP, OIDC federations). & OAuth 2.0/OIDC with configurable providers; no hardcoded Auth0 dependency. \\
+\hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\subsection{Technology Stack Constraints}
+\label{subsec:technology-constraints}
+
+The following technology choices are constraints inherited from project requirements or ecosystem considerations:
+
+\begin{table}[htbp]
+\centering
+\caption{Technology Stack Constraints}
+\label{tab:technology-constraints}
+\small
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\textbf{Component} & \textbf{Technology} & \textbf{Rationale} \\
+\hline
+Runtime & Python 3.11+ & Ecosystem compatibility (ML/AI libraries), team expertise, async support. \\
+\hline
+Web Framework & FastAPI & Modern async framework, automatic OpenAPI generation, Pydantic integration. \\
+\hline
+Control Database & PostgreSQL 15+ & ACID compliance, JSONB support, mature ecosystem, institutional familiarity. \\
+\hline
+Cache/Queue & Redis 7+ & Low-latency caching, pub/sub for events, rate limiting primitives. \\
+\hline
+Graph Database & Memgraph & Cypher compatibility, in-memory performance, streaming graph analytics. \\
+\hline
+Container Runtime & Docker 24+ & Industry standard, Compose for development, Kubernetes for production. \\
+\hline
+Reverse Proxy & Nginx & SSL termination, rate limiting, static file serving, proven reliability. \\
+\hline
+Monitoring & Prometheus + Grafana & Open-source observability stack, extensive community dashboards. \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Dependency Version Constraints}
+
+Key Python dependencies with version constraints (from \texttt{pyproject.toml}):
+
+\begin{itemize}
+    \item \texttt{fastapi >= 0.109.0}: Async web framework with OpenAPI support
+    \item \texttt{pydantic >= 2.0}: Data validation with Python type hints
+    \item \texttt{sqlalchemy >= 2.0}: ORM with async support
+    \item \texttt{redis >= 5.0}: Async Redis client
+    \item \texttt{httpx >= 0.25.0}: Async HTTP client for external API calls
+    \item \texttt{structlog >= 24.1.0}: Structured logging
+    \item \texttt{prometheus-client >= 0.19.0}: Metrics exposition
+    \item \texttt{opentelemetry-api >= 1.20.0}: Distributed tracing
+\end{itemize}
+
+%------------------------------------------------------------------------------
+\subsection{Regulatory and Compliance Constraints}
+\label{subsec:compliance-constraints}
+
+The platform operates within a regulated environment with the following compliance considerations:
+
+\begin{description}
+    \item[GDPR (General Data Protection Regulation):] As a European institution, CINECA must ensure GDPR compliance for any personal data processed. This mandates data minimization, purpose limitation, consent management, and data subject rights support.
+    
+    \item[Research Data Management:] Scientific data must maintain provenance records, versioning, and retention according to funder requirements (e.g., Horizon Europe data management plans).
+    
+    \item[Institutional Security Policies:] CINECA maintains ISO 27001-aligned security policies that govern access control, incident response, and audit requirements.
+    
+    \item[Export Control:] Certain research domains (dual-use technologies, cryptography) may be subject to export controls affecting data sharing and cross-border processing.
+\end{description}
+
+\subsubsection{Compliance Implementation Mapping}
+
+\begin{table}[htbp]
+\centering
+\caption{Compliance Requirement to Feature Mapping}
+\label{tab:compliance-mapping}
+\small
+\begin{tabular}{|l|l|p{6cm}|}
+\hline
+\textbf{Regulation} & \textbf{Requirement} & \textbf{Platform Feature} \\
+\hline
+GDPR Art. 17 & Right to erasure & Tenant data deletion API, cascade delete for user data \\
+\hline
+GDPR Art. 30 & Records of processing & Audit log with processing activity records \\
+\hline
+GDPR Art. 32 & Security of processing & Encryption in transit (TLS), access controls, PII scrubbing \\
+\hline
+GDPR Art. 33 & Breach notification & Audit log monitoring, anomaly detection hooks \\
+\hline
+ISO 27001 A.12.4 & Logging and monitoring & Structured logging, metrics, distributed tracing \\
+\hline
+ISO 27001 A.9.4 & Access control & OIDC authentication, RBAC authorization \\
+\hline
+\end{tabular}
+\end{table}
+
+%------------------------------------------------------------------------------
+\subsection{Development Process Constraints}
+\label{subsec:development-constraints}
+
+Constraints arising from the development methodology and team structure:
+
+\begin{description}
+    \item[Single-Developer Implementation:] The core platform was developed as a master's thesis project by a single developer. This constrains the scope and complexity of initial implementation while emphasizing clean architecture and comprehensive documentation for future maintainers.
+    
+    \item[Academic Timeline:] Development adheres to academic semester constraints, requiring prioritization of core features over nice-to-have enhancements.
+    
+    \item[Open-Source Orientation:] The platform is intended for open-source release, requiring:
+    \begin{itemize}
+        \item Clear licensing (MIT License for code)
+        \item No proprietary dependencies for core functionality
+        \item Comprehensive documentation for community adoption
+        \item Secrets and credentials externalized from codebase
+    \end{itemize}
+    
+    \item[Continuous Integration:] Development follows CI/CD practices with automated testing, though full production CI pipeline setup is deferred to deployment phase.
+\end{description}
+
+%------------------------------------------------------------------------------
+\subsection{Assumptions}
+\label{subsec:assumptions}
+
+The architecture is predicated on the following assumptions. Violation of these assumptions may require design revisions:
+
+\begin{table}[htbp]
+\centering
+\caption{Architectural Assumptions}
+\label{tab:assumptions}
+\small
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{1.2cm}|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
+\hline
+\textbf{ID} & \textbf{Assumption} & \textbf{Risk if Violated} \\
+\hline
+A-01 & LLM providers (OpenAI, Ollama) maintain stable API contracts. & Adapter layer may require updates; circuit breakers mitigate transient issues. \\
+\hline
+A-02 & Authentication is delegated to a trusted OIDC provider (Auth0, Keycloak, etc.). & If provider is unavailable, authentication fails; local token caching provides limited mitigation. \\
+\hline
+A-03 & Network latency to LLM providers is acceptable ($<$ 500ms RTT). & High latency degrades user experience; local Ollama deployment provides alternative. \\
+\hline
+A-04 & PostgreSQL and Redis are deployed with high availability (replication, failover). & Single points of failure if not properly configured; application assumes availability. \\
+\hline
+A-05 & Memgraph graph database can fit the working dataset in memory. & Memory pressure may cause performance degradation or OOM; monitoring required. \\
+\hline
+A-06 & Container orchestration (Docker/Kubernetes) handles process supervision and restart. & Application does not implement its own process manager; relies on orchestrator. \\
+\hline
+A-07 & Clock synchronization (NTP) is maintained across all nodes. & JWT expiration validation may fail with significant clock skew ($>$ 30 seconds). \\
+\hline
+A-08 & DNS resolution is reliable and cached appropriately. & Service discovery failures may cascade; health checks detect connectivity issues. \\
+\hline
+A-09 & Users have modern web browsers (Chrome, Firefox, Safari, Edge) for UI access. & Legacy browser support is not tested; graceful degradation not guaranteed. \\
+\hline
+A-10 & Concurrent user load does not exceed 1,000 simultaneous sessions initially. & Scaling strategy requires validation for higher loads. \\
+\hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\subsection{Scope Boundaries}
+\label{subsec:scope-boundaries}
+
+Clear scope boundaries define what the platform does and does not address:
+
+\subsubsection{In Scope}
+
+\begin{itemize}
+    \item Agent orchestration for conversational AI and multi-step reasoning
+    \item Natural language to Cypher query translation for graph databases
+    \item Background job processing with lifecycle management
+    \item Multi-tenant architecture with tenant isolation
+    \item OAuth 2.0/OIDC authentication with scope-based authorization
+    \item MCP-style tool ecosystem with capability-based access
+    \item Prometheus/Grafana observability stack
+    \item RESTful API with OpenAPI documentation
+    \item Chat UI (Next.js) and Control Panel (Streamlit)
+\end{itemize}
+
+\subsubsection{Out of Scope (Non-Goals)}
+
+\begin{itemize}
+    \item \textbf{Document RAG Pipeline:} Document ingestion, chunking, embedding, and vector search are not implemented. The platform focuses on graph-based knowledge retrieval via NL$\rightarrow$Cypher.
+    
+    \item \textbf{Model Training:} The platform consumes pre-trained models but does not support fine-tuning or training workflows.
+    
+    \item \textbf{Multi-Agent Collaboration:} Complex multi-agent architectures (agent-to-agent communication, hierarchical agent teams) are not implemented in the initial version.
+    
+    \item \textbf{Real-Time Streaming:} Server-Sent Events (SSE) for job progress exist, but WebSocket-based real-time agent step streaming is not implemented (polling is used).
+    
+    \item \textbf{Mobile Applications:} Native mobile apps are not provided; the web UI is responsive but not optimized for mobile.
+    
+    \item \textbf{Offline Operation:} The platform requires network connectivity; offline/disconnected operation is not supported.
+    
+    \item \textbf{Custom UI Framework:} The UIs (Next.js, Streamlit) are provided as reference implementations; custom UI development is the integrator's responsibility.
+\end{itemize}
+
+%------------------------------------------------------------------------------
+\subsection{Constraint and Assumption Validation}
+\label{subsec:constraint-validation}
+
+The following mechanisms validate that constraints and assumptions hold during operation:
+
+\begin{enumerate}
+    \item \textbf{Health Probes:} Liveness, readiness, and startup probes verify infrastructure assumptions (database connectivity, Redis availability, LLM provider health).
+    
+    \item \textbf{Configuration Validation:} Application startup validates required environment variables and configuration consistency.
+    
+    \item \textbf{Dependency Version Checks:} Runtime assertions verify minimum library versions where API compatibility is critical.
+    
+    \item \textbf{Integration Tests:} CI pipeline includes integration tests against containerized dependencies to validate technology stack compatibility.
+    
+    \item \textbf{Monitoring and Alerting:} Prometheus metrics and Grafana alerts detect constraint violations (e.g., clock skew detection, memory pressure).
+\end{enumerate}

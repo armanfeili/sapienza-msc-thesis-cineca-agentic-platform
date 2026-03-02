@@ -1,0 +1,350 @@
+% =============================================================================
+% SECTION: Security and Multi-Tenancy Foundations
+% Chapter: Background and Related Work
+% =============================================================================
+%
+% TODO Checklist (verified in codebase/docs):
+% [x] Reviewed Q&A.md Q16-Q22 for security and multi-tenancy details
+% [x] Reviewed README.md for OIDC/JWT and RBAC overview
+% [x] Reviewed src/security/ for auth implementation patterns
+% [x] Reviewed db/postgres_control/models/ for tenant model
+% [x] Cross-referenced OAuth 2.0 / OIDC specifications
+% [x] This section covers conceptual foundations; implementation details in Ch. 8
+%
+% =============================================================================
+
+\section{Security and Multi-Tenancy Foundations}
+\label{sec:security-foundations}
+
+Security and multi-tenancy are critical concerns for enterprise AI agent platforms. This section provides the conceptual foundations for authentication, authorization, tenant isolation, and audit logging that underpin the Cineca Agentic Platform's security architecture. Implementation details specific to the platform are presented in Chapter~\ref{ch:security}.
+
+\subsection{Authentication Fundamentals}
+
+Authentication is the process of verifying the identity of a user, service, or system attempting to access resources. Modern distributed systems typically rely on token-based authentication standards.
+
+\paragraph{OAuth 2.0}
+
+OAuth 2.0~% TODO: add bibitem for OAuth2RFC
+is an authorization framework that enables third-party applications to obtain limited access to resources on behalf of users. Key concepts include:
+
+\begin{itemize}
+    \item \textbf{Resource Owner}: The user who owns the protected resources.
+    \item \textbf{Client}: The application requesting access on behalf of the resource owner.
+    \item \textbf{Authorization Server}: Issues tokens after authenticating the resource owner.
+    \item \textbf{Resource Server}: Hosts protected resources and validates access tokens.
+    \item \textbf{Access Token}: A credential representing the granted authorization.
+    \item \textbf{Refresh Token}: A long-lived credential used to obtain new access tokens.
+\end{itemize}
+
+OAuth 2.0 defines several grant types for different use cases:
+\begin{itemize}
+    \item \textbf{Authorization Code}: For server-side applications with user interaction.
+    \item \textbf{Client Credentials}: For machine-to-machine authentication without user involvement.
+    \item \textbf{Resource Owner Password}: For trusted applications (deprecated for most uses).
+    \item \textbf{Implicit}: For browser-based applications (deprecated in favor of PKCE).
+\end{itemize}
+
+\paragraph{OpenID Connect (OIDC)}
+
+OpenID Connect~% TODO: add bibitem for OIDC
+is an identity layer built on top of OAuth 2.0. While OAuth 2.0 provides authorization (access to resources), OIDC adds authentication (identity verification):
+
+\begin{itemize}
+    \item \textbf{ID Token}: A JSON Web Token (JWT) containing claims about the authenticated user.
+    \item \textbf{UserInfo Endpoint}: An API endpoint returning claims about the authenticated user.
+    \item \textbf{Standard Claims}: Predefined claim types (sub, name, email, etc.) for interoperability.
+    \item \textbf{Discovery}: A well-known endpoint for discovering provider configuration.
+\end{itemize}
+
+OIDC enables federated identity, where users authenticate with an identity provider (IdP) and access resources across multiple applications.
+
+\paragraph{JSON Web Tokens (JWT)}
+
+JWTs~% TODO: add bibitem for JWTRFC
+are a compact, URL-safe format for representing claims between parties. A JWT consists of three parts:
+
+\begin{enumerate}
+    \item \textbf{Header}: Specifies the token type and signing algorithm.
+    \item \textbf{Payload}: Contains claims (statements about the subject and metadata).
+    \item \textbf{Signature}: Cryptographic signature for integrity verification.
+\end{enumerate}
+
+JWT claims can be:
+\begin{itemize}
+    \item \textbf{Registered claims}: Standardized claims like \texttt{iss} (issuer), \texttt{sub} (subject), \texttt{exp} (expiration).
+    \item \textbf{Public claims}: Claims registered in the IANA JWT Claims Registry.
+    \item \textbf{Private claims}: Application-specific claims agreed upon by parties.
+\end{itemize}
+
+\paragraph{Token Validation}
+
+Validating JWTs involves several checks:
+
+\begin{enumerate}
+    \item \textbf{Signature verification}: Using the issuer's public key (from JWKS endpoint).
+    \item \textbf{Expiration check}: Ensuring the token has not expired (\texttt{exp} claim).
+    \item \textbf{Issuer verification}: Confirming the token comes from a trusted issuer.
+    \item \textbf{Audience verification}: Ensuring the token is intended for this application.
+    \item \textbf{Claim validation}: Checking application-specific claims (e.g., scopes, roles).
+\end{enumerate}
+
+The JSON Web Key Set (JWKS) endpoint provides public keys for signature verification. Clients typically cache these keys and refresh them periodically or when signature verification fails.
+
+\subsection{Role-Based Access Control (RBAC)}
+
+RBAC is an access control paradigm where permissions are assigned to roles, and users are assigned to roles. This indirection simplifies permission management in systems with many users.
+
+\paragraph{RBAC Components}
+
+\begin{itemize}
+    \item \textbf{Users}: Individual identities (human or machine) that authenticate to the system.
+    \item \textbf{Roles}: Named collections of permissions that represent job functions or responsibilities.
+    \item \textbf{Permissions}: Fine-grained authorizations to perform specific operations on specific resources.
+    \item \textbf{Sessions}: Active user sessions during which role assignments apply.
+\end{itemize}
+
+\paragraph{RBAC Models}
+
+NIST defines several RBAC models with increasing complexity~% TODO: add bibitem for NISTRBAC
+:
+
+\begin{itemize}
+    \item \textbf{Core RBAC}: Basic user-role and permission-role assignments.
+    \item \textbf{Hierarchical RBAC}: Roles can inherit permissions from other roles.
+    \item \textbf{Constrained RBAC}: Adds constraints such as separation of duties.
+    \item \textbf{Symmetric RBAC}: Adds permission-role review and user-role review.
+\end{itemize}
+
+\paragraph{Scope-Based Authorization}
+
+Many modern systems implement authorization through scopes---named permissions that can be granted to applications or users:
+
+\begin{itemize}
+    \item Scopes are strings like \texttt{read:users}, \texttt{write:workflows}, or \texttt{admin:all}.
+    \item Access tokens include a list of granted scopes.
+    \item API endpoints declare required scopes; requests are rejected if scopes are insufficient.
+    \item Scopes can be hierarchical (e.g., \texttt{admin:all} implies all other scopes).
+\end{itemize}
+
+This approach combines well with OAuth 2.0, where scopes are explicitly part of the authorization grant.
+
+\paragraph{RBAC in AI Agent Systems}
+
+AI agent systems present unique RBAC challenges:
+
+\begin{itemize}
+    \item \textbf{Tool permissions}: Which tools can each user/role invoke?
+    \item \textbf{Model access}: Which LLM models can each user/role use?
+    \item \textbf{Data access}: What data can agents access on behalf of users?
+    \item \textbf{Delegation}: Can agents perform actions the user cannot?
+    \item \textbf{Audit attribution}: Who is responsible for agent actions?
+\end{itemize}
+
+These considerations inform the design of the Cineca Agentic Platform's authorization system.
+
+\subsection{Multi-Tenant Architecture Patterns}
+
+Multi-tenancy refers to a software architecture where a single instance of the software serves multiple customers (tenants), with appropriate isolation between them.
+
+\paragraph{Tenancy Models}
+
+Different levels of isolation are possible:
+
+\begin{itemize}
+    \item \textbf{Shared everything}: All tenants share the same database, schemas, and application instances. Isolation is enforced through data tagging and query filtering.
+    
+    \item \textbf{Shared database, separate schemas}: Tenants share a database server but have separate schemas or table prefixes. Provides stronger isolation with moderate overhead.
+    
+    \item \textbf{Separate databases}: Each tenant has a dedicated database. Provides strongest isolation but highest operational overhead.
+    
+    \item \textbf{Separate instances}: Each tenant has dedicated application and database instances. Maximum isolation, typically for high-value or regulated tenants.
+\end{itemize}
+
+\paragraph{Isolation Dimensions}
+
+Multi-tenant systems must isolate tenants across multiple dimensions:
+
+\begin{itemize}
+    \item \textbf{Data isolation}: Tenant data must not leak to other tenants.
+    \item \textbf{Performance isolation}: One tenant's workload should not degrade others' performance.
+    \item \textbf{Configuration isolation}: Tenants may have different settings and preferences.
+    \item \textbf{Billing isolation}: Resource usage must be tracked per tenant for billing.
+    \item \textbf{Security isolation}: Security incidents in one tenant should not affect others.
+\end{itemize}
+
+\paragraph{Implementation Patterns}
+
+Common patterns for implementing multi-tenancy include:
+
+\begin{itemize}
+    \item \textbf{Tenant ID column}: Every data table includes a \texttt{tenant\_id} column, and all queries filter by this column.
+    
+    \item \textbf{Row-level security}: Database-level policies automatically filter rows based on session context.
+    
+    \item \textbf{Connection routing}: Database connections are routed to tenant-specific databases or schemas.
+    
+    \item \textbf{Middleware injection}: Request middleware extracts tenant identity and injects it into the request context.
+    
+    \item \textbf{Namespace prefixing}: Keys in caches or queues are prefixed with tenant identifiers.
+\end{itemize}
+
+\paragraph{Multi-Tenancy in AI Systems}
+
+AI agent platforms add additional multi-tenancy considerations:
+
+\begin{itemize}
+    \item \textbf{Model isolation}: Should tenants share LLM instances or have dedicated allocations?
+    \item \textbf{Context isolation}: Agent memory and conversation history must be tenant-scoped.
+    \item \textbf{Tool isolation}: Tool configurations and credentials may differ per tenant.
+    \item \textbf{Cost allocation}: LLM API costs must be tracked and attributed to tenants.
+    \item \textbf{Quota management}: Rate limits and usage quotas may differ per tenant.
+\end{itemize}
+
+\subsection{Audit Logging and Compliance}
+
+Audit logging is the systematic recording of security-relevant events for compliance, forensics, and monitoring purposes.
+
+\paragraph{Audit Log Requirements}
+
+Comprehensive audit logs should capture:
+
+\begin{itemize}
+    \item \textbf{Who}: The authenticated identity performing the action.
+    \item \textbf{What}: The specific action performed (CRUD operation, tool invocation, etc.).
+    \item \textbf{When}: Timestamp with sufficient precision and time zone information.
+    \item \textbf{Where}: The resource or object affected by the action.
+    \item \textbf{How}: Additional context (IP address, user agent, request ID).
+    \item \textbf{Outcome}: Whether the action succeeded or failed, and any error details.
+\end{itemize}
+
+\paragraph{Audit Log Properties}
+
+Effective audit logs have several properties:
+
+\begin{itemize}
+    \item \textbf{Immutability}: Once written, audit records should not be modifiable.
+    \item \textbf{Completeness}: All security-relevant events should be captured.
+    \item \textbf{Integrity}: Logs should be tamper-evident (e.g., through cryptographic chaining).
+    \item \textbf{Availability}: Logs should be retained for required periods and accessible for review.
+    \item \textbf{Searchability}: Logs should be queryable by various criteria (user, time range, action type).
+\end{itemize}
+
+\paragraph{Compliance Frameworks}
+
+Various compliance frameworks mandate audit logging:
+
+\begin{itemize}
+    \item \textbf{GDPR}: Requires logging of data access and processing activities for personal data.
+    \item \textbf{SOC 2}: Requires logging of security events and access controls.
+    \item \textbf{HIPAA}: Requires audit trails for access to protected health information.
+    \item \textbf{PCI DSS}: Requires logging of all access to cardholder data.
+    \item \textbf{ISO 27001}: Requires event logging and log protection as part of security controls.
+\end{itemize}
+
+\paragraph{Audit Logging in AI Systems}
+
+AI agent systems introduce specific audit requirements:
+
+\begin{itemize}
+    \item \textbf{LLM invocations}: Logging prompts and responses (with PII redaction).
+    \item \textbf{Tool invocations}: Logging tool inputs, outputs, and execution metadata.
+    \item \textbf{Agent decisions}: Logging the reasoning trace that led to specific actions.
+    \item \textbf{Data access}: Logging what data the agent accessed on behalf of users.
+    \item \textbf{Cost events}: Logging token usage and API costs for billing reconciliation.
+\end{itemize}
+
+\subsection{Security Challenges in AI Agent Systems}
+
+AI agent systems face unique security challenges beyond traditional web applications:
+
+\paragraph{Prompt Injection}
+
+Prompt injection attacks attempt to manipulate the LLM's behavior by embedding malicious instructions in user input or retrieved content:
+
+\begin{itemize}
+    \item \textbf{Direct injection}: Malicious instructions in user messages.
+    \item \textbf{Indirect injection}: Malicious content in retrieved documents or tool outputs.
+    \item \textbf{Goal hijacking}: Redirecting the agent toward attacker-chosen objectives.
+    \item \textbf{Privilege escalation}: Tricking the agent into invoking privileged tools.
+\end{itemize}
+
+Defenses include input validation, output filtering, privilege separation, and human-in-the-loop approval for sensitive actions.
+
+\paragraph{Data Exfiltration}
+
+Agents with tool access may be manipulated to exfiltrate sensitive data:
+
+\begin{itemize}
+    \item Encoding data in tool parameters (e.g., embedding secrets in URLs).
+    \item Requesting unnecessary data and including it in responses.
+    \item Using communication tools to send data to external parties.
+\end{itemize}
+
+Defenses include restricting tool capabilities, monitoring tool usage patterns, and implementing data loss prevention (DLP) measures.
+
+\paragraph{Excessive Agency}
+
+Agents may take actions beyond what users intend:
+
+\begin{itemize}
+    \item Misinterpreting instructions and taking incorrect actions.
+    \item Executing irreversible operations without confirmation.
+    \item Acting on outdated or incorrect context.
+\end{itemize}
+
+Defenses include confirmation workflows for sensitive actions, undo capabilities, and clear scope limitations.
+
+\paragraph{Model Vulnerabilities}
+
+The underlying LLMs may have vulnerabilities:
+
+\begin{itemize}
+    \item Jailbreaking techniques that bypass safety guardrails.
+    \item Training data extraction attacks.
+    \item Adversarial inputs that cause unexpected behavior.
+\end{itemize}
+
+Defenses include using models with robust safety training, implementing output filtering, and maintaining defense in depth.
+
+\subsection{Security Principles for Enterprise AI Platforms}
+
+Based on these challenges, enterprise AI platforms should adhere to several security principles:
+
+\paragraph{Defense in Depth}
+
+Multiple layers of security controls ensure that no single failure compromises the system:
+\begin{itemize}
+    \item Authentication at the perimeter.
+    \item Authorization at the API layer.
+    \item Validation at the tool layer.
+    \item Filtering at the output layer.
+\end{itemize}
+
+\paragraph{Principle of Least Privilege}
+
+Users and agents should have only the minimum permissions necessary:
+\begin{itemize}
+    \item Fine-grained scopes for tool access.
+    \item Tenant-scoped data access by default.
+    \item Explicit elevation for administrative operations.
+\end{itemize}
+
+\paragraph{Secure by Default}
+
+Default configurations should be secure:
+\begin{itemize}
+    \item Authentication required unless explicitly disabled.
+    \item Restrictive permissions until explicitly granted.
+    \item Logging enabled for all security-relevant events.
+\end{itemize}
+
+\paragraph{Auditability}
+
+All actions should be traceable and attributable:
+\begin{itemize}
+    \item Comprehensive audit logging.
+    \item Request ID correlation across services.
+    \item Immutable audit records.
+\end{itemize}
+
+These principles guide the security design of the Cineca Agentic Platform, as detailed in Chapter~\ref{ch:security}.

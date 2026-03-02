@@ -1,0 +1,128 @@
+# See https://pre-commit.com for usage
+# Install & run:
+#   pip install pre-commit
+#   pre-commit install
+#   pre-commit run -a
+# Heavy checks (tests, audit) run on pre-push.
+
+default_language_version:
+  python: python3.11
+
+default_stages: [commit]
+
+exclude: |
+  (?x)(
+    ^db/original-dataset/|
+    ^db/populated/|
+    ^docs/diagrams/|
+    ^ops/grafana/provisioning/dashboards/|
+    ^.*/node_modules/|
+    ^.*/dist/
+  )
+
+ci:
+  autofix_prs: true
+  autoupdate_schedule: monthly
+  skip: []  # you can add "pytest" here to skip tests in CI pre-commit
+
+repos:
+  # ---------------- Core hygiene hooks ----------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: check-ast
+      - id: check-yaml
+      - id: check-json
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+      - id: debug-statements
+      - id: detect-private-key
+      - id: name-tests-test
+      - id: requirements-txt-fixer
+
+  # ---------------- Ruff (lint + isort) ----------------
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.5.7
+    hooks:
+      - id: ruff
+        args: ["--fix", "--exit-non-zero-on-fix"]
+      - id: ruff-format
+
+  # ---------------- Black (formatter) ----------------
+  - repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+      - id: black
+
+  # ---------------- Mypy (type checking) ----------------
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - pydantic>=2
+          - pydantic-settings>=2
+          - types-requests
+          - types-redis
+        args: ["--config-file", "pyproject.toml"]
+
+  # ---------------- Bandit (security linter) ----------------
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.9
+    hooks:
+      - id: bandit
+        name: bandit (security)
+        args: ["-c", "pyproject.toml", "-r", "src"]
+        stages: [pre-push]
+
+  # ---------------- pip-audit (dependency CVEs) ----------------
+  - repo: https://github.com/pypa/pip-audit
+    rev: v2.7.3
+    hooks:
+      - id: pip-audit
+        name: pip-audit (CVE scan)
+        args: ["--progress-spinner=off"]
+        stages: [pre-push]
+
+  # ---------------- Codespell (typos) ----------------
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+      - id: codespell
+        args:
+          - --ignore-words-list=teh,nd
+          - --skip=*.drawio,*.png,*.jpg,*.jpeg,*.svg,*.pdf
+        additional_dependencies: []
+
+  # ---------------- Local hooks ----------------
+  - repo: local
+    hooks:
+      # Quick sanity tests on push (skip slow suites)
+      - id: pytest-quick
+        name: pytest (quick)
+        entry: pytest
+        language: system
+        pass_filenames: false
+        args: ["-q", "-m", "not e2e and not performance", "--maxfail=1"]
+        stages: [pre-push]
+
+      # Validate OpenAPI can be exported (if script exists)
+      - id: openapi-export-check
+        name: openapi export check
+        entry: bash
+        language: system
+        pass_filenames: false
+        args:
+          - -c
+          - |
+            if [ -f "scripts/openapi/export_openapi.py" ]; then \
+              python scripts/openapi/export_openapi.py >/dev/null; \
+            else \
+              echo "skip: no export_openapi.py"; \
+            fi
+        stages: [pre-push]

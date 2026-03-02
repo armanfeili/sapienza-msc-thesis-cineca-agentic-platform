@@ -1,0 +1,270 @@
+% TODO checklist: Inspected files for this section:
+% - Q&A.md (questions 41, 46, 50 - operational weaknesses, technical debt, comparison)
+% - comparison.md (disadvantages section, trade-offs)
+% - README.md (scope notes, architecture constraints)
+% - sapthesis-doc.tex (scope-nongoals section reference)
+
+\section{Limitations}
+\label{sec:limitations}
+
+While the Cineca Agentic Platform successfully addresses many enterprise requirements for AI agent orchestration, it is important to acknowledge its limitations transparently. This section discusses known weaknesses, scope constraints, and areas requiring improvement.
+
+\subsection{Scope Constraints}
+
+The platform was designed with specific goals in mind, which necessarily excluded certain capabilities:
+
+\paragraph{Single-Agent Focus}
+The current implementation focuses on single-agent orchestration with multi-step workflows. Unlike frameworks such as AutoGen or crewAI, the platform does not natively support \textbf{multi-agent collaboration} where multiple agents communicate, delegate tasks, or coordinate on complex problems. Agent runs are isolated execution units, and inter-agent communication would require custom implementation.
+
+\paragraph{No Built-in RAG Pipeline}
+While the platform provides graph-native NL-to-Cypher capabilities, it does not include a complete \textbf{Retrieval-Augmented Generation (RAG) pipeline} with:
+\begin{itemize}
+    \item Document ingestion and chunking
+    \item Vector embedding generation and storage
+    \item Semantic similarity search
+    \item Hybrid retrieval (vector + keyword)
+\end{itemize}
+
+Organizations requiring document-based retrieval would need to integrate external solutions (LlamaIndex, LangChain retrievers, or custom implementations) or extend the platform's tool ecosystem.
+
+\paragraph{Limited Agent Type Variety}
+The orchestration engine implements a ReAct-style reasoning pattern with TODO-based planning. Alternative agent architectures are not currently supported:
+\begin{itemize}
+    \item Plan-and-Execute patterns with separate planning and execution phases
+    \item Tree-of-Thought reasoning with exploration and backtracking
+    \item Self-Ask patterns with decomposition into sub-questions
+    \item Reflexion patterns with self-critique and refinement
+\end{itemize}
+
+\paragraph{Graph Database Specificity}
+The platform is designed around \textbf{Memgraph} as the graph database, using Cypher as the query language. While Cypher is also supported by Neo4j, the platform does not provide:
+\begin{itemize}
+    \item Abstraction layer for multiple graph database backends
+    \item Neo4j-specific features (APOC procedures, GDS algorithms, Aura integration)
+    \item Support for non-Cypher graph query languages (Gremlin, SPARQL)
+\end{itemize}
+
+\subsection{Architectural Limitations}
+
+\paragraph{Polling-Based Updates}
+Real-time agent run progress is communicated through \textbf{polling} rather than true push-based streaming:
+\begin{itemize}
+    \item The Agent Chat UI polls the backend at 2-second intervals
+    \item SSE streaming is available for job events but not for step-by-step agent output
+    \item WebSocket support is not implemented
+\end{itemize}
+
+This design choice simplifies infrastructure (no persistent connections, easier load balancing) but introduces latency and increased request volume compared to WebSocket-based solutions.
+
+\paragraph{Single Worker Assumption}
+The job worker architecture currently assumes \textbf{one worker per job type}:
+\begin{itemize}
+    \item No distributed locking for multi-worker deployments
+    \item Job queue dequeuing uses simple Redis BRPOP without worker coordination
+    \item Horizontal scaling of workers requires external coordination (Redis SETNX or Redlock)
+\end{itemize}
+
+Production deployments with high job volumes would need to implement distributed locking to prevent duplicate processing.
+
+\paragraph{Memory System Limitations}
+The platform provides session-based state persistence but lacks sophisticated \textbf{agent memory systems}:
+\begin{itemize}
+    \item No semantic memory with embedding-based retrieval
+    \item No summary memory with automatic conversation compression
+    \item No entity memory for tracking mentioned entities across sessions
+    \item Session context is stored but not semantically indexed
+\end{itemize}
+
+Long-running agent interactions may suffer from context window limitations without these memory augmentation strategies.
+
+\paragraph{Complex Deployment Topology}
+The platform requires \textbf{multiple services} for production deployment:
+\begin{itemize}
+    \item FastAPI backend (1+ instances)
+    \item PostgreSQL database
+    \item Redis cache/queue
+    \item Memgraph graph database
+    \item Worker processes
+    \item Optional: Prometheus, Grafana, NGINX, UI containers
+\end{itemize}
+
+This multi-service architecture, while providing clear separation of concerns, increases operational complexity compared to simpler single-process solutions. Organizations without Kubernetes or Docker Compose expertise may find deployment challenging.
+
+\subsection{Technical Debt Analysis}
+\label{subsec:technical-debt}
+
+A systematic review of the codebase reveals several areas of technical debt that should be addressed in future development:
+
+\subsubsection{Large File Complexity}
+
+Several source files exceed recommended size thresholds, impacting maintainability:
+
+\begin{table}[ht]
+\centering
+\caption{Files exceeding 1,000 lines of code.}
+\label{tab:large-files}
+\begin{tabular}{lrl}
+\hline
+\textbf{File} & \textbf{Lines} & \textbf{Recommendation} \\
+\hline
+\texttt{orchestrator.py} & 8,263 & Split into planner, executor, providers \\
+\texttt{model\_instances.py} & 2,110 & Extract service layer \\
+\texttt{model\_management.py} & 2,097 & Extract validation helpers \\
+\texttt{jobs.py} & 2,004 & Extract job lifecycle helpers \\
+\texttt{app.py} & 1,930 & Split middleware, router mounting \\
+\texttt{conftest.py} (tests) & 1,014+ & Modularize fixtures \\
+\hline
+\end{tabular}
+\end{table}
+
+The \texttt{orchestrator.py} file is particularly concerning, as it contains the core agent execution logic, intent classification, step management, and metrics collection in a single module. This centralization, while providing a single point of control, creates:
+\begin{itemize}
+    \item Cognitive load for developers navigating the codebase
+    \item Merge conflict potential when multiple developers work on orchestration features
+    \item Testing challenges requiring extensive mocking
+    \item Difficulty in isolating functionality for focused improvements
+\end{itemize}
+
+\subsubsection{Redis Coupling}
+
+Many components directly depend on Redis client implementations rather than abstract interfaces:
+
+\begin{itemize}
+    \item Job queues use Redis-specific BRPOP commands
+    \item Rate limiting uses Redis ZSET data structures directly
+    \item Session state assumes Redis availability
+    \item Circuit breaker state is stored in Redis keys
+\end{itemize}
+
+This tight coupling has implications:
+\begin{itemize}
+    \item Unit testing requires Redis mocks or test containers
+    \item Alternative backends (Memcached, DynamoDB) would require significant refactoring
+    \item Redis outages affect multiple platform features simultaneously
+\end{itemize}
+
+\textbf{Mitigation strategy}: Introduce repository-style interfaces for queue, cache, and state operations, with Redis as the default implementation.
+
+\subsubsection{Error Handling Inconsistencies}
+
+The codebase exhibits multiple error handling patterns:
+
+\begin{itemize}
+    \item \textbf{Custom exceptions}: \texttt{ToolError}, \texttt{ValidationError\_}, \texttt{PermissionError\_}
+    \item \textbf{HTTP exceptions}: \texttt{HTTPException(status\_code=500, detail=...)}
+    \item \textbf{Result pattern}: \texttt{Result(ok=False, error="...")}
+    \item \textbf{Dictionary returns}: \texttt{\{"ok": False, "error": "..."\}}
+\end{itemize}
+
+This inconsistency complicates:
+\begin{itemize}
+    \item Error propagation across service boundaries
+    \item Client-side error handling
+    \item Logging and monitoring of failure modes
+\end{itemize}
+
+While RFC 7807 Problem Details is used for external API responses, internal error handling would benefit from standardization.
+
+\subsubsection{Incomplete TODO Comments}
+
+The codebase contains TODO comments indicating incomplete implementations:
+
+\begin{lstlisting}[language=Python, caption=Examples of TODO comments in codebase]
+# src/mcp/runtime.py:359
+# TODO: Integrate with src.mcp.tools.ratelimit.manage
+
+# src/mcp/tools/graph/secure_query.py:424
+return {"cypher": cypher, "params": {}}  # TODO: Extract parameters
+
+# src/routers/admin_db.py:94
+# TODO: Parse actual job data
+
+# src/routers/admin_ops.py:270
+# TODO: Implement actual manifest reading logic
+\end{lstlisting}
+
+These comments indicate:
+\begin{itemize}
+    \item Planned features that were not completed
+    \item Temporary implementations requiring refinement
+    \item Integration points not yet connected
+\end{itemize}
+
+\textbf{Recommendation}: Convert TODO comments to tracked issues with priority and ownership.
+
+\subsubsection{Test Coverage Gaps}
+
+While the test suite is extensive (2,700+ test functions), certain areas have incomplete coverage:
+
+\begin{itemize}
+    \item \textbf{NL-to-Cypher edge cases}: Complex multi-hop queries, aggregation combinations
+    \item \textbf{Circuit breaker recovery}: State transitions under concurrent load
+    \item \textbf{Multi-tenant isolation boundaries}: Cross-tenant access attempts via all data paths
+    \item \textbf{Background task error scenarios}: Scheduler failures, cleanup interruptions
+\end{itemize}
+
+\subsubsection{Documentation Drift}
+
+Some documentation has drifted from implementation:
+
+\begin{itemize}
+    \item Inline comments outdated after refactoring
+    \item OpenAPI specification may lag behind endpoint implementations
+    \item Configuration options not fully documented in README
+    \item Some ADRs reference superseded designs
+\end{itemize}
+
+\textbf{Mitigation strategy}: Implement documentation generation automation and include documentation review in the PR process.
+
+\subsubsection{Configuration Complexity}
+
+The platform uses over 100 environment variables for configuration, creating challenges:
+
+\begin{itemize}
+    \item Cognitive load for operators setting up deployments
+    \item Some defaults only work in development mode
+    \item Validation of configuration consistency happens at runtime, not startup
+    \item Environment variable names follow inconsistent conventions
+\end{itemize}
+
+\textbf{Recommendation}: Implement startup-time configuration validation, provide environment profiles (development, testing, production), and consolidate related settings into configuration groups.
+
+\subsection{Comparison with State-of-the-Art}
+
+When compared with leading agent frameworks, the platform shows specific gaps:
+
+\begin{table}[ht]
+\centering
+\caption{Capability gaps relative to state-of-the-art frameworks.}
+\label{tab:sota-gaps}
+\small
+\begin{tabular}{p{4cm}p{3cm}p{5cm}}
+\hline
+\textbf{Capability} & \textbf{Leaders} & \textbf{Platform Status} \\
+\hline
+Multi-agent collaboration & AutoGen, crewAI & Not implemented \\
+Document RAG pipeline & LlamaIndex & Not implemented \\
+Advanced memory systems & LangChain, Mem0 & Session-based only \\
+Real-time streaming & OpenAI Assistants & Polling-based \\
+Agent type variety & LangChain & ReAct only \\
+Tool ecosystem size & LangChain (100+) & 34 tools \\
+\hline
+\end{tabular}
+\end{table}
+
+These gaps are a consequence of the platform's enterprise-first design philosophy, which prioritized security, multi-tenancy, and operational concerns over agent capability breadth. The trade-off is explicit: the platform excels in production readiness but lags in agent sophistication.
+
+\subsection{Mitigation Strategies}
+
+To address the identified limitations, the following mitigation strategies are recommended:
+
+\begin{enumerate}
+    \item \textbf{Refactoring sprints}: Dedicated development cycles to decompose large files, particularly \texttt{orchestrator.py}
+    \item \textbf{Interface abstractions}: Introduce repository interfaces for Redis operations to enable testing and alternative backends
+    \item \textbf{Error standardization}: Adopt a unified error handling pattern throughout the codebase
+    \item \textbf{TODO tracking}: Convert code TODOs to tracked issues with regular triage
+    \item \textbf{Coverage requirements}: Establish minimum coverage thresholds for critical paths
+    \item \textbf{Documentation automation}: Generate API documentation from code, enforce documentation in CI
+    \item \textbf{Configuration validation}: Implement Pydantic-based validation at startup with clear error messages
+\end{enumerate}
+

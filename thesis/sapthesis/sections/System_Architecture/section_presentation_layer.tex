@@ -1,0 +1,514 @@
+% TODO checklist:
+% - [x] README.md: UI descriptions, technology stack
+% - [x] Q&A.md (Section H, Q47-Q49): UI architectures, API interaction, dual-UI analysis
+% - [x] ui_agent/: Next.js application structure, components, state management
+% - [x] ui_control_panel/: Streamlit application structure, views, API client
+
+\section{Presentation Layer}
+\label{sec:presentation-layer}
+
+The Presentation Layer provides two specialized user interfaces optimized for distinct personas and use cases: a \textbf{Next.js Agent Chat UI} for end-user conversational interactions, and a \textbf{Streamlit Control Panel} for administrative operations and system monitoring. This dual-UI strategy enables persona-specific optimization while sharing the common backend API.
+
+\subsection{Agent Chat UI}
+\label{subsec:agent-chat-ui}
+
+The Agent Chat UI is a modern, production-grade web application built with Next.js 14, providing a Copilot-style conversational interface for interacting with AI agents.
+
+\paragraph{Technology Stack}
+Table~\ref{tab:chat-ui-stack} summarizes the technologies used in the Agent Chat UI.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Agent Chat UI technology stack.}
+    \label{tab:chat-ui-stack}
+    \small
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{Component} & \textbf{Technology} & \textbf{Version} \\
+        \midrule
+        Framework & Next.js (App Router) & 14.2.15 \\
+        UI Library & React & 18.3.1 \\
+        State Management & Zustand & 4.5.5 \\
+        UI Components & Radix UI & Latest \\
+        Styling & Tailwind CSS & 3.4.14 \\
+        Icons & Lucide React & Latest \\
+        Type Safety & TypeScript & 5.x \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Component Architecture}
+The UI follows a component-based architecture with clear separation of concerns:
+
+\begin{lstlisting}[language=bash, caption={Agent Chat UI directory structure.}]
+ui_agent/src/
+|-- app/
+|   |-- page.tsx          # Main chat page with layout
+|   |-- layout.tsx        # Root layout with providers
+|   |-- globals.css       # Global styles (Tailwind)
+|   `-- api/              # API routes (auth token proxy)
+|-- components/
+|   |-- chat-area.tsx     # Message display + step rendering
+|   |-- chat-input.tsx    # Prompt input + model selector
+|   |-- role-toggle.tsx   # Admin/User role switch
+|   `-- ui/               # Radix UI primitives
+|-- stores/
+|   |-- auth-store.ts     # Authentication state (Zustand + persist)
+|   `-- chat-store.ts     # Chat messages and runs (Zustand)
+`-- lib/
+    |-- api.ts            # Backend API client
+    `-- utils.ts          # Utility functions
+\end{lstlisting}
+
+\paragraph{State Management}
+The application uses Zustand for lightweight, performant state management with two primary stores:
+
+\begin{description}
+    \item[Auth Store] Manages role selection (Admin/User), token generation via Auth0, and SSR-safe hydration. Role selection persists in localStorage, but tokens are regenerated on each session for security.
+    
+    \item[Chat Store] Manages chat messages, agent runs with steps and status, model selection, and auto-scroll behavior. Messages are stored as a flat array with run references for efficient rendering.
+\end{description}
+
+\begin{lstlisting}[language=JavaScript, caption={Zustand store interface pattern.}]
+interface ChatState {
+  messages: ChatMessage[];
+  selectedModel: string;
+  availableModels: Array<{ id: string; name: string }>;
+  currentRunId: string | null;
+  isSubmitting: boolean;
+  isPolling: boolean;
+  
+  addUserMessage: (content: string) => string;
+  addAgentResponse: (messageId: string, run: AgentRun) => void;
+  updateAgentRun: (messageId: string, run: AgentRun) => void;
+}
+\end{lstlisting}
+
+\paragraph{Backend API Interaction}
+The API client in \texttt{lib/api.ts} provides typed functions for all backend communication:
+
+\begin{table}[htbp]
+    \centering
+    \caption{Agent Chat UI API endpoints.}
+    \label{tab:chat-api-endpoints}
+    \small
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{Endpoint} & \textbf{Function} & \textbf{Purpose} \\
+        \midrule
+        \texttt{POST /v1/agent-runs} & \texttt{createAgentRun()} & Create new agent run \\
+        \texttt{GET /v1/agent-runs/\{id\}} & \texttt{getAgentRun()} & Poll run status \\
+        \texttt{GET /v1/agent-runs/\{id\}/steps} & \texttt{getAgentRunSteps()} & Get execution steps \\
+        \texttt{GET /v1/models/instances} & \texttt{listModels()} & List available models \\
+        \texttt{GET /v1/models/defaults} & \texttt{getDefaultModel()} & Get default model \\
+        \texttt{GET /v1/auth/me} & \texttt{getAuthMe()} & Validate token \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Polling Pattern}
+The chat UI implements a time-based polling pattern for agent run completion:
+
+\begin{lstlisting}[language=JavaScript, caption={Run completion polling implementation.}]
+async function pollRunUntilComplete(
+  runId: string,
+  token: string | null,
+  onUpdate: (run: AgentRun) => void,
+  intervalMs: number = 2000,    // 2 second intervals
+  maxAttempts: number = 300     // 10 minutes max
+): Promise<AgentRun> {
+  let attempts = 0;
+  
+  while (attempts < maxAttempts) {
+    const run = await getAgentRun(runId, token);
+    onUpdate(run);  // Update UI with latest state
+    
+    // Terminal states
+    if (['succeeded', 'failed', 'cancelled'].includes(run.status)) {
+      return run;
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, intervalMs));
+    attempts++;
+  }
+  
+  throw new Error(`Polling timed out after ${maxAttempts} attempts`);
+}
+\end{lstlisting}
+
+\paragraph{Model Selection Flow}
+The chat input component handles dynamic model selection:
+\begin{enumerate}
+    \item On role change, fetch available models from \texttt{/v1/models/instances}
+    \item Query \texttt{/v1/models/defaults} for backend-configured default
+    \item If backend default exists, use it; otherwise use first available model
+    \item User can override via dropdown selection
+\end{enumerate}
+
+\paragraph{Message Display Features}
+The chat area component renders messages with rich step visualization:
+\begin{itemize}
+    \item \textbf{User messages}: Simple text bubbles with timestamp
+    \item \textbf{Agent responses}: Full run timeline including:
+    \begin{itemize}
+        \item Status indicators (loading spinner, success checkmark, error icon)
+        \item Step-by-step execution display with action types
+        \item Tool calls with expandable inputs/outputs
+        \item Cypher query syntax highlighting
+        \item Collapsible JSON output drawers
+        \item Execution metrics (latency, token count)
+    \end{itemize}
+\end{itemize}
+
+\subsection{Control Panel UI}
+\label{subsec:control-panel-ui}
+
+The Control Panel UI is a comprehensive Streamlit-based administration interface providing full API coverage with role-aware access control.
+
+\paragraph{Technology Stack}
+\begin{itemize}
+    \item \textbf{Framework}: Streamlit (Python web apps)
+    \item \textbf{Authentication}: Auth0 OAuth2/OIDC
+    \item \textbf{HTTP Client}: httpx (async-capable)
+    \item \textbf{Data Display}: Pandas DataFrames
+    \item \textbf{Visualization}: Plotly (via Streamlit)
+\end{itemize}
+
+\paragraph{Application Structure}
+\begin{lstlisting}[language=bash, caption={Control Panel directory structure.}]
+ui_control_panel/
+|-- app.py              # Main Streamlit entry point
+|-- api.py              # API client with auth handling
+|-- state.py            # Session state management
+|-- components.py       # Reusable UI components
+`-- views/
+    |-- auth.py         # Authentication tab
+    |-- dashboard.py    # Health monitoring
+    |-- agents.py       # Agent runs & sessions
+    |-- tools.py        # Tool discovery & invocation
+    |-- models.py       # Model management
+    |-- jobs.py         # Job management
+    |-- tenants.py      # Multi-tenancy CRUD
+    |-- admin.py        # Admin operations
+    |-- cypher.py       # NL-to-Cypher workflow
+    `-- explore.py      # API explorer
+\end{lstlisting}
+
+\paragraph{Authentication System}
+The Control Panel supports four identity types with Auth0 integration:
+
+\begin{table}[htbp]
+    \centering
+    \caption{Control Panel identity types.}
+    \label{tab:control-panel-auth}
+    \small
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{Identity Type} & \textbf{Auth Method} & \textbf{Use Case} \\
+        \midrule
+        Admin & Password Realm & Full platform administration \\
+        User & Password Realm & Normal user operations \\
+        Machine & Client Credentials & Service-to-service \\
+        Custom & Manual token & Testing/debugging \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Scope-Based Access Control}
+Features are enabled based on OAuth2 scopes in the active token:
+
+\begin{table}[htbp]
+    \centering
+    \caption{Control Panel feature scopes.}
+    \label{tab:control-panel-scopes}
+    \small
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Feature} & \textbf{Required Scopes} \\
+        \midrule
+        Dashboard & None (public health endpoints) \\
+        Agents & \texttt{user:me} \\
+        Tools (Safe) & \texttt{tools:invoke:basic} \\
+        Tools (All) & \texttt{tools:invoke:all} \\
+        Models (Create) & \texttt{admin:all} \\
+        Tenants & \texttt{admin:all} \\
+        Admin Operations & \texttt{admin:all} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Tab-Based Navigation}
+The Control Panel uses Streamlit's tab system to organize functionality:
+
+\begin{enumerate}
+    \item \textbf{Auth}: Role selection, token management, scope inspection
+    \item \textbf{Dashboard}: System health, component status, KPI metrics
+    \item \textbf{Agents}: Run creation, session management, step visualization
+    \item \textbf{Tools}: Tool discovery, schema inspection, invocation testing
+    \item \textbf{Models}: Provider management, instance configuration, defaults
+    \item \textbf{Jobs}: Job creation, status monitoring, event streaming
+    \item \textbf{Tenants}: Tenant CRUD, configuration management
+    \item \textbf{Admin}: Database operations, system configuration
+    \item \textbf{Cypher}: NL-to-Cypher testing, query execution
+    \item \textbf{Explore}: OpenAPI specification, raw API requests
+\end{enumerate}
+
+\paragraph{API Client Architecture}
+The API client provides robust backend communication:
+
+\begin{lstlisting}[language=Python, caption={Control Panel API client pattern.}]
+def normalize_endpoint(endpoint: str) -> str:
+    """Ensure all endpoints start with /v1/"""
+    if not endpoint.startswith('/'):
+        endpoint = '/' + endpoint
+    if not endpoint.startswith('/v1'):
+        endpoint = '/v1' + endpoint
+    return endpoint
+
+def get_headers() -> dict:
+    """Build request headers with auth and tenant context"""
+    headers = {"Content-Type": "application/json"}
+    token = get_active_token()
+    if token:
+        headers["Authorization"] = f"Bearer {token.value}"
+    tenant_id = get_state().tenant_id
+    if tenant_id:
+        headers["X-Tenant-ID"] = tenant_id
+    return headers
+\end{lstlisting}
+
+\paragraph{Dashboard Health Monitoring}
+The dashboard tab monitors system health via multiple endpoints:
+
+\begin{table}[htbp]
+    \centering
+    \caption{Dashboard health endpoints.}
+    \label{tab:dashboard-health}
+    \small
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{Endpoint} & \textbf{Purpose} & \textbf{Display} \\
+        \midrule
+        \texttt{/health/live} & Liveness probe & Status card \\
+        \texttt{/health/ready} & Readiness probe & Status card \\
+        \texttt{/health/startup} & Startup probe & Status card \\
+        \texttt{/health/components} & Component health & Grid of cards \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Agent Execution Interface}
+The agents tab provides a complete agent execution interface:
+\begin{itemize}
+    \item Run creator form with prompt, model selection, temperature, and max steps
+    \item Session management for conversation continuity
+    \item Real-time progress monitoring with step-by-step timeline
+    \item Result display with final answer and execution metrics
+    \item Polling with jitter to prevent thundering herd effects
+\end{itemize}
+
+\paragraph{NL-to-Cypher Testing}
+The Cypher tab enables natural language to Cypher workflow testing:
+\begin{enumerate}
+    \item Natural language query input with example prompts
+    \item Graph schema exploration and visualization
+    \item Generated Cypher display with syntax highlighting
+    \item Query execution with result rendering
+    \item Query history for comparison and iteration
+\end{enumerate}
+
+\subsection{Dual-UI Architecture Analysis}
+\label{subsec:dual-ui-analysis}
+
+The decision to implement two separate user interfaces---rather than a single unified application---reflects a deliberate architectural choice based on persona analysis and technology fit.
+
+\paragraph{Advantages of Dual-UI Approach}
+
+\begin{description}
+    \item[Persona Separation] The Chat UI serves end-users requiring conversational AI interaction, while the Control Panel serves administrators and operators requiring data exploration and system management. Each UI optimizes for its target persona without compromises.
+    
+    \item[Technology Specialization] Next.js excels at real-time, interactive experiences with sub-second feedback, while Streamlit excels at rapid development of data-driven dashboards. Using each framework for its strengths yields better user experiences than a single compromise solution.
+    
+    \item[Parallel Development] Separate codebases enable independent development by different team members or skill sets. Frontend specialists can focus on the Chat UI while backend developers contribute to the Control Panel.
+    
+    \item[Risk Isolation] Bugs or outages in one UI do not affect the other. The Chat UI can remain operational during Control Panel maintenance and vice versa.
+    
+    \item[Deployment Flexibility] Each UI can be deployed, scaled, and updated independently. The Chat UI can be served as static assets via CDN, while the Control Panel runs as a Python process.
+\end{description}
+
+\paragraph{Potential Limitations}
+
+\begin{description}
+    \item[Code Duplication] Both UIs implement their own API clients, authentication handling, and error formatting. Changes to API contracts require updates in both codebases.
+    
+    \item[State Inconsistency] Session state and user preferences are managed independently in each UI. A user switching between UIs may encounter inconsistent defaults or cached data.
+    
+    \item[Cognitive Overhead] Users who require both interfaces (e.g., developers testing agents and monitoring jobs) must context-switch between different visual languages and interaction patterns.
+    
+    \item[Testing Complexity] End-to-end tests must cover both interfaces, potentially with different testing frameworks (Playwright for Next.js, Selenium or direct Python tests for Streamlit).
+    
+    \item[Maintenance Burden] Feature additions (e.g., a new model field) may require changes in both UIs, increasing total development effort.
+\end{description}
+
+\paragraph{Mitigations Implemented}
+
+\begin{itemize}
+    \item \textbf{Shared Backend API}: The REST API serves as the single source of truth, ensuring both UIs reflect consistent data.
+    \item \textbf{Consistent Model Selection}: Both UIs query the same \texttt{/v1/models/defaults} endpoint, ensuring default model consistency.
+    \item \textbf{Common Health Endpoints}: Both UIs display health status from the same \texttt{/health/*} endpoints.
+    \item \textbf{Documentation}: Clear documentation indicates when to use each UI based on task type.
+\end{itemize}
+
+\paragraph{Comparison Summary}
+Table~\ref{tab:ui-comparison} summarizes the key differences between the two interfaces.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Comparison of Chat UI and Control Panel characteristics.}
+    \label{tab:ui-comparison}
+    \small
+    \begin{tabularx}{\textwidth}{lXX}
+        \toprule
+        \textbf{Aspect} & \textbf{Agent Chat UI} & \textbf{Control Panel} \\
+        \midrule
+        Primary Persona & End users, researchers & Administrators, operators \\
+        Interaction Style & Conversational, real-time & Dashboard, form-driven \\
+        Technology & Next.js, React, TypeScript & Streamlit, Python \\
+        State Management & Zustand (client-side) & Session state (server-side) \\
+        Deployment & Static/SSR, CDN-cacheable & Python process, stateful \\
+        Update Latency & Sub-second (polling) & Page refresh \\
+        Development Speed & Moderate (typed, compiled) & Fast (Python, hot reload) \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\subsection{Developer Experience and API Consumer Patterns}
+\label{subsec:developer-experience}
+
+Beyond the two provided UIs, the platform API is designed for consumption by external clients, scripts, and integrations. This subsection describes patterns for effective API usage.
+
+\paragraph{RESTful Conventions}
+The API follows standard REST conventions:
+\begin{itemize}
+    \item \textbf{Resource-Oriented URLs}: \texttt{/v1/agents}, \texttt{/v1/jobs/\{id\}}
+    \item \textbf{HTTP Methods}: GET (read), POST (create), PUT/PATCH (update), DELETE (remove)
+    \item \textbf{Status Codes}: 200 (success), 201 (created), 204 (no content), 4xx (client error), 5xx (server error)
+    \item \textbf{Content Types}: \texttt{application/json} for requests/responses, \texttt{application/problem+json} for errors
+\end{itemize}
+
+\paragraph{Authentication Pattern}
+API clients authenticate using JWT bearer tokens:
+
+\begin{lstlisting}[language=bash, caption={API authentication example.}]
+# Obtain token from Auth0
+TOKEN=$(curl -s https://${AUTH0_DOMAIN}/oauth/token \
+  -d "grant_type=client_credentials" \
+  -d "client_id=${CLIENT_ID}" \
+  -d "client_secret=${CLIENT_SECRET}" \
+  -d "audience=${API_AUDIENCE}" | jq -r .access_token)
+
+# Make authenticated request
+curl -H "Authorization: Bearer ${TOKEN}" \
+     -H "X-Tenant-ID: ${TENANT_ID}" \
+     https://api.example.com/v1/agents
+\end{lstlisting}
+
+\paragraph{Error Handling}
+Clients should handle RFC 7807 Problem Detail responses:
+
+\begin{lstlisting}[language=Python, caption={Python client error handling.}]
+import httpx
+
+def create_agent_run(prompt: str, token: str) -> dict:
+    response = httpx.post(
+        f"{API_BASE}/v1/agent-runs",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"prompt": prompt},
+    )
+    
+    if response.status_code >= 400:
+        problem = response.json()
+        raise APIError(
+            status=problem["status"],
+            title=problem["title"],
+            detail=problem.get("detail"),
+        )
+    
+    return response.json()
+\end{lstlisting}
+
+\paragraph{Idempotent Requests}
+For safe retries, clients should use idempotency keys:
+
+\begin{lstlisting}[language=Python, caption={Idempotent request pattern.}]
+import uuid
+
+def create_job_idempotent(job_type: str, payload: dict, token: str) -> dict:
+    idempotency_key = str(uuid.uuid4())
+    
+    response = httpx.post(
+        f"{API_BASE}/v1/jobs",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Idempotency-Key": idempotency_key,
+        },
+        json={"type": job_type, "payload": payload},
+    )
+    
+    # Safe to retry with same idempotency_key
+    return response.json()
+\end{lstlisting}
+
+\paragraph{Pagination Handling}
+Clients should use cursor-based pagination for list endpoints:
+
+\begin{lstlisting}[language=Python, caption={Cursor-based pagination example.}]
+def list_all_runs(token: str) -> list[dict]:
+    all_runs = []
+    cursor = None
+    
+    while True:
+        params = {"limit": 100}
+        if cursor:
+            params["cursor"] = cursor
+        
+        response = httpx.get(
+            f"{API_BASE}/v1/agent-runs",
+            headers={"Authorization": f"Bearer {token}"},
+            params=params,
+        )
+        data = response.json()
+        all_runs.extend(data["items"])
+        
+        if not data.get("has_more"):
+            break
+        cursor = data["next_cursor"]
+    
+    return all_runs
+\end{lstlisting}
+
+\paragraph{OpenAPI Documentation}
+The API provides OpenAPI 3.1 documentation at \texttt{/openapi.json}:
+\begin{itemize}
+    \item Full endpoint documentation with request/response schemas
+    \item Authentication requirements per endpoint
+    \item Example requests and responses
+    \item Interactive exploration via Swagger UI at \texttt{/docs}
+\end{itemize}
+
+\paragraph{SDK Generation}
+The OpenAPI specification enables automatic SDK generation for various languages:
+
+\begin{lstlisting}[language=bash, caption={SDK generation example.}]
+# Generate Python client
+openapi-generator-cli generate \
+  -i https://api.example.com/openapi.json \
+  -g python \
+  -o ./sdk/python
+
+# Generate TypeScript client
+openapi-generator-cli generate \
+  -i https://api.example.com/openapi.json \
+  -g typescript-fetch \
+  -o ./sdk/typescript
+\end{lstlisting}

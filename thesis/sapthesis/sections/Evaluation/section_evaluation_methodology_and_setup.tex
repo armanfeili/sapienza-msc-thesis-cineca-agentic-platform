@@ -1,0 +1,291 @@
+% TODO checklist:
+% - [x] Inspected: README.md (test suite overview, 3000+ test cases)
+% - [x] Inspected: Q&A.md (Q44: testing strategy, Q42: metrics catalog)
+% - [x] Inspected: tests/README.md (test categories, markers, conventions)
+% - [x] Inspected: tests/conftest.py (fixtures)
+% - [x] Inspected: tests/performance/locustfile.py (load testing)
+% - [x] Inspected: tests/e2e/test_end_to_end_health.py (E2E patterns)
+% - [x] Inspected: comparison.md (baseline comparisons)
+
+\section{Evaluation Methodology and Setup}
+\label{sec:eval-methodology}
+
+This chapter presents a comprehensive evaluation of the Cineca Agentic Platform, examining its functional correctness, performance characteristics, security posture, and operational capabilities. The evaluation methodology is designed to validate that the platform meets the requirements established in Chapter~\ref{ch:requirements} and to provide empirical evidence of its production readiness.
+
+\subsection{Evaluation Objectives}
+
+The evaluation addresses the following primary objectives:
+
+\begin{enumerate}
+    \item \textbf{Functional Validation}: Verify that all declared features operate correctly across the agent orchestration, tool invocation, graph querying, and job processing subsystems.
+    
+    \item \textbf{Performance Assessment}: Measure response times, throughput, and resource utilization under varying loads to establish operational baselines.
+    
+    \item \textbf{Security Verification}: Confirm that authentication, authorization, multi-tenancy isolation, and data protection mechanisms enforce the declared security policies.
+    
+    \item \textbf{Operational Readiness}: Evaluate health monitoring, fault tolerance, and degradation behavior under component failures.
+    
+    \item \textbf{Comparative Analysis}: Position the platform against state-of-the-art alternatives to highlight relative strengths and trade-offs.
+\end{enumerate}
+
+\subsection{Test Environment Configuration}
+
+The evaluation was conducted in a controlled environment designed to approximate production conditions while maintaining reproducibility.
+
+\subsubsection{Hardware Configuration}
+
+\begin{table}[ht]
+\centering
+\caption{Test environment hardware specifications.}
+\label{tab:eval-hardware}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Component} & \textbf{Specification} & \textbf{Notes} \\
+\hline
+CPU & Apple M2 Pro (10 cores) & Development machine \\
+Memory & 16 GB unified & Shared across services \\
+Storage & 512 GB SSD (NVMe) & Local Docker volumes \\
+Network & localhost (loopback) & No network latency \\
+\hline
+\end{tabular}
+\end{table}
+
+For containerized deployments, Docker Desktop was configured with 8 GB memory allocation and 4 CPU cores dedicated to the container runtime.
+
+\subsubsection{Software Stack}
+
+The evaluation utilized the following software versions:
+
+\begin{table}[ht]
+\centering
+\caption{Software versions used in evaluation.}
+\label{tab:eval-software}
+\small
+\begin{tabular}{ll}
+\hline
+\textbf{Component} & \textbf{Version} \\
+\hline
+Python & 3.11.8 \\
+FastAPI & 0.115.x \\
+PostgreSQL & 16.x \\
+Redis & 7.x \\
+Memgraph & 2.x \\
+pytest & 8.4.x \\
+Locust & 2.x \\
+Docker & 27.x \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Environment Variables}
+
+The test environment was configured with the following key parameters:
+
+\begin{lstlisting}[language=bash,caption={Test environment configuration.}]
+APP_ENV=test
+APP_VERSION=0.0.0-test
+MG_HOST=localhost
+MG_PORT=7687
+REDIS_URL=redis://localhost:6379/0
+SESSION_TTL_SECONDS=604800
+PERF_HEALTH_P99_MS=50
+TEST_MAX_HEALTH_MS=800
+TEST_MAX_READY_MS=1500
+\end{lstlisting}
+
+\subsection{Test Suite Architecture}
+
+The Cineca Agentic Platform ships with a comprehensive test suite built around \texttt{pytest}, organized into distinct categories based on test scope and dependencies.
+
+\subsubsection{Test Categories and Markers}
+
+Tests are classified using pytest markers to enable selective execution:
+
+\begin{table}[ht]
+\centering
+\caption{Test categories and their characteristics.}
+\label{tab:test-categories}
+\small
+\begin{tabular}{llp{5.5cm}}
+\hline
+\textbf{Marker} & \textbf{Scope} & \textbf{Characteristics} \\
+\hline
+\texttt{@pytest.mark.unit} & Isolated logic & No external dependencies; must complete in $<$1s each \\
+\texttt{@pytest.mark.integration} & Adapters/services & Uses fakes or ephemeral resources \\
+\texttt{@pytest.mark.e2e} & HTTP surface & Full API contract validation \\
+\texttt{@pytest.mark.performance} & Latency budgets & Skipped by default; opt-in with \texttt{--runslow} \\
+\texttt{@pytest.mark.security} & AuthN/AuthZ & Deterministic policy validation \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Test Suite Statistics}
+
+The test suite provides extensive coverage across all platform components:
+
+\begin{table}[ht]
+\centering
+\caption{Test suite statistics.}
+\label{tab:test-stats}
+\begin{tabular}{lr}
+\hline
+\textbf{Metric} & \textbf{Count} \\
+\hline
+Total test files & 236+ \\
+Total test functions & 2,720+ \\
+Test directories (categories) & 27 \\
+Lines of test code & $\sim$64,500 \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Test Directory Organization}
+
+The test suite is organized into specialized directories:
+
+\begin{itemize}
+    \item \texttt{tests/unit/}: Pure Python logic tests (PII scrubber, policy loader, intent classifier)
+    \item \texttt{tests/integration/}: Adapter and service tests with fakes or real services
+    \item \texttt{tests/e2e/}: Full HTTP API contract validation
+    \item \texttt{tests/security/}: Authentication, authorization, rate limiting
+    \item \texttt{tests/performance/}: Latency budgets and load testing
+    \item \texttt{tests/mcp/}: Tool invocation and discovery tests
+    \item \texttt{tests/jobs/}: Job lifecycle and worker behavior
+    \item \texttt{tests/agents/}: Agent run orchestration
+    \item \texttt{tests/compliance/}: RFC compliance (RFC 7807, idempotency)
+    \item \texttt{tests/observability/}: Metrics, logging, and tracing
+\end{itemize}
+
+\subsection{Fixture Strategy}
+
+The test suite employs a layered fixture strategy to balance isolation, speed, and realism.
+
+\subsubsection{Global Fixtures}
+
+Global fixtures defined in \texttt{tests/conftest.py} provide consistent test infrastructure:
+
+\begin{itemize}
+    \item \textbf{\texttt{app\_client}}: FastAPI TestClient (ASGI transport, no network)
+    \item \textbf{\texttt{memgraph\_fake}}: Deterministic in-memory Memgraph adapter
+    \item \textbf{\texttt{redis\_fake}}: Lightweight Redis stub or real pool based on \texttt{REDIS\_URL}
+    \item \textbf{\texttt{tmp\_backups\_dir}}: Temporary directory for archive snapshots
+    \item \textbf{\texttt{auth\_headers}}: JWT tokens for different roles (admin, user, service)
+    \item \textbf{\texttt{test\_tenant}}: Isolated tenant context
+    \item \textbf{\texttt{mock\_llm\_provider}}: Stubbed LLM responses
+\end{itemize}
+
+\subsubsection{Flakiness Mitigation}
+
+Integration tests avoid flakiness through several mechanisms:
+
+\begin{enumerate}
+    \item \textbf{Memgraph}: Default adapter tests use \texttt{fake\_memgraph.py} (pure Python). Real Memgraph tests are opt-in via \texttt{--run-real-memgraph}.
+    
+    \item \textbf{Redis}: Ephemeral namespaces with unique prefixes isolate concurrent test runs. Falls back to in-memory stub when Redis is unavailable.
+    
+    \item \textbf{File System}: Archive tests write to \texttt{tmp\_path} via fixtures, never touching repository files.
+    
+    \item \textbf{Volatile Fields}: Tests avoid asserting on time-dependent fields (\texttt{time}, \texttt{latency\_ms}) unless using tolerant comparisons.
+\end{enumerate}
+
+\subsection{Metrics Collection Methodology}
+
+Evaluation metrics are collected through multiple complementary approaches:
+
+\subsubsection{Prometheus Metrics}
+
+The platform exposes comprehensive Prometheus metrics at \texttt{/metrics}:
+
+\begin{itemize}
+    \item \textbf{HTTP metrics}: Request counts, latency histograms, in-progress gauges
+    \item \textbf{Agent run metrics}: Run counts by status, step totals, token usage
+    \item \textbf{Job metrics}: Queue lengths, processing duration, status transitions
+    \item \textbf{Tool metrics}: Invocation counts, error rates, latency per tool
+    \item \textbf{LLM metrics}: Provider call counts, token consumption, cost estimates
+\end{itemize}
+
+\subsubsection{Test Instrumentation}
+
+Performance tests use direct timing measurements:
+
+\begin{lstlisting}[language=Python,caption={Latency measurement pattern from \texttt{test\_health\_latency.py}.}]
+def _measure_latency(client, path: str, rounds: int = 5, warmup: int = 1):
+    # Warmup phase
+    for _ in range(warmup):
+        client.get(path)
+    
+    # Measurement phase
+    samples_ms = []
+    for _ in range(rounds):
+        t0 = time.perf_counter()
+        resp = client.get(path)
+        t1 = time.perf_counter()
+        samples_ms.append((t1 - t0) * 1000.0)
+    
+    return {
+        "avg_ms": statistics.fmean(samples_ms),
+        "p95_ms": statistics.quantiles(samples_ms, n=20)[18],
+        "min_ms": min(samples_ms),
+        "max_ms": max(samples_ms),
+    }
+\end{lstlisting}
+
+\subsubsection{Load Testing with Locust}
+
+Load tests use Locust to simulate realistic traffic patterns:
+
+\begin{lstlisting}[language=bash,caption={Running Locust load tests.}]
+locust -f tests/performance/locustfile.py --host=http://localhost:8000
+\end{lstlisting}
+
+The Locust configuration models two user types:
+\begin{itemize}
+    \item \textbf{CinecaPlatformUser}: Regular users (10:1 ratio) with typical operations
+    \item \textbf{AdminUser}: Administrative users with lower frequency, heavier operations
+\end{itemize}
+
+\subsection{Baseline Comparisons}
+
+To contextualize evaluation results, we establish baselines against:
+
+\begin{enumerate}
+    \item \textbf{Framework Capabilities}: Feature matrices comparing against LangChain, LlamaIndex, Semantic Kernel, OpenAI Assistants, AutoGen, and crewAI (detailed in Section~\ref{sec:comparison}).
+    
+    \item \textbf{MCP Ecosystem}: Protocol compliance and interoperability with GitHub MCP Server and Neo4j MCP servers.
+    
+    \item \textbf{Internal Benchmarks}: Performance regression tests against previous platform versions.
+\end{enumerate}
+
+\subsection{Reproducibility Considerations}
+
+To ensure reproducibility of evaluation results:
+
+\begin{enumerate}
+    \item \textbf{Containerized Environment}: All services run in Docker containers with pinned versions.
+    
+    \item \textbf{Seed Data}: Synthetic graph data is generated deterministically via ETL scripts.
+    
+    \item \textbf{Test Mode}: The \texttt{LLM\_MEMGRAPH\_NL\_TEST\_MODE} environment variable enables deterministic NL-to-Cypher responses using a JSON prompt catalog.
+    
+    \item \textbf{Documented Configuration}: All environment variables and thresholds are documented and version-controlled.
+\end{enumerate}
+
+\begin{lstlisting}[language=bash,caption={Enabling deterministic NL-to-Cypher testing.}]
+export LLM_MEMGRAPH_NL_TEST_MODE=true
+export LLM_MEMGRAPH_NL_HINTS_PATH=tests/fixtures/memgraph_nl_prompts.json
+\end{lstlisting}
+
+\subsection{Evaluation Scope and Limitations}
+
+The evaluation focuses on the platform as deployed in the development/staging environment. The following limitations apply:
+
+\begin{itemize}
+    \item \textbf{Hardware}: Single-machine deployment; distributed scaling is not evaluated.
+    \item \textbf{Network}: Localhost deployment eliminates network latency effects.
+    \item \textbf{LLM Providers}: Tests use mock providers or local Ollama instances; cloud provider latency is simulated.
+    \item \textbf{Data Volume}: Synthetic datasets; real-world data volumes may exhibit different characteristics.
+\end{itemize}
+
+These limitations are addressed in the threats to validity discussion (Section~\ref{sec:threats-validity}).
+

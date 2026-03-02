@@ -1,0 +1,131 @@
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=1  --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=2  --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=3  --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=4  --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=5  --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=6  --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=7  --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=8  --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=9  --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=10 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=11 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=12 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=13 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=14 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=15 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=16 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=17 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=18 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=19 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=20 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=21 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=22 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=23 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=24 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=25 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=26 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=27 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=28 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=29 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+docker compose exec -e RUN_LLM_SMOKE=false -T app \
+  pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+  -m memgraph_nl --nl-prompts=30 --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+
+
+
+
+
+
+
+for i in $(seq 1 30); do
+  docker compose exec -e RUN_LLM_SMOKE=false -T app \
+    pytest tests/integration/test_agent_memgraph_nl_prompts_v2.py \
+      -m memgraph_nl --nl-prompts="$i" --nl-prompts-role=both --nl-force-full-agentic -vv -rs
+done

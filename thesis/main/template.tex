@@ -1,0 +1,431 @@
+% !TeX encoding = UTF-8
+% !TeX program = pdflatex
+% !TeX spellcheck = en_US
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  SAPTHESIS TEMPLATE FOR: CINECA AGENTIC PLATFORM
+%%  Enterprise-Grade AI Agent Orchestration Platform
+%%  Connecting Multi-Tenant Architecture, MCP Tools, and Secure Graph Querying
+%%  
+%%  Master's Thesis in Data Science
+%%  Sapienza Università di Roma
+%%  Facoltà di Ingegneria dell'Informazione, Informatica e Statistica
+%%  
+%%  Author: Arman Feili (Matricola: 2101835)
+%%  Email: feili.2101835@studenti.uniroma1.it
+%%  
+%%  University Supervisors:
+%%    - Prof. Marco Raoul Marini (marini@di.uniroma1.it)
+%%    - Dr. Valerio Venanzi (venanzi@di.uniroma1.it)
+%%  
+%%  CINECA Supervisors:
+%%    - Dr. Giuseppe Melfi (G.MELFI@cineca.it)
+%%    - Dr. Marco Puccini (m.puccini@cineca.it)
+%%  
+%%  Date: December 2025
+%%  
+%%  Links:
+%%    - GitHub: https://github.com/armanfeili
+%%    - Scholar: https://scholar.google.com/citations?user=qfG60rMAAAAJ
+%%    - LinkedIn: https://www.linkedin.com/in/arman-feili/
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DOCUMENT STRUCTURE (Based on thesis/guides/structure.txt)
+%% Target: ≤ 80 pages
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Note: binding option should be passed without the '=' syntax for sapthesis
+\documentclass[a4paper,twoside]{sapthesis}
+
+% Set binding offset using geometry (sapthesis uses geometry internally)
+\geometry{bindingoffset=0.6cm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% PACKAGES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{microtype}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, positioning}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{amssymb}
+\usepackage{subcaption}
+\usepackage{url}
+\usepackage{csquotes}
+
+\hypersetup{
+    pdftitle={CINECA AGENTIC PLATFORM: Enterprise-Grade AI Agent Orchestration Platform Connecting Multi-Tenant Architecture, MCP Tools, and Secure Graph Querying},
+    pdfauthor={Arman Feili},
+    pdfsubject={Master's Thesis in Data Science},
+    pdfkeywords={AI Agents, LLM, Orchestration, MCP, Graph Database, Multi-tenancy, Enterprise},
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue,
+    filecolor=blue
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% CODE LISTING SETTINGS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{pythonstyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    language=Python
+}
+
+\lstset{style=pythonstyle}
+
+\lstdefinelanguage{json}{
+    basicstyle=\ttfamily\footnotesize,
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{blue},
+    stringstyle=\color{codepurple},
+    numbers=left,
+    numberstyle=\tiny\color{codegray},
+    breaklines=true,
+    breakatwhitespace=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    morestring=[b]",
+    morestring=[s]{'}{'},
+    morecomment=[l]{//},
+    morecomment=[s]{/*}{*/},
+}
+
+\lstdefinelanguage{javascript}{
+    language=Java,
+    morekeywords={typeof, new, true, false, catch, function, return, null, catch, switch, var, if, in, while, do, else, case, break, let, const, async, await},
+    morecomment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]",
+    morestring=[b]',
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% TITLE PAGE INFORMATION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{CINECA AGENTIC PLATFORM\\
+       Enterprise-Grade AI Agent Orchestration Platform\\
+       Connecting Multi-Tenant Architecture, MCP Tools,\\
+       and Secure Graph Querying}
+
+\author{Arman Feili}
+\IDnumber{2101835}
+\course{Master of Science in Data Science}
+\courseorganizer{Facolt\`a di Ingegneria dell'Informazione,\\Informatica e Statistica}
+\AcademicYear{2025/2026}
+\advisor{Prof. Marco Raoul Marini}
+\coadvisor{Dr. Valerio Venanzi}
+\coadvisor{Dr. Giuseppe Melfi}
+\coadvisor{Dr. Marco Puccini}
+\copyyear{2026}
+\authoremail{feili.2101835@studenti.uniroma1.it}
+\thesistype{Master's Thesis}
+\website{https://github.com/armanfeili}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DOCUMENT START
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\ToolCount}{34}
+\newcommand{\EndpointCount}{76}
+\newcommand{\TestCount}{3,000+}
+\newcommand{\TotalLOC}{411,700}
+\newcommand{\OrchestratorLOC}{8,263}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\frontmatter
+
+\maketitle
+
+\begin{abstract}
+    The rapid advancement of Large Language Models (LLMs) has opened new possibilities for building intelligent software agents capable of reasoning, planning, and executing complex tasks. However, deploying AI agents in enterprise environments presents significant challenges, including multi-tenancy requirements, security and governance needs, reliability concerns, and integration with existing infrastructure.
+    
+    This thesis presents the design and implementation of the Cineca Agentic Platform, an enterprise-grade AI agent orchestration system developed in collaboration with CINECA, Italy's national supercomputing center. The platform addresses the gap between research-oriented agent frameworks and production-ready enterprise systems by providing a comprehensive solution for agent orchestration, tool integration, and knowledge graph querying.
+    
+    The key contributions of this work include: (1) a novel three-layer architecture separating core backend services, data persistence, and presentation concerns; (2) a native implementation of the Model Context Protocol (MCP) with \ToolCount{} tools across 17 categories; (3) a Natural Language to Cypher pipeline enabling intuitive graph database querying with multi-layer safety validation; (4) a comprehensive security framework featuring OpenID Connect (OIDC) and JSON Web Token (JWT) authentication, role-based access control (RBAC), multi-tenancy isolation, and personally identifiable information (PII) protection; (5) a production-ready observability stack with Prometheus metrics, OpenTelemetry tracing, and structured logging; and (6) an asynchronous job system supporting long-running agent tasks with real-time progress streaming via Server-Sent Events (SSE).
+    
+    The platform is implemented using Python and FastAPI for the backend, PostgreSQL and Redis for data management, Memgraph for graph storage, and dual frontends built with Next.js and Streamlit. In the evaluation scenarios described in this thesis, the system demonstrates capability to handle enterprise workloads while maintaining security, reliability, and extensibility.
+    
+    This work contributes to the emerging field of enterprise AI agent systems by providing a reference architecture and open-source implementation that bridges the gap between academic agent research and industrial deployment requirements.
+\end{abstract}
+
+\tableofcontents
+
+% Optional: List of Figures and Tables
+% \listoffigures
+% \listoftables
+% \lstlistoflistings
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% MAIN MATTER — Structure from thesis/guides/structure.txt
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\mainmatter
+
+%==============================================================================
+% 1. Introduction (7–9 pages)
+%==============================================================================
+
+\chapter{Introduction}
+\label{ch:introduction}
+
+\section{Context and motivation}
+\label{sec:context-motivation}
+\emph{Production gap.} Content to be added.
+
+\section{Problem statement}
+\label{sec:problem-statement}
+\emph{What fails with naïve agent demos / chatbots in enterprise settings.} Content to be added.
+
+\section{Objectives and scope}
+\label{sec:objectives-scope}
+\emph{Explicit non-goals included.} Content to be added.
+
+\section{Proposed approach}
+\label{sec:proposed-approach}
+\emph{What you built and why.} Content to be added.
+
+\section{Contributions}
+\label{sec:contributions}
+\emph{Bullet list; each testable/measurable.} Content to be added.
+
+\section{Results preview}
+\label{sec:results-preview}
+\emph{What you evaluated + 3–6 headline outcomes.} Content to be added.
+
+\section{Thesis roadmap}
+\label{sec:thesis-roadmap}
+\emph{Chapter map in plain language.} Content to be added.
+
+%==============================================================================
+% 2. Related works and background (9–12 pages)
+%==============================================================================
+
+\chapter{Related Works and Background}
+\label{ch:background}
+
+\section{Agentic systems and tool-use}
+\label{sec:agentic-systems}
+Content to be added.
+
+\section{Orchestration and Workflow Engines vs Agent Frameworks}
+\label{sec:orchestration-frameworks}
+\emph{Durability, infra scope, ``library-only'' limits.} Content to be added.
+
+\section{Tool ecosystems and governance}
+\label{sec:tool-ecosystems}
+\emph{Controlled extensibility; why registries matter.} Content to be added.
+
+\section{Natural-language interfaces to graphs}
+\label{sec:nl-graphs}
+\emph{Why NL$\to$Cypher needs safety and isolation.} Content to be added.
+
+\section{Positioning and gap analysis}
+\label{sec:gap-analysis}
+\emph{What existing systems don't provide together.} Content to be added.
+
+%==============================================================================
+% 3. Proposed solution: The CINECA Agentic Platform (24–30 pages)
+%==============================================================================
+
+\chapter{Proposed Solution: The CINECA Agentic Platform}
+\label{ch:proposed-solution}
+
+\section{Requirements and design goals}
+\label{sec:requirements}
+\emph{Stakeholders, functional + non-functional requirements, R1–Rk, traceability mini-table.} Content to be added.
+
+\section{System overview and core concepts}
+\label{sec:system-overview}
+\emph{High-level architecture diagram, tenant, principal, run, step, job, tool, audit.} Content to be added.
+
+\section{Execution model: dual workflows}
+\label{sec:execution-model}
+\emph{Workflow A: Agent Runs; Workflow B: Jobs; trade-offs.} Content to be added.
+
+\subsection{End-to-end request walkthrough}
+\label{sec:request-walkthrough}
+\emph{Representative scenario: user request $\to$ routing $\to$ run/steps or job.} Content to be added.
+
+\section{Orchestration engine}
+\label{sec:orchestration-engine}
+\emph{Intent/routing, plan $\to$ execute $\to$ persist trace.} Content to be added.
+
+\section{MCP tool ecosystem}
+\label{sec:mcp-tools}
+\emph{Registry, schema validation, authorization, auditing; tool categories overview.} Content to be added.
+
+\section{NL-to-Cypher Subsystem}
+\label{sec:nl-cypher}
+\emph{Pipeline stages, safety validation rationale.} Content to be added.
+
+\section{Data and state}
+\label{sec:data-state}
+\emph{Control plane vs data plane; what is stored where.} Content to be added.
+
+\section{Security, multi-tenancy, and governance}
+\label{sec:security}
+\emph{Identity/auth, RBAC, tenant isolation, audit trail, threat model summary.} Content to be added.
+
+\section{Observability and operational readiness}
+\label{sec:observability}
+\emph{Metrics/logging/tracing as requirements.} Content to be added.
+
+\section{Design trade-offs summary}
+\label{sec:design-tradeoffs}
+\emph{Safety vs flexibility; latency vs durability; extensibility vs governance.} Content to be added.
+
+%==============================================================================
+% 4. Tests (Evaluation Methodology) (9–12 pages)
+%==============================================================================
+
+\chapter{Tests (Evaluation Methodology)}
+\label{ch:tests}
+
+\section{Experimental setup and reproducibility}
+\label{sec:experimental-setup}
+\emph{Hardware/OS, major versions, workloads, reproducibility contract, rigor commitment.} Content to be added.
+
+\section{Evaluation questions}
+\label{sec:evaluation-questions}
+\emph{EQ1–EQj mapped to §3.1 requirements and traceability table.} Content to be added.
+
+\section{Metrics}
+\label{sec:metrics}
+\emph{Precise definitions; what each metric demonstrates.} Content to be added.
+
+\section{Test protocols}
+\label{sec:test-protocols}
+\emph{Functional, security, reliability/degradation, performance/load.} Content to be added.
+
+\section{Baselines and comparison design}
+\label{sec:baselines}
+\emph{What you compare against and why it's fair.} Content to be added.
+
+%==============================================================================
+% 5. Results and discussion (14–18 pages)
+%==============================================================================
+
+\chapter{Results and Discussion}
+\label{ch:results}
+
+\section{Functional results}
+\label{sec:functional-results}
+Content to be added.
+
+\section{Performance results}
+\label{sec:performance-results}
+\emph{Include variability/percentiles.} Content to be added.
+
+\section{Reliability results}
+\label{sec:reliability-results}
+\emph{Durability, cancellation, recovery.} Content to be added.
+
+\section{Security results}
+\label{sec:security-results}
+\emph{What was verified; edge cases.} Content to be added.
+
+\section{Comparative results vs baselines}
+\label{sec:comparative-results}
+Content to be added.
+
+\section{Limitations and threats to validity}
+\label{sec:limitations}
+\emph{Grouped, concrete.} Content to be added.
+
+%==============================================================================
+% 6. Conclusions (3–4 pages)
+%==============================================================================
+
+\chapter{Conclusions}
+\label{ch:conclusions}
+\emph{Tight recap: problem $\to$ CAP $\to$ key results; final takeaways (3–5 clear statements).} Content to be added.
+
+%==============================================================================
+% 7. Future work (2–3 pages)
+%==============================================================================
+
+\chapter{Future Work}
+\label{ch:future-work}
+\emph{Evaluation depth, new tools, stronger benchmarks, deployment hardening, broader providers/tenancy.} Content to be added.
+
+%==============================================================================
+% Appendix (0–8 pages total) — single chapter with subsections A–E
+%==============================================================================
+
+\appendix
+
+\chapter*{Appendices}
+\addcontentsline{toc}{chapter}{Appendices}
+\label{ch:appendix}
+\renewcommand{\thesection}{\Alph{section}}
+\setcounter{section}{0}
+
+\section{Full tool inventory}
+\label{app:tool-inventory}
+\emph{Complete list; schemas summary if useful.} Content to be added.
+
+\section{API catalog / endpoint tables}
+\label{app:api-catalog}
+\emph{Only if included.} Content to be added.
+
+\section{Extra diagrams}
+\label{app:extra-diagrams}
+\emph{Full workflows, state machines.} Content to be added.
+
+\section{Extended tables and plots}
+\label{app:extended-tables}
+\emph{Additional metrics, long tables, overflow plots.} Content to be added.
+
+\section{Reproducibility notes}
+\label{app:reproducibility}
+\emph{How to rerun: configs/templates/how to run.} Content to be added.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% BIBLIOGRAPHY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\backmatter
+
+% \bibliographystyle{sapthesis}
+% \bibliography{references}
+
+\end{document}

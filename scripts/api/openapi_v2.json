@@ -1,0 +1,6462 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Cineca Agentic Platform",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health/live": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Liveness probe (v2)",
+        "operationId": "live_v2_v2_health_live_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ActionResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "description": "Whether the operation succeeded"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Human-readable result message"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details",
+            "description": "Additional details"
+          },
+          "trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trace Id",
+            "description": "Distributed trace ID"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id",
+            "description": "Event/provenance ID"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "ok",
+          "message"
+        ],
+        "title": "ActionResponse",
+        "description": "Generic action response with success/failure details."
+      },
+      "ActivateManifestRequest": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Optional reason for activation"
+          }
+        },
+        "type": "object",
+        "title": "ActivateManifestRequest",
+        "description": "Request to activate latest staged manifest."
+      },
+      "ActivateManifestResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
+          },
+          "trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trace Id"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message",
+          "details"
+        ],
+        "title": "ActivateManifestResponse",
+        "description": "Response for activation operation."
+      },
+      "AuthConfig": {
+        "properties": {
+          "scheme": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheme",
+            "description": "Auth scheme (e.g., 'bearer', 'basic')"
+          },
+          "token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token",
+            "description": "Auth token (will be redacted in responses)"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "AuthConfig",
+        "description": "Authentication configuration for provider."
+      },
+      "BatchOperation": {
+        "properties": {
+          "operation": {
+            "type": "string",
+            "title": "Operation",
+            "description": "Operation type: create, update, delete"
+          },
+          "resourceType": {
+            "type": "string",
+            "title": "Resourcetype",
+            "description": "Resource type: model, tenant, tool, agent"
+          },
+          "resourceId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resourceid",
+            "description": "Resource ID (for update/delete)"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "Resource data (for create/update)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "operation",
+          "resourceType"
+        ],
+        "title": "BatchOperation",
+        "description": "Single operation in a batch request."
+      },
+      "BatchOperationResult": {
+        "properties": {
+          "operation": {
+            "type": "string",
+            "title": "Operation",
+            "description": "Operation type that was attempted"
+          },
+          "resourceType": {
+            "type": "string",
+            "title": "Resourcetype",
+            "description": "Resource type that was targeted"
+          },
+          "resourceId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resourceid",
+            "description": "Resource ID (if applicable)"
+          },
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "Whether the operation succeeded"
+          },
+          "statusCode": {
+            "type": "integer",
+            "title": "Statuscode",
+            "description": "HTTP-style status code"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable result message"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "Result data (for successful operations)"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message (for failed operations)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "operation",
+          "resourceType",
+          "success",
+          "statusCode"
+        ],
+        "title": "BatchOperationResult",
+        "description": "Result of a single operation."
+      },
+      "BatchRequest": {
+        "properties": {
+          "operations": {
+            "items": {
+              "$ref": "#/components/schemas/BatchOperation"
+            },
+            "type": "array",
+            "title": "Operations",
+            "description": "List of operations to perform"
+          },
+          "continueOnError": {
+            "type": "boolean",
+            "title": "Continueonerror",
+            "description": "Continue processing if an operation fails",
+            "default": false
+          },
+          "atomic": {
+            "type": "boolean",
+            "title": "Atomic",
+            "description": "Rollback all operations if any fails (not yet supported)",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "operations"
+        ],
+        "title": "BatchRequest",
+        "description": "Batch operation request."
+      },
+      "BatchResponse": {
+        "properties": {
+          "totalOperations": {
+            "type": "integer",
+            "title": "Totaloperations",
+            "description": "Total number of operations in the batch"
+          },
+          "successCount": {
+            "type": "integer",
+            "title": "Successcount",
+            "description": "Number of successful operations"
+          },
+          "failureCount": {
+            "type": "integer",
+            "title": "Failurecount",
+            "description": "Number of failed operations"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/BatchOperationResult"
+            },
+            "type": "array",
+            "title": "Results",
+            "description": "Results for each operation"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors",
+            "description": "List of global errors (if any)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "totalOperations",
+          "successCount",
+          "failureCount",
+          "results"
+        ],
+        "title": "BatchResponse",
+        "description": "Batch operation response."
+      },
+      "CountsResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "nodes": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Nodes",
+            "description": "Total node count"
+          },
+          "edges": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edges",
+            "description": "Total edge count (if available)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nodes"
+        ],
+        "title": "CountsResponse",
+        "description": "Database node/edge counts."
+      },
+      "CreateJobRequest": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "description": "Job type: 'create', 'migrate', 'vacuum', etc."
+          },
+          "sql": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sql",
+            "description": "Optional SQL to execute"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target",
+            "description": "Target database: 'memgraph', 'postgres'"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "CreateJobRequest",
+        "description": "Request to create a database maintenance job."
+      },
+      "CreateJobResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "job_id": {
+            "type": "string",
+            "title": "Job Id",
+            "description": "Unique job identifier"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id"
+        ],
+        "title": "CreateJobResponse",
+        "description": "Response from creating a job."
+      },
+      "CreateRunRequest": {
+        "properties": {
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id",
+            "description": "Optional session ID. If not provided, a new session will be created."
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "description": "Natural-language input for the agent to act on"
+          },
+          "manager": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager",
+            "description": "Manager/planner LLM name"
+          },
+          "preferred_workers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Workers",
+            "description": "Preferred workers"
+          },
+          "llm_preferences": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Preferences",
+            "description": "Tool preferences"
+          },
+          "agent_role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Role",
+            "description": "Agent role"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "Allowed tools"
+          },
+          "temperature": {
+            "type": "number",
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Temperature",
+            "description": "Sampling temperature",
+            "default": 0.2
+          },
+          "max_steps": {
+            "type": "integer",
+            "maximum": 64.0,
+            "minimum": 1.0,
+            "title": "Max Steps",
+            "description": "Maximum steps",
+            "default": 8
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "description": "Metadata"
+          },
+          "force_full_agentic": {
+            "type": "boolean",
+            "title": "Force Full Agentic",
+            "description": "Force full agentic pipeline (disable trivial fast paths)",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "prompt"
+        ],
+        "title": "CreateRunRequest",
+        "description": "Request to create a new agent run."
+      },
+      "CreateSessionRequest": {
+        "properties": {
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id",
+            "description": "Optional client-provided session ID. If provided and owned by caller, returns existing session idempotently."
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt",
+            "description": "Optional natural-language input for the agent to act on"
+          },
+          "manager": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager",
+            "description": "Optional named manager/planner LLM to use (e.g., 'planner')"
+          },
+          "preferred_workers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Workers",
+            "description": "Optional allowlist of worker LLM names the manager may use"
+          },
+          "llm_preferences": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Preferences",
+            "description": "Optional per-session mapping of tool/action -> preferred LLM name"
+          },
+          "agent_role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Role",
+            "description": "Optional agent role (e.g., 'researcher','coder') to influence system prompt"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "Optional allowlist of tool names the agent may use"
+          },
+          "temperature": {
+            "type": "number",
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Temperature",
+            "description": "Sampling temperature for stochastic models (0.0 = deterministic)",
+            "default": 0.2
+          },
+          "max_steps": {
+            "type": "integer",
+            "maximum": 64.0,
+            "minimum": 1.0,
+            "title": "Max Steps",
+            "description": "Maximum planner/agent steps to execute",
+            "default": 8
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "description": "Arbitrary metadata passed to the orchestrator"
+          }
+        },
+        "type": "object",
+        "title": "CreateSessionRequest",
+        "description": "Request to create a new agent session."
+      },
+      "CreateStepRequest": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Step type: 'message' (user message), 'user' (user action), 'assistant' (LLM response), 'tool' (tool invocation), 'system' (system message), 'error' (error occurred)",
+            "examples": [
+              "message"
+            ]
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message"
+          },
+          "tool": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool",
+            "description": "Tool name if this is a tool step"
+          },
+          "input": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input",
+            "description": "Structured input payload"
+          },
+          "output": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output",
+            "description": "Structured output payload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "CreateStepRequest",
+        "description": "Request to add a step to a session."
+      },
+      "CreateTenantRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "description": "Display name for the tenant",
+            "examples": [
+              "ACME Corporation",
+              "Beta Test Tenant"
+            ]
+          },
+          "admin_email": {
+            "type": "string",
+            "format": "email",
+            "title": "Admin Email",
+            "description": "Contact email for tenant administrator (must be valid RFC 5322 email)",
+            "examples": [
+              "admin@example.com",
+              "contact@example.com"
+            ]
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "description": "Optional tenant metadata (arbitrary keys supported)",
+            "examples": [
+              {
+                "region": "us-east-1",
+                "tier": "premium"
+              },
+              {}
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "admin_email"
+        ],
+        "title": "CreateTenantRequest",
+        "description": "Request to create a new tenant.\n\n**Required fields**: `name`, `admin_email`\n**Optional fields**: `metadata` (defaults to empty dict)",
+        "examples": [
+          {
+            "admin_email": "admin@example.com",
+            "metadata": {
+              "contact": {
+                "phone": "+1-555-0100",
+                "slack": "#acme-admins"
+              },
+              "features": [
+                "a",
+                "b",
+                "c"
+              ],
+              "region": "us-east-1",
+              "tier": "premium"
+            },
+            "name": "ACME Corporation"
+          },
+          {
+            "admin_email": "admin@example.com",
+            "name": "ACME"
+          }
+        ]
+      },
+      "DBCountsResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "nodes": {
+            "type": "integer",
+            "title": "Nodes"
+          },
+          "edges": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edges"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "nodes"
+        ],
+        "title": "DBCountsResponse",
+        "description": "Response from getting DB counts."
+      },
+      "DBJobRequest": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "create",
+              "populate"
+            ],
+            "title": "Type",
+            "description": "Job type: 'create' (rebuild DB) or 'populate' (add test data)",
+            "examples": [
+              "create",
+              "populate"
+            ]
+          },
+          "wipe": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wipe",
+            "description": "For type=create: whether to wipe existing DB first",
+            "examples": [
+              true,
+              false
+            ]
+          },
+          "users": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Users",
+            "description": "For type=populate: number of users to generate",
+            "examples": [
+              10,
+              100,
+              1000
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "DBJobRequest",
+        "description": "Request to create a database job.",
+        "examples": [
+          {
+            "type": "create",
+            "wipe": true
+          },
+          {
+            "type": "populate",
+            "users": 100
+          }
+        ]
+      },
+      "DBJobResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "job_id"
+        ],
+        "title": "DBJobResponse",
+        "description": "Response from creating a database job."
+      },
+      "DBJobStatusResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "progress": {
+            "type": "number",
+            "title": "Progress"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "state",
+          "progress",
+          "action",
+          "params"
+        ],
+        "title": "DBJobStatusResponse",
+        "description": "Response from getting job status."
+      },
+      "ExecutionMetrics": {
+        "properties": {
+          "overall_ms": {
+            "type": "integer",
+            "title": "Overall Ms",
+            "description": "Overall execution time in milliseconds"
+          },
+          "llm": {
+            "items": {
+              "$ref": "#/components/schemas/LLMCallMetrics"
+            },
+            "type": "array",
+            "title": "Llm",
+            "description": "LLM call metrics"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/ToolCallMetrics"
+            },
+            "type": "array",
+            "title": "Tools",
+            "description": "Tool call metrics"
+          },
+          "model_warmup_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Warmup Ms",
+            "description": "Time taken for model warmup in milliseconds"
+          },
+          "first_llm_call_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Llm Call Ms",
+            "description": "Latency of the first LLM call within this run (preferred over model_warmup_ms for clarity)"
+          },
+          "total_llm_calls": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Llm Calls",
+            "description": "Total number of LLM API calls made"
+          },
+          "llm_call_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Call Count",
+            "description": "Number of LLM calls made during this run (excludes warmup)"
+          },
+          "llm_attempted_calls": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Attempted Calls",
+            "description": "Number of LLM calls attempted (including failures)"
+          },
+          "llm_successful_calls": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Successful Calls",
+            "description": "Number of LLM calls that succeeded"
+          },
+          "tool_calls": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Calls",
+            "description": "Total number of tool invocations"
+          },
+          "tool_errors": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Errors",
+            "description": "Number of tool invocation errors"
+          },
+          "timeout_stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timeout Stage",
+            "description": "Stage where timeout occurred (if applicable)"
+          },
+          "configured_run_timeout_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Configured Run Timeout Seconds",
+            "description": "Configured run timeout (seconds)"
+          },
+          "configured_step_timeout_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Configured Step Timeout Seconds",
+            "description": "Configured step timeout (seconds)"
+          },
+          "run_timeout_budget_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Timeout Budget Ms",
+            "description": "Remaining timeout budget at run end (ms)"
+          },
+          "planning_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planning Ms",
+            "description": "Time spent in planning phase (ms)"
+          },
+          "execution_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Execution Ms",
+            "description": "Time spent in execution phase (ms)"
+          },
+          "timeout_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timeout Reason",
+            "description": "Reason for timeout if applicable"
+          },
+          "llm_error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Error Type",
+            "description": "Type of LLM error if any (e.g., TimeoutException)"
+          },
+          "llm_error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Error Message",
+            "description": "LLM error message if any"
+          },
+          "llm_latency": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Latency",
+            "description": "Aggregate LLM latency breakdown: {per_purpose: {<purpose>: {avg_ms, p95_ms, count}}, slow_calls: {gt_60s, gt_120s}}"
+          }
+        },
+        "type": "object",
+        "required": [
+          "overall_ms"
+        ],
+        "title": "ExecutionMetrics",
+        "description": "Performance and execution metrics for the run."
+      },
+      "ExportRequest": {
+        "properties": {
+          "tenantIds": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenantids",
+            "description": "Specific tenant IDs to export (omit for all)"
+          },
+          "includeModels": {
+            "type": "boolean",
+            "title": "Includemodels",
+            "description": "Include model configurations",
+            "default": true
+          },
+          "includeProviders": {
+            "type": "boolean",
+            "title": "Includeproviders",
+            "description": "Include provider configurations",
+            "default": true
+          },
+          "includeTools": {
+            "type": "boolean",
+            "title": "Includetools",
+            "description": "Include tool definitions",
+            "default": true
+          },
+          "includeAgents": {
+            "type": "boolean",
+            "title": "Includeagents",
+            "description": "Include agent configurations",
+            "default": true
+          },
+          "includeJobs": {
+            "type": "boolean",
+            "title": "Includejobs",
+            "description": "Include job history (may be large)",
+            "default": false
+          },
+          "format": {
+            "type": "string",
+            "title": "Format",
+            "description": "Export format: json or zip",
+            "default": "json"
+          }
+        },
+        "type": "object",
+        "title": "ExportRequest",
+        "description": "Request to export configurations"
+      },
+      "GetDefaultResponse": {
+        "properties": {
+          "chat": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Chat",
+            "description": "Default chat model info"
+          },
+          "etag": {
+            "type": "string",
+            "title": "Etag"
+          }
+        },
+        "type": "object",
+        "required": [
+          "chat",
+          "etag"
+        ],
+        "title": "GetDefaultResponse",
+        "description": "Response for get default model."
+      },
+      "GetMainProviderResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "description": "Operation success"
+          },
+          "tenant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenant Id",
+            "description": "Tenant scope queried"
+          },
+          "main": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Main",
+            "description": "Main/default provider ID"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok"
+        ],
+        "title": "GetMainProviderResponse",
+        "description": "Response from GET /providers/main."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ImportRequest": {
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data",
+            "description": "Export data to import"
+          },
+          "overwriteExisting": {
+            "type": "boolean",
+            "title": "Overwriteexisting",
+            "description": "Overwrite existing resources with same IDs",
+            "default": false
+          },
+          "skipErrors": {
+            "type": "boolean",
+            "title": "Skiperrors",
+            "description": "Continue importing even if some items fail",
+            "default": true
+          },
+          "dryRun": {
+            "type": "boolean",
+            "title": "Dryrun",
+            "description": "Validate import without making changes",
+            "default": false
+          },
+          "mergeStrategy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mergestrategy",
+            "description": "Merge strategy: skip or overwrite"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "ImportRequest",
+        "description": "Request to import configurations"
+      },
+      "ImportResult": {
+        "properties": {
+          "importedAt": {
+            "type": "string",
+            "title": "Importedat"
+          },
+          "importedBy": {
+            "type": "string",
+            "title": "Importedby"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "itemsProcessed": {
+            "type": "integer",
+            "title": "Itemsprocessed"
+          },
+          "itemsImported": {
+            "type": "integer",
+            "title": "Itemsimported"
+          },
+          "itemsSkipped": {
+            "type": "integer",
+            "title": "Itemsskipped"
+          },
+          "itemsFailed": {
+            "type": "integer",
+            "title": "Itemsfailed"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "importedResources": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Importedresources",
+            "description": "Count of imported resources by type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "importedAt",
+          "importedBy",
+          "status",
+          "success",
+          "itemsProcessed",
+          "itemsImported",
+          "itemsSkipped",
+          "itemsFailed"
+        ],
+        "title": "ImportResult",
+        "description": "Result of import operation"
+      },
+      "InstanceDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Instance UUID"
+          },
+          "instance_name": {
+            "type": "string",
+            "title": "Instance Name",
+            "description": "Human-readable instance name"
+          },
+          "provider_id": {
+            "type": "string",
+            "title": "Provider Id",
+            "description": "Provider UUID"
+          },
+          "model_id": {
+            "type": "string",
+            "title": "Model Id",
+            "description": "Model identifier"
+          },
+          "model_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Uri",
+            "description": "Model-specific URI"
+          },
+          "tenant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenant Id",
+            "description": "Tenant scope (null=global)"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameters",
+            "description": "Model parameters"
+          },
+          "context_window": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Window",
+            "description": "Context window size in tokens"
+          },
+          "modalities": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modalities",
+            "description": "Supported modalities"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Instance description"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Whether instance is enabled"
+          },
+          "loaded": {
+            "type": "boolean",
+            "title": "Loaded",
+            "description": "Whether instance is currently loaded"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At",
+            "description": "Creation timestamp (ISO 8601)"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "Last update timestamp (ISO 8601)"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By",
+            "description": "Actor who created the instance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "instance_name",
+          "provider_id",
+          "model_id",
+          "enabled",
+          "loaded",
+          "created_at"
+        ],
+        "title": "InstanceDetail",
+        "description": "Detailed instance information.",
+        "example": {
+          "context_window": 128000,
+          "created_at": "2025-01-15T10:30:00Z",
+          "created_by": "admin@example.com",
+          "description": "GPT-4 Omni - multimodal capabilities for production workloads",
+          "enabled": true,
+          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "instance_name": "gpt-4o-production",
+          "loaded": true,
+          "modalities": [
+            "text",
+            "vision",
+            "audio"
+          ],
+          "model_id": "gpt-4o",
+          "parameters": {
+            "max_tokens": 4096,
+            "temperature": 0.7
+          },
+          "provider_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+          "updated_at": "2025-01-15T10:30:00Z"
+        }
+      },
+      "JobCreateRequest": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Job type identifier (e.g., 'agent.run', 'demo')",
+            "examples": [
+              "agent.run",
+              "demo"
+            ]
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload",
+            "description": "Arbitrary JSON payload for the job",
+            "examples": [
+              {
+                "duration_ms": 1000
+              },
+              {
+                "test": "data"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "JobCreateRequest",
+        "description": "Request to create a new job.",
+        "examples": [
+          {
+            "payload": {
+              "agent_id": "abc123"
+            },
+            "type": "agent.run"
+          },
+          {
+            "payload": {
+              "duration_ms": 500
+            },
+            "type": "demo"
+          }
+        ]
+      },
+      "JobListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/JobResponse"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Jobs in current page"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of jobs matching filters",
+            "examples": [
+              100
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "Page size",
+            "examples": [
+              25
+            ]
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset",
+            "description": "Pagination offset",
+            "examples": [
+              0,
+              25
+            ]
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "description": "Whether more pages are available",
+            "examples": [
+              true,
+              false
+            ]
+          },
+          "next_page_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Page Token",
+            "description": "Opaque token for next page (use as offset query param)",
+            "examples": [
+              "25",
+              "50"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset",
+          "has_more"
+        ],
+        "title": "JobListResponse",
+        "description": "Paginated list of jobs.",
+        "examples": [
+          {
+            "has_more": true,
+            "items": [
+              {
+                "created_at": "2025-10-12T15:30:00Z",
+                "etag": "abc123",
+                "id": "123e4567-e89b-12d3-a456-426614174000",
+                "owner_sub": "user@example.com",
+                "priority": 0,
+                "status": "finished",
+                "tenant_id": "default",
+                "type": "agent.run",
+                "updated_at": "2025-10-12T15:30:10Z"
+              }
+            ],
+            "limit": 25,
+            "next_page_token": "25",
+            "offset": 0,
+            "total": 100
+          }
+        ]
+      },
+      "JobResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Job UUID",
+            "examples": [
+              "123e4567-e89b-12d3-a456-426614174000"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Job type",
+            "examples": [
+              "agent.run"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Job status (queued, running, finished, failed, cancelled)",
+            "examples": [
+              "queued",
+              "running",
+              "finished"
+            ]
+          },
+          "owner": {
+            "type": "string",
+            "title": "Owner",
+            "description": "Job owner (token subject)",
+            "examples": [
+              "user@example.com"
+            ]
+          },
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id",
+            "description": "Tenant identifier",
+            "examples": [
+              "default",
+              "tenant-abc"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At",
+            "description": "ISO 8601 creation timestamp",
+            "examples": [
+              "2025-10-12T15:30:00Z"
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "ISO 8601 last update timestamp",
+            "examples": [
+              "2025-10-12T15:30:05Z"
+            ]
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "ISO 8601 start timestamp (when transitioned to running)",
+            "examples": [
+              "2025-10-12T15:30:01Z"
+            ]
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At",
+            "description": "ISO 8601 completion timestamp (when reached terminal state)",
+            "examples": [
+              "2025-10-12T15:30:10Z"
+            ]
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payload",
+            "description": "Job payload (only included if requested)"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result",
+            "description": "Job result (only available after completion)",
+            "examples": [
+              {
+                "output": "data",
+                "status": "success"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error details (only if status=failed)"
+          },
+          "priority": {
+            "type": "integer",
+            "title": "Priority",
+            "description": "Job priority",
+            "examples": [
+              0,
+              10
+            ]
+          },
+          "queue_latency_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queue Latency Ms",
+            "description": "Time from created to started (milliseconds)",
+            "examples": [
+              1234
+            ]
+          },
+          "exec_latency_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exec Latency Ms",
+            "description": "Time from started to completed (milliseconds)",
+            "examples": [
+              5678
+            ]
+          },
+          "etag": {
+            "type": "string",
+            "title": "Etag",
+            "description": "Entity tag for conditional requests",
+            "examples": [
+              "abc123def456"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "status",
+          "owner",
+          "tenant_id",
+          "created_at",
+          "priority",
+          "etag"
+        ],
+        "title": "JobResponse",
+        "description": "Job representation in API responses.",
+        "examples": [
+          {
+            "completed_at": "2025-10-12T15:30:10Z",
+            "created_at": "2025-10-12T15:30:00Z",
+            "etag": "abc123",
+            "exec_latency_ms": 9000,
+            "id": "123e4567-e89b-12d3-a456-426614174000",
+            "owner_sub": "user@example.com",
+            "priority": 0,
+            "queue_latency_ms": 1000,
+            "result": {
+              "status": "success"
+            },
+            "started_at": "2025-10-12T15:30:01Z",
+            "status": "finished",
+            "tenant_id": "default",
+            "type": "agent.run",
+            "updated_at": "2025-10-12T15:30:10Z"
+          }
+        ]
+      },
+      "JobStatusResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "state": {
+            "type": "string",
+            "title": "State",
+            "description": "'pending', 'running', 'completed', 'failed', 'cancelled'"
+          },
+          "progress": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Progress",
+            "description": "Progress percentage"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "state",
+          "progress",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "JobStatusResponse",
+        "description": "Status of a database job."
+      },
+      "LLMCallMetrics": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Model name used for this call"
+          },
+          "latency_ms": {
+            "type": "integer",
+            "title": "Latency Ms",
+            "description": "Latency in milliseconds"
+          },
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "Whether the call succeeded"
+          },
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Tokens",
+            "description": "Number of input tokens"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Tokens",
+            "description": "Number of output tokens"
+          },
+          "total_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Tokens",
+            "description": "Total number of tokens (input + output)"
+          },
+          "purpose": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purpose",
+            "description": "Purpose of the call (e.g., 'todo_list_creation')"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message if call failed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "latency_ms",
+          "success"
+        ],
+        "title": "LLMCallMetrics",
+        "description": "Metrics for a single LLM API call."
+      },
+      "LLMSmokeTestResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Status of smoke test: success, error, or timeout"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Model name used for test"
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "description": "Test prompt sent to LLM"
+          },
+          "response_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Text",
+            "description": "LLM response (truncated to 500 chars)"
+          },
+          "latency_ms": {
+            "type": "integer",
+            "title": "Latency Ms",
+            "description": "End-to-end latency in milliseconds"
+          },
+          "tokens_input": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tokens Input",
+            "description": "Input tokens (if available)"
+          },
+          "tokens_output": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tokens Output",
+            "description": "Output tokens (if available)"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message if test failed"
+          },
+          "device": {
+            "type": "string",
+            "title": "Device",
+            "description": "Device used for inference (cpu/cuda/mps)"
+          },
+          "api_base": {
+            "type": "string",
+            "title": "Api Base",
+            "description": "LLM API base URL"
+          },
+          "instance_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instance Name",
+            "description": "Model instance name from DB (canonical alias)"
+          },
+          "provider_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Model Id",
+            "description": "Provider-specific model identifier"
+          },
+          "config_source": {
+            "type": "string",
+            "title": "Config Source",
+            "description": "Configuration source: db_default, env, or fallback",
+            "default": "env"
+          },
+          "provider_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Name",
+            "description": "LLM provider name (e.g., ollama-local)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "model",
+          "prompt",
+          "latency_ms",
+          "device",
+          "api_base"
+        ],
+        "title": "LLMSmokeTestResponse",
+        "description": "Response from LLM smoke test endpoint."
+      },
+      "ListBuiltinsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "List of manifest objects"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of manifests"
+          },
+          "etag": {
+            "type": "string",
+            "title": "Etag",
+            "description": "ETag for cache validation"
+          },
+          "next_page_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Page Token",
+            "description": "Pagination token (future use)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "etag"
+        ],
+        "title": "ListBuiltinsResponse",
+        "description": "Response for list builtins.\n\nUses standard format {items, total, etag, next_page_token}.\nMaintains backward compatibility via aliases (manifests -> items, count -> total).",
+        "example": {
+          "etag": "abc123def456",
+          "items": [
+            {
+              "id": "uuid",
+              "state": "active",
+              "version": "1.0.0"
+            }
+          ],
+          "total": 1
+        }
+      },
+      "ListHistoryResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "List of activation records"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of activations"
+          },
+          "etag": {
+            "type": "string",
+            "title": "Etag",
+            "description": "ETag for cache validation"
+          },
+          "next_page_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Page Token",
+            "description": "Pagination token (future use)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "etag"
+        ],
+        "title": "ListHistoryResponse",
+        "description": "Response for activation history.\n\nUses standard format {items, total, etag, next_page_token}.\nMaintains backward compatibility via aliases (activations -> items, count -> total).",
+        "example": {
+          "etag": "xyz789abc123",
+          "items": [
+            {
+              "activated_at": "2025-10-13T20:00:00Z",
+              "id": "uuid",
+              "manifest_id": "uuid"
+            }
+          ],
+          "total": 10
+        }
+      },
+      "ListInstancesResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "List of model instance objects"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of instances"
+          },
+          "etag": {
+            "type": "string",
+            "title": "Etag",
+            "description": "ETag for cache validation"
+          },
+          "next_page_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Page Token",
+            "description": "Pagination continuation token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "etag"
+        ],
+        "title": "ListInstancesResponse",
+        "description": "Response for list instances.\n\nUses standard format {items, total, etag, next_page_token}.\nMaintains backward compatibility via aliases (instances -> items, count -> total).",
+        "example": {
+          "etag": "abc123def456",
+          "items": [
+            {
+              "enabled": true,
+              "id": "uuid",
+              "instance_name": "mistral-7b",
+              "loaded": true
+            }
+          ],
+          "total": 4
+        }
+      },
+      "LoadInstanceRequest": {
+        "properties": {
+          "provider_id": {
+            "type": "string",
+            "title": "Provider Id",
+            "description": "Provider UUID (must reference an existing registered provider)"
+          },
+          "instance_name": {
+            "type": "string",
+            "title": "Instance Name",
+            "description": "Human-readable instance name for display and reference"
+          },
+          "model_id": {
+            "type": "string",
+            "title": "Model Id",
+            "description": "Model identifier used by the provider (e.g., 'gpt-4o', 'llama3.2:3b-instruct-q4_K_M')"
+          },
+          "model_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Uri",
+            "description": "Optional model-specific URI (e.g., Azure deployment URL, local file path)"
+          },
+          "tenant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenant Id",
+            "description": "Tenant scope for multi-tenancy (null = global instance accessible to all tenants)"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameters",
+            "description": "Model-specific parameters (temperature, max_tokens, top_p, etc.). Known fields are validated; additional properties allowed for provider-specific settings."
+          },
+          "context_window": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1024.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Window",
+            "description": "Maximum context window size in tokens (null = use provider default)"
+          },
+          "modalities": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modalities",
+            "description": "Supported modalities: \"text\" (chat/completion), \"vision\" (image input), \"audio\" (speech), \"tool\" (function calling)"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Optional human-readable description of this instance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider_id",
+          "instance_name",
+          "model_id"
+        ],
+        "title": "LoadInstanceRequest",
+        "description": "Request to load/create a model instance.\n\nComprehensive schema from model_instances.py with full parameter support.",
+        "examples": [
+          {
+            "description": "Latest GPT-4 Omni model with multimodal capabilities",
+            "summary": "GPT-4o (OpenAI)",
+            "value": {
+              "context_window": 128000,
+              "description": "GPT-4 Omni - multimodal capabilities for production workloads",
+              "instance_name": "gpt-4o-production",
+              "modalities": [
+                "text",
+                "vision",
+                "audio"
+              ],
+              "model_id": "gpt-4o",
+              "parameters": {
+                "frequency_penalty": 0.0,
+                "max_tokens": 4096,
+                "presence_penalty": 0.0,
+                "temperature": 0.7,
+                "top_p": 1.0
+              },
+              "provider_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+            }
+          },
+          {
+            "description": "Self-hosted local model via Ollama",
+            "summary": "Llama 3.2 3B (Ollama)",
+            "value": {
+              "context_window": 8192,
+              "description": "Local Llama 3.2 3B with 4-bit quantization for fast inference",
+              "instance_name": "ollama-llama3.2-3b",
+              "modalities": [
+                "text"
+              ],
+              "model_id": "llama3.2:3b-instruct-q4_K_M",
+              "parameters": {
+                "num_ctx": 8192,
+                "num_predict": 512,
+                "temperature": 0.7
+              },
+              "provider_id": "d4e5f6a7-b8c9-0123-def0-234567890123"
+            }
+          }
+        ]
+      },
+      "LoadInstanceResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Instance ID (UUID)"
+          },
+          "instance_name": {
+            "type": "string",
+            "title": "Instance Name"
+          },
+          "provider_id": {
+            "type": "string",
+            "title": "Provider Id"
+          },
+          "model_id": {
+            "type": "string",
+            "title": "Model Id"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "loaded": {
+            "type": "boolean",
+            "title": "Loaded"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "etag": {
+            "type": "string",
+            "title": "Etag"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "instance_name",
+          "provider_id",
+          "model_id",
+          "enabled",
+          "loaded",
+          "created_at",
+          "etag"
+        ],
+        "title": "LoadInstanceResponse",
+        "description": "Response for instance load operation."
+      },
+      "ManifestActivationRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique record identifier"
+          },
+          "manifest_name": {
+            "type": "string",
+            "title": "Manifest Name",
+            "description": "Name of the manifest"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "description": "Manifest version"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Status: 'staged', 'active', 'rolled_back', 'failed'"
+          },
+          "activated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Activated At",
+            "description": "Activation timestamp (ISO 8601)"
+          },
+          "activated_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activated By",
+            "description": "User or system identifier"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes",
+            "description": "Optional context or reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "manifest_name",
+          "version",
+          "status",
+          "activated_at"
+        ],
+        "title": "ManifestActivationRecord",
+        "description": "Record of a manifest activation/rollback operation.",
+        "example": {
+          "activated_at": "2025-10-21T09:00:00Z",
+          "activated_by": "auth0|68c709969225afe265151ed5",
+          "id": "550e8400-e29b-41d4-a716-446655440000",
+          "manifest_name": "production-builtins",
+          "notes": "Rolled out new model versions",
+          "status": "active",
+          "version": "v1.2.3"
+        }
+      },
+      "ManifestHistoryResponse": {
+        "properties": {
+          "manifests": {
+            "items": {
+              "$ref": "#/components/schemas/ManifestActivationRecord"
+            },
+            "type": "array",
+            "title": "Manifests",
+            "description": "List of manifest activation records"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor",
+            "description": "Cursor for pagination; omit if no more results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "manifests"
+        ],
+        "title": "ManifestHistoryResponse",
+        "description": "Response for GET /admin/processes/history/manifests.",
+        "example": {
+          "manifests": [
+            {
+              "activated_at": "2025-10-21T09:00:00Z",
+              "activated_by": "auth0|admin",
+              "id": "550e8400-e29b-41d4-a716-446655440000",
+              "manifest_name": "production-builtins",
+              "status": "active",
+              "version": "v1.2.3"
+            }
+          ]
+        }
+      },
+      "OrchestrationStepInput": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "step",
+            "title": "Type",
+            "default": "step"
+          },
+          "step_id": {
+            "type": "string",
+            "title": "Step Id",
+            "description": "Step identifier (can be string like '1', '2', 'create-todos')"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action",
+            "description": "Action/tool to execute"
+          },
+          "input": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input",
+            "description": "Input parameters for the action"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "ISO timestamp when step execution started"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "ISO timestamp when step execution finished"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms",
+            "description": "Execution latency in milliseconds"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "step_id",
+          "action"
+        ],
+        "title": "OrchestrationStepInput",
+        "description": "Represents a planned orchestration step."
+      },
+      "OrchestrationStepOutput": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "output",
+            "title": "Type",
+            "default": "output"
+          },
+          "step_id": {
+            "type": "string",
+            "title": "Step Id",
+            "description": "Step identifier matching the input step"
+          },
+          "output": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output",
+            "description": "Output data from step execution"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message if step failed"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "ISO timestamp when step execution started"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "ISO timestamp when step execution finished"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms",
+            "description": "Execution latency in milliseconds"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "step_id"
+        ],
+        "title": "OrchestrationStepOutput",
+        "description": "Represents output from an executed orchestration step."
+      },
+      "Paths": {
+        "properties": {
+          "chat_completions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat Completions",
+            "description": "OpenAI-compatible chat completions path",
+            "default": "/v1/chat/completions"
+          },
+          "completions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completions",
+            "description": "Optional raw completions path (provider-specific)"
+          },
+          "embeddings": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embeddings",
+            "description": "Embeddings endpoint path",
+            "default": "/v1/embeddings"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Paths",
+        "description": "API path configuration for provider endpoints."
+      },
+      "PreviewStagedItem": {
+        "properties": {
+          "manifest_id": {
+            "type": "string",
+            "title": "Manifest Id"
+          },
+          "manifest_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manifest Version"
+          },
+          "model_id": {
+            "type": "string",
+            "title": "Model Id"
+          },
+          "est_mem_mb": {
+            "type": "integer",
+            "title": "Est Mem Mb"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "allowed": {
+            "type": "boolean",
+            "title": "Allowed"
+          },
+          "overridden_by_ui": {
+            "type": "boolean",
+            "title": "Overridden By Ui"
+          },
+          "concurrency_ok": {
+            "type": "boolean",
+            "title": "Concurrency Ok"
+          },
+          "whitelist_ok": {
+            "type": "boolean",
+            "title": "Whitelist Ok"
+          },
+          "resources_ok": {
+            "type": "boolean",
+            "title": "Resources Ok"
+          },
+          "ts": {
+            "type": "string",
+            "title": "Ts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "manifest_id",
+          "model_id",
+          "est_mem_mb",
+          "reason",
+          "allowed",
+          "overridden_by_ui",
+          "concurrency_ok",
+          "whitelist_ok",
+          "resources_ok",
+          "ts"
+        ],
+        "title": "PreviewStagedItem",
+        "description": "A single staged manifest preview item."
+      },
+      "PreviewStagedManifest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "auto_start": {
+            "type": "boolean",
+            "title": "Auto Start"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "'builtin' or 'custom'"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "version",
+          "auto_start",
+          "source"
+        ],
+        "title": "PreviewStagedManifest",
+        "description": "A single manifest that would be deployed."
+      },
+      "ProcessEventRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique event identifier"
+          },
+          "process_id": {
+            "type": "string",
+            "title": "Process Id",
+            "description": "Process identifier"
+          },
+          "artifact": {
+            "type": "string",
+            "title": "Artifact",
+            "description": "Artifact name"
+          },
+          "pid": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pid",
+            "description": "Operating system process ID"
+          },
+          "port": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Port",
+            "description": "Listening port"
+          },
+          "event": {
+            "type": "string",
+            "title": "Event",
+            "description": "Event type: 'start', 'heartbeat', 'stop', 'exit', 'signal'"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Event reason or context"
+          },
+          "exit_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exit Code",
+            "description": "Exit code for 'exit' events"
+          },
+          "ts": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ts",
+            "description": "Event timestamp (ISO 8601)"
+          },
+          "tenant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenant Id",
+            "description": "Tenant identifier"
+          },
+          "manifest_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manifest Version",
+            "description": "Manifest version"
+          },
+          "host": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host",
+            "description": "Hostname or pod identifier"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "process_id",
+          "artifact",
+          "event",
+          "ts"
+        ],
+        "title": "ProcessEventRecord",
+        "description": "Record of a process lifecycle event.",
+        "example": {
+          "artifact": "llama3-8b",
+          "event": "start",
+          "host": "localhost",
+          "id": "660e8400-e29b-41d4-a716-446655440000",
+          "manifest_version": "v1.2.3",
+          "pid": 42789,
+          "port": 8080,
+          "process_id": "builtin:llama3-8b:abc123",
+          "reason": "manifest_activation",
+          "ts": "2025-10-21T10:30:00Z"
+        }
+      },
+      "ProcessHistoryResponse": {
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/ProcessEventRecord"
+            },
+            "type": "array",
+            "title": "Events",
+            "description": "List of process lifecycle events"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor",
+            "description": "Cursor for pagination; omit if no more results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "events"
+        ],
+        "title": "ProcessHistoryResponse",
+        "description": "Response for GET /admin/processes/history/processes.",
+        "example": {
+          "events": [
+            {
+              "artifact": "llama3-8b",
+              "event": "start",
+              "host": "localhost",
+              "id": "660e8400-e29b-41d4-a716-446655440000",
+              "manifest_version": "v1.2.3",
+              "pid": 42789,
+              "port": 8080,
+              "process_id": "builtin:llama3-8b:abc123",
+              "reason": "manifest_activation",
+              "ts": "2025-10-21T10:30:00Z"
+            }
+          ]
+        }
+      },
+      "ProcessInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique process identifier"
+          },
+          "process_id": {
+            "type": "string",
+            "title": "Process Id",
+            "description": "Stable process identifier across restarts"
+          },
+          "artifact": {
+            "type": "string",
+            "title": "Artifact",
+            "description": "Artifact name (e.g., 'llama3-8b', 'whisper-large')"
+          },
+          "pid": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pid",
+            "description": "Operating system process ID"
+          },
+          "port": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Port",
+            "description": "Listening port if applicable"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Process status: 'running', 'starting', 'stopping', 'exited'"
+          },
+          "ts": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ts",
+            "description": "Last update timestamp (ISO 8601)"
+          },
+          "tenant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenant Id",
+            "description": "Tenant identifier if applicable"
+          },
+          "manifest_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manifest Version",
+            "description": "Manifest version that started this process"
+          },
+          "host": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host",
+            "description": "Hostname or pod identifier"
+          },
+          "last_heartbeat": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Heartbeat",
+            "description": "Last heartbeat timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "process_id",
+          "artifact",
+          "status",
+          "ts"
+        ],
+        "title": "ProcessInfo",
+        "description": "Information about a single built-in process.",
+        "example": {
+          "artifact": "llama3-8b",
+          "host": "worker-01",
+          "id": "llama3-8b-1234",
+          "last_heartbeat": "2025-10-21T10:35:00Z",
+          "manifest_version": "v1.2.3",
+          "pid": 42789,
+          "port": 8080,
+          "process_id": "builtin:llama3-8b:abc123",
+          "status": "running",
+          "tenant_id": "tenant-001",
+          "ts": "2025-10-21T10:30:00Z"
+        }
+      },
+      "ProcessListResponse": {
+        "properties": {
+          "processes": {
+            "items": {
+              "$ref": "#/components/schemas/ProcessInfo"
+            },
+            "type": "array",
+            "title": "Processes",
+            "description": "List of active and recent processes"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor",
+            "description": "Cursor for pagination; omit if no more results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "processes"
+        ],
+        "title": "ProcessListResponse",
+        "description": "Response for GET /admin/processes.",
+        "example": {
+          "processes": [
+            {
+              "artifact": "llama3-8b",
+              "host": "localhost",
+              "id": "llama3-8b-1234",
+              "last_heartbeat": "2025-10-21T10:35:00Z",
+              "manifest_version": "v1.2.3",
+              "pid": 42789,
+              "port": 8080,
+              "process_id": "builtin:llama3-8b:abc123",
+              "status": "running",
+              "ts": "2025-10-21T10:30:00Z"
+            }
+          ]
+        }
+      },
+      "Provider": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique provider identifier"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Human-friendly provider name"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ProviderType",
+            "description": "Provider type"
+          },
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url",
+            "description": "HTTP base URL"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Default model identifier"
+          },
+          "tenant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenant Id",
+            "description": "Tenant scope (null for global)"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProviderConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Provider-specific configuration"
+          },
+          "has_api_key": {
+            "type": "boolean",
+            "title": "Has Api Key",
+            "description": "Whether an API key is configured",
+            "default": false
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Created At",
+            "description": "Creation timestamp (RFC3339, ISO8601, or Unix epoch)"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Updated At",
+            "description": "Last update timestamp (RFC3339, ISO8601, or Unix epoch)"
+          },
+          "health": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProviderHealth"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Current health status"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "type",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "Provider",
+        "description": "Canonical Provider schema used for GET/LIST responses."
+      },
+      "ProviderConfig": {
+        "properties": {
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url",
+            "description": "HTTP base URL for the provider"
+          },
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key",
+            "description": "API key (will be redacted in responses)"
+          },
+          "headers": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Headers",
+            "description": "Custom HTTP headers"
+          },
+          "auth": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Authentication configuration"
+          },
+          "timeouts": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Timeouts"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Request timeout settings"
+          },
+          "tls": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TLSConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "TLS/SSL settings"
+          },
+          "paths": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Paths"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Custom API path overrides"
+          },
+          "request_templates": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RequestTemplates"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Request templates"
+          },
+          "response_extract": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponseExtract"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Response extraction config"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "ProviderConfig",
+        "description": "Provider-specific configuration settings.\n\nAccepts arbitrary provider-specific keys to support custom configurations.\nRedaction rules apply to: api_key, headers.authorization, auth.token."
+      },
+      "ProviderHealth": {
+        "properties": {
+          "reachable": {
+            "type": "boolean",
+            "title": "Reachable",
+            "description": "Whether the provider was reachable during last check"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status",
+            "description": "HTTP status code from last health check (e.g., 200, 503)"
+          },
+          "last_check": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Check",
+            "description": "Unix timestamp of last health check"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms",
+            "description": "Response latency in milliseconds"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message if unreachable"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "reachable"
+        ],
+        "title": "ProviderHealth",
+        "description": "Provider health/reachability status.\n\nHealth information is cached from the last health check and remains stable\nacross GET reads unless explicitly refreshed. Health checks are performed:\n- On provider registration (initial check)\n- Periodically by background workers (if configured)\n- Optionally after PATCH operations (implementation-dependent)\n\n**Source**: Cached result from last health check, not live probe."
+      },
+      "ProviderListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Provider"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "List of providers"
+          },
+          "next_page_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Page Token",
+            "description": "Token for next page (if available)"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total",
+            "description": "Total count of providers (optional)"
+          }
+        },
+        "type": "object",
+        "title": "ProviderListResponse",
+        "description": "Paginated list of providers."
+      },
+      "ProviderType": {
+        "type": "string",
+        "enum": [
+          "openai_compatible",
+          "custom"
+        ],
+        "title": "ProviderType",
+        "description": "Allowed provider types for LLM integration."
+      },
+      "RegisterProviderRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "description": "Provider name",
+            "examples": [
+              "production-openai",
+              "local-ollama"
+            ]
+          },
+          "type": {
+            "$ref": "#/components/schemas/ProviderType",
+            "description": "Provider type",
+            "examples": [
+              "openai_compatible"
+            ]
+          },
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url",
+            "description": "HTTP base URL (required for openai_compatible)",
+            "examples": [
+              "https://api.openai.com/v1",
+              "http://localhost:11434/v1"
+            ]
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Default model identifier",
+            "examples": [
+              "gpt-4",
+              "llama2"
+            ]
+          },
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key",
+            "description": "API key for authentication",
+            "examples": [
+              "sk-proj-..."
+            ]
+          },
+          "tenant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenant Id",
+            "description": "Tenant scope (null for global)",
+            "examples": [
+              null,
+              "tenant-123"
+            ]
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config",
+            "description": "Provider-specific configuration (paths, timeouts, etc.)",
+            "examples": [
+              {
+                "timeouts": {
+                  "connect": 5.0,
+                  "read": 30.0
+                }
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "type"
+        ],
+        "title": "RegisterProviderRequest",
+        "description": "Request to register a new provider.",
+        "examples": [
+          {
+            "api_key": "sk-proj-...",
+            "base_url": "https://api.openai.com/v1",
+            "config": {
+              "headers": {
+                "X-Custom-Header": "value"
+              },
+              "timeouts": {
+                "connect": 5.0,
+                "read": 30.0
+              }
+            },
+            "model": "gpt-4",
+            "name": "production-openai",
+            "type": "openai_compatible"
+          },
+          {
+            "base_url": "http://localhost:11434/v1",
+            "config": {
+              "timeouts": {
+                "connect": 2.0,
+                "read": 60.0
+              }
+            },
+            "model": "llama2",
+            "name": "local-ollama",
+            "tenant_id": "tenant-123",
+            "type": "openai_compatible"
+          }
+        ]
+      },
+      "RequestTemplates": {
+        "properties": {
+          "chat": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat",
+            "description": "Template for chat-completions style request"
+          },
+          "completion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion",
+            "description": "Legacy singular completion template"
+          },
+          "completions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completions",
+            "description": "Preferred template for completions requests"
+          },
+          "embeddings": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embeddings",
+            "description": "Template for embeddings request body"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "RequestTemplates",
+        "description": "Request body templates for different operation types."
+      },
+      "ResponseExtract": {
+        "properties": {
+          "text_jmespath": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text Jmespath",
+            "description": "JMESPath to extract text output (first choice)"
+          },
+          "output": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output",
+            "description": "Alias for text extraction when spec uses response_extract.completions.output"
+          },
+          "usage_prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usage Prompt",
+            "description": "JMESPath for prompt tokens"
+          },
+          "usage_completion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usage Completion",
+            "description": "JMESPath for completion tokens"
+          },
+          "usage_total": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usage Total",
+            "description": "JMESPath for total tokens"
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "JMESPath for embedding vector"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "ResponseExtract",
+        "description": "JMESPath extractors for parsing provider responses."
+      },
+      "RollbackManifestRequest": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Optional reason for rollback"
+          }
+        },
+        "type": "object",
+        "title": "RollbackManifestRequest",
+        "description": "Request to rollback to previous manifest."
+      },
+      "RollbackManifestResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
+          },
+          "trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trace Id"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message",
+          "details"
+        ],
+        "title": "RollbackManifestResponse",
+        "description": "Response for rollback operation."
+      },
+      "RunResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Run Id",
+            "description": "Run identifier"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id",
+            "description": "Associated session ID"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "Owner user ID"
+          },
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id",
+            "description": "Tenant ID"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Model name used"
+          },
+          "manager": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager",
+            "description": "Manager name used"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms",
+            "description": "Run latency in milliseconds"
+          },
+          "trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trace Id",
+            "description": "Stable provenance trace ID (persists across requests)"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id",
+            "description": "HTTP request ID (matches X-Request-Id header)"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id",
+            "description": "Provenance event ID"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Run status (running, succeeded, failed, cancelled)"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At",
+            "description": "Start timestamp"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "Finish timestamp"
+          },
+          "output": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output",
+            "description": "Run output (structured object or list, never empty string)"
+          },
+          "steps": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/OrchestrationStepInput"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OrchestrationStepOutput"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Steps",
+            "description": "Orchestration steps from execution (inputs and outputs)"
+          },
+          "todos": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TodoItem"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Todos",
+            "description": "TODO list generated by agent"
+          },
+          "metrics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExecutionMetrics"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execution performance metrics"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Arbitrary metadata provided with the run request"
+          },
+          "errors": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errors",
+            "description": "List of errors encountered during execution"
+          },
+          "warnings": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warnings",
+            "description": "List of non-fatal warnings encountered during execution"
+          },
+          "degraded": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Degraded",
+            "description": "True if run succeeded but with degraded quality (e.g., LLM fallback used). Allows dashboards to distinguish clean success from fallback-success."
+          },
+          "used_fallback": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Used Fallback",
+            "description": "True if deterministic fallback was used instead of LLM response. Specifically indicates memgraph_response_builder or similar fallback paths."
+          },
+          "total_llm_calls": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Llm Calls",
+            "description": "Total number of LLM calls made (rollup)"
+          },
+          "llm_call_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Call Count",
+            "description": "Number of LLM calls made during this run (excludes warmup)"
+          },
+          "tool_calls": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Calls",
+            "description": "Total number of tool calls made (rollup)"
+          },
+          "tool_errors": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Errors",
+            "description": "Total number of tool errors encountered (rollup)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "user_id",
+          "tenant_id",
+          "status",
+          "started_at"
+        ],
+        "title": "RunResponse",
+        "description": "Response containing run details with properly typed orchestration artifacts."
+      },
+      "SessionListItem": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id",
+            "description": "Session identifier"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Session status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last update timestamp"
+          },
+          "last_step_seq": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Step Seq",
+            "description": "Sequence number of last step"
+          },
+          "manager": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager",
+            "description": "Manager name if configured"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SessionListItem",
+        "description": "Minimal session info for list responses."
+      },
+      "SessionListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SessionListItem"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Session items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor",
+            "description": "Opaque cursor for next page"
+          }
+        },
+        "type": "object",
+        "title": "SessionListResponse",
+        "description": "Paginated list of sessions."
+      },
+      "SessionResponse": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id",
+            "description": "Session identifier"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "Owner user ID"
+          },
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id",
+            "description": "Tenant ID"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Session status (active, completed, cancelled, failed)"
+          },
+          "manager": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager",
+            "description": "Manager/planner LLM name if configured"
+          },
+          "preferred_workers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Workers",
+            "description": "Preferred worker LLM names"
+          },
+          "llm_preferences": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Preferences",
+            "description": "Tool -> LLM preferences"
+          },
+          "agent_role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Role",
+            "description": "Agent role"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "Allowed tools"
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "Sampling temperature"
+          },
+          "max_steps": {
+            "type": "integer",
+            "title": "Max Steps",
+            "description": "Maximum steps"
+          },
+          "session_metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Session Metadata",
+            "description": "Session metadata"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last update timestamp"
+          },
+          "last_step_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Step Id",
+            "description": "ID of the last step in this session"
+          },
+          "etag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Etag",
+            "description": "ETag for caching"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "user_id",
+          "tenant_id",
+          "status",
+          "temperature",
+          "max_steps",
+          "session_metadata",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SessionResponse",
+        "description": "Response containing session details."
+      },
+      "SetDefaultProviderRequest": {
+        "properties": {
+          "provider_id": {
+            "type": "string",
+            "title": "Provider Id",
+            "description": "Provider ID to set as default"
+          },
+          "tenant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenant Id",
+            "description": "Tenant scope (null for global default)"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider_id"
+        ],
+        "title": "SetDefaultProviderRequest",
+        "description": "Request to set a provider as default."
+      },
+      "SetDefaultRequest": {
+        "properties": {
+          "chat": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat",
+            "description": "Chat model selection (preferred: {\"instance_id\": \"<uuid>\"} or legacy: {\"name\": \"<instance-name>\"})"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "DEPRECATED: Top-level instance name (use chat.instance_id instead)"
+          },
+          "instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instance Id",
+            "description": "DEPRECATED: Top-level instance ID (use chat.instance_id instead)"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SetDefaultRequest",
+        "description": "Request to set default model.\n\n**IMPORTANT:** Send the raw JSON from the example. Do NOT wrap in summary/description/value.\n\nPreferred format: {\"chat\": {\"instance_id\": \"<uuid>\"}}\nLegacy formats supported for backward compatibility."
+      },
+      "SetDefaultResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Default model updated successfully"
+          },
+          "instance_id": {
+            "type": "string",
+            "title": "Instance Id"
+          },
+          "instance_name": {
+            "type": "string",
+            "title": "Instance Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "instance_id",
+          "instance_name"
+        ],
+        "title": "SetDefaultResponse",
+        "description": "Response for set default operation."
+      },
+      "StageManifestRequest": {
+        "properties": {
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url",
+            "description": "HTTPS URL to fetch manifest JSON from (mutually exclusive with inline)"
+          },
+          "inline": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inline",
+            "description": "Inline manifest content (mutually exclusive with url)"
+          }
+        },
+        "type": "object",
+        "title": "StageManifestRequest",
+        "description": "Request to stage a remote manifest or inline content."
+      },
+      "StageManifestResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
+          },
+          "trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trace Id"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message",
+          "details"
+        ],
+        "title": "StageManifestResponse",
+        "description": "Response for staging operation."
+      },
+      "StepListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StepResponse"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Step items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor",
+            "description": "Opaque cursor for next page"
+          }
+        },
+        "type": "object",
+        "title": "StepListResponse",
+        "description": "Paginated list of steps."
+      },
+      "StepResponse": {
+        "properties": {
+          "step_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Step Id",
+            "description": "Step identifier"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id",
+            "description": "Session identifier"
+          },
+          "seq": {
+            "type": "integer",
+            "title": "Seq",
+            "description": "Sequence number within session"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Step type"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message"
+          },
+          "tool": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool",
+            "description": "Tool name"
+          },
+          "input": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input",
+            "description": "Input payload"
+          },
+          "output": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output",
+            "description": "Output payload"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Step status (queued, running, completed, failed, cancelled)"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error details if failed"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At",
+            "description": "Completion timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "step_id",
+          "session_id",
+          "seq",
+          "type",
+          "status",
+          "created_at"
+        ],
+        "title": "StepResponse",
+        "description": "Response containing step details from database."
+      },
+      "TLSConfig": {
+        "properties": {
+          "verify": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verify",
+            "description": "Whether to verify SSL certificates",
+            "default": true
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "TLSConfig",
+        "description": "TLS/SSL configuration for provider connections."
+      },
+      "Tenant": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique tenant identifier (server-generated)"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Human-friendly tenant name"
+          },
+          "admin_email": {
+            "type": "string",
+            "title": "Admin Email",
+            "description": "Contact email for tenant administrator (RFC 5322)"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "description": "Arbitrary tenant metadata (permissive, preserved on readback)"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At",
+            "description": "Creation timestamp (ISO 8601)"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At",
+            "description": "Last update timestamp (ISO 8601)"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "admin_email",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "Tenant",
+        "description": "Canonical Tenant schema used for GET/LIST responses."
+      },
+      "TenantListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Tenant"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "List of tenants"
+          },
+          "next_page_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Page Token",
+            "description": "Token for next page (if available)"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total",
+            "description": "Total count of tenants (optional)"
+          }
+        },
+        "type": "object",
+        "title": "TenantListResponse",
+        "description": "Paginated list of tenants."
+      },
+      "TestInstanceRequest": {
+        "properties": {
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt",
+            "description": "Test prompt to send to the model (converted to user message)"
+          },
+          "messages": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Messages",
+            "description": "Pre-formatted chat messages (alternative to prompt)"
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 2.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature",
+            "description": "Sampling temperature (0.0 = deterministic, default 0.0)",
+            "default": 0.0
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 8000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens",
+            "description": "Maximum tokens to generate (default 32 for concise tests)",
+            "default": 32
+          },
+          "stop": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop",
+            "description": "Stop sequences (if None, uses smart defaults based on one_sentence)"
+          },
+          "one_sentence": {
+            "type": "boolean",
+            "title": "One Sentence",
+            "description": "Enforce single-sentence responses (adds stop=[\"\\n\"] and system instruction)",
+            "default": true
+          },
+          "no_system": {
+            "type": "boolean",
+            "title": "No System",
+            "description": "Skip system message injection (advanced use only)",
+            "default": false
+          },
+          "format_hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Format Hint",
+            "description": "Format hint for output (e.g., 'poem', 'list')"
+          }
+        },
+        "type": "object",
+        "title": "TestInstanceRequest",
+        "description": "Request to test instance with prompt (alternative to TestRequest).",
+        "examples": [
+          {
+            "description": "Deterministic test with temperature=0.0 for consistent results",
+            "summary": "Factual deterministic",
+            "value": {
+              "max_tokens": 32,
+              "one_sentence": true,
+              "prompt": "What is the capital of France?",
+              "temperature": 0.0
+            }
+          },
+          {
+            "description": "Quick test with minimal tokens for concise response",
+            "summary": "Short answer",
+            "value": {
+              "max_tokens": 64,
+              "one_sentence": true,
+              "prompt": "Explain quantum computing in one sentence.",
+              "temperature": 0.0
+            }
+          }
+        ]
+      },
+      "TestInstanceResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "output": {
+            "type": "string",
+            "title": "Output"
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usage"
+          },
+          "trace_id": {
+            "type": "string",
+            "title": "Trace Id"
+          },
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider",
+            "description": "Provider used for the request"
+          },
+          "provider_base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Base Url",
+            "description": "Provider base URL for debugging"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms",
+            "description": "Request latency in milliseconds"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameters",
+            "description": "Actual parameters used for the test"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "output",
+          "trace_id",
+          "event_id"
+        ],
+        "title": "TestInstanceResponse",
+        "description": "Response for instance test.",
+        "example": {
+          "event_id": "event-7f8e9d0a1b2c3d4e",
+          "latency_ms": 1234.5,
+          "model": "llama3.2:3b-instruct",
+          "output": "Quantum computing uses quantum-mechanical phenomena to perform calculations exponentially faster than classical computers.",
+          "parameters": {
+            "max_tokens": 32,
+            "temperature": 0.0
+          },
+          "provider": "ollama-local",
+          "provider_base_url": "http://ollama:11434",
+          "trace_id": "trace-a1b2c3d4e5f6g7h8",
+          "usage": {
+            "completion_tokens": 17,
+            "prompt_tokens": 15,
+            "total_tokens": 32
+          }
+        }
+      },
+      "Timeouts": {
+        "properties": {
+          "connect": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Connect",
+            "description": "Connection timeout in seconds",
+            "default": 2.0
+          },
+          "read": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read",
+            "description": "Read timeout in seconds",
+            "default": 30.0
+          },
+          "write": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Write",
+            "description": "Write timeout in seconds",
+            "default": 10.0
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Timeouts",
+        "description": "HTTP timeout configuration for provider requests."
+      },
+      "TodoItem": {
+        "properties": {
+          "task": {
+            "type": "string",
+            "title": "Task",
+            "description": "Description of the task to complete"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "in_progress",
+                  "completed",
+                  "failed"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status",
+            "description": "Current status of the TODO item"
+          },
+          "expect_evidence": {
+            "type": "boolean",
+            "title": "Expect Evidence",
+            "description": "Whether this TODO is expected to produce external evidence (skip warnings when False)",
+            "default": true
+          },
+          "evidence": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence",
+            "description": "Optional evidence entries (step ids, actions, or summaries) that support completion"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta",
+            "description": "Optional metadata to guide execution (tool hints, modes, prompt ids)"
+          },
+          "requires_llm_planning": {
+            "type": "boolean",
+            "title": "Requires Llm Planning",
+            "description": "When false, the orchestrator should execute this TODO directly without LLM planning",
+            "default": true
+          },
+          "nested_steps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Nested Steps",
+            "description": "Nested step descriptions (e.g., from LLM JSON with step_description fields) for tool validation"
+          },
+          "fallback_mode": {
+            "type": "boolean",
+            "title": "Fallback Mode",
+            "description": "When true, this TODO is expected to complete without tools (fallback/LLM-only mode)",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "task"
+        ],
+        "title": "TodoItem",
+        "description": "Represents a TODO task in the agent's plan."
+      },
+      "ToolCallMetrics": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Tool name"
+          },
+          "latency_ms": {
+            "type": "integer",
+            "title": "Latency Ms",
+            "description": "Execution latency in milliseconds"
+          },
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "Whether the tool call succeeded"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "latency_ms",
+          "success"
+        ],
+        "title": "ToolCallMetrics",
+        "description": "Metrics for a single tool invocation."
+      },
+      "ToolInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique tool identifier with version (e.g., \"graph.query@1\")"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Short dotted name (e.g., \"graph.query\")"
+          },
+          "module": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Module",
+            "description": "Python import path (admin only; redacted for non-admin)"
+          },
+          "entrypoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entrypoint",
+            "description": "Callable used, if detected"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Short human-friendly description of the tool"
+          },
+          "input_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Schema",
+            "description": "JSON Schema for invocation input (never null for invokable)"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scopes",
+            "description": "Permissions required to invoke (e.g., ['tools:basic'])"
+          },
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Capabilities",
+            "description": "Tool capabilities (e.g., ['reads_db', 'writes_db'])"
+          },
+          "namespace": {
+            "type": "boolean",
+            "title": "Namespace",
+            "description": "True when this record represents a non-invokable namespace",
+            "default": false
+          },
+          "invokable": {
+            "type": "boolean",
+            "title": "Invokable",
+            "description": "True when the tool can be invoked via entrypoint",
+            "default": false
+          },
+          "long_running": {
+            "type": "boolean",
+            "title": "Long Running",
+            "description": "True if tool is expected to run long (async/job)",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ToolInfo",
+        "description": "Information about a registered or discovered tool."
+      },
+      "ToolInvokeRequest": {
+        "properties": {
+          "args": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Args",
+            "description": "Keyword arguments passed to the tool"
+          },
+          "timeout_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 3600.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timeout Seconds",
+            "description": "Optional execution timeout in seconds (1-3600)"
+          }
+        },
+        "type": "object",
+        "title": "ToolInvokeRequest",
+        "description": "Request to invoke a tool."
+      },
+      "ToolInvokeResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Tool name invoked"
+          },
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "description": "Whether the invocation completed successfully"
+          },
+          "result": {
+            "title": "Result",
+            "description": "Tool-specific result payload"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message when invocation failed"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "title": "Duration Ms",
+            "description": "Observed duration of the invocation in milliseconds"
+          },
+          "trace_id": {
+            "type": "string",
+            "title": "Trace Id",
+            "description": "Provenance trace identifier"
+          },
+          "event_id": {
+            "type": "string",
+            "title": "Event Id",
+            "description": "Provenance event identifier"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "ok",
+          "duration_ms",
+          "trace_id",
+          "event_id"
+        ],
+        "title": "ToolInvokeResponse",
+        "description": "Response from tool invocation."
+      },
+      "ToolsListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ToolInfo"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "List of tools"
+          },
+          "next_page_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Page Token",
+            "description": "Token for next page (if available)"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total",
+            "description": "Total items available (best-effort)"
+          },
+          "has_more": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has More",
+            "description": "Whether more pages are available"
+          }
+        },
+        "type": "object",
+        "title": "ToolsListResponse",
+        "description": "Paginated list of available tools."
+      },
+      "ToolsSmokeTestResponse": {
+        "properties": {
+          "data_quality": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data Quality"
+          },
+          "graph_schema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Graph Schema"
+          },
+          "principal_used": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Principal Used"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data_quality",
+          "graph_schema",
+          "principal_used"
+        ],
+        "title": "ToolsSmokeTestResponse"
+      },
+      "UpdateProviderRequest": {
+        "properties": {
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url",
+            "description": "Updated base URL"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Updated default model"
+          },
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key",
+            "description": "Updated API key"
+          },
+          "tenant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenant Id",
+            "description": "Updated tenant scope"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config",
+            "description": "Updated configuration (merged)"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UpdateProviderRequest",
+        "description": "Request to update an existing provider."
+      },
+      "UpdateTenantRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Updated display name"
+          },
+          "admin_email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Email",
+            "description": "Updated admin contact email (must be valid RFC 5322 email)"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Metadata updates (deep-merged with existing metadata)"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UpdateTenantRequest",
+        "description": "Request to update an existing tenant (partial update)."
+      },
+      "UserInfo": {
+        "properties": {
+          "sub": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sub",
+            "description": "Subject (stable principal identifier)"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username",
+            "description": "Deprecated legacy username (unused for auth)"
+          },
+          "tenant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenant Id",
+            "description": "Resolved tenant id (from header/middleware)"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scopes",
+            "description": "Granted scopes (when enforced elsewhere)"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Roles",
+            "description": "Roles array from token if present"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Permissions",
+            "description": "Effective permissions (admin routes only)"
+          }
+        },
+        "type": "object",
+        "title": "UserInfo",
+        "description": "User identity and permission information extracted from JWT."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "src__routers__admin_ops__AutoStartOverrideRequest": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Whether to enable auto-start"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Note",
+            "description": "Optional explanation for this override",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled"
+        ],
+        "title": "AutoStartOverrideRequest",
+        "description": "Request to override auto-start behavior for built-in models."
+      },
+      "src__routers__admin_ops__AutoStartOverrideResponse": {
+        "properties": {
+          "allowed": {
+            "type": "boolean",
+            "title": "Allowed",
+            "description": "Whether the override feature is enabled"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Current auto-start state"
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "title": "Ttl Seconds",
+            "description": "Time-to-live in seconds (0 if feature disabled or error)"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error indicator if cache unavailable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "allowed",
+          "enabled",
+          "ttl_seconds"
+        ],
+        "title": "AutoStartOverrideResponse",
+        "description": "Response from auto-start override operation."
+      },
+      "src__routers__admin_ops__PreviewStagedResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PreviewStagedManifest"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "override_active": {
+            "type": "boolean",
+            "title": "Override Active",
+            "description": "Whether auto-start override is currently active"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "count",
+          "override_active",
+          "timestamp"
+        ],
+        "title": "PreviewStagedResponse",
+        "description": "Response from preview-staged operation."
+      },
+      "src__routers__internal_ops__AutoStartOverrideRequest": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Enable or disable auto-start override"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note",
+            "description": "Optional reason/note for this override (max 200 chars)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled"
+        ],
+        "title": "AutoStartOverrideRequest",
+        "description": "Request to set auto-start override."
+      },
+      "src__routers__internal_ops__AutoStartOverrideResponse": {
+        "properties": {
+          "allowed": {
+            "type": "boolean",
+            "title": "Allowed",
+            "description": "Whether UI override is allowed by configuration"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Current override value (false if not allowed)"
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "title": "Ttl Seconds",
+            "description": "TTL of the override in seconds (0 if not allowed or on error)"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error code if operation failed gracefully (e.g., 'cache_unavailable')"
+          }
+        },
+        "type": "object",
+        "required": [
+          "allowed",
+          "enabled",
+          "ttl_seconds"
+        ],
+        "title": "AutoStartOverrideResponse",
+        "description": "Response from setting auto-start override."
+      },
+      "src__routers__internal_ops__PreviewStagedResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PreviewStagedItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "count",
+          "timestamp"
+        ],
+        "title": "PreviewStagedResponse",
+        "description": "Response from previewing staged manifests."
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "extensions": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "example": {
+          "type": "about:blank",
+          "title": "Internal Server Error",
+          "status": 500,
+          "detail": "An unexpected error occurred",
+          "extensions": {
+            "correlation_id": "corr-abc123",
+            "timestamp": "2025-10-20T15:30:45.123456Z"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad Request",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            },
+            "example": {
+              "type": "https://httpstatuses.com/400",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "Invalid request parameters or body",
+              "extensions": {
+                "correlation_id": "corr-xyz789",
+                "timestamp": "2025-10-20T15:30:45.123456Z"
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            },
+            "example": {
+              "type": "https://httpstatuses.com/401",
+              "title": "Unauthorized",
+              "status": 401,
+              "detail": "Missing or invalid authentication token",
+              "extensions": {
+                "correlation_id": "corr-xyz789",
+                "timestamp": "2025-10-20T15:30:45.123456Z"
+              }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Forbidden",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            },
+            "example": {
+              "type": "https://httpstatuses.com/403",
+              "title": "Forbidden",
+              "status": 403,
+              "detail": "Authenticated but insufficient permissions",
+              "extensions": {
+                "correlation_id": "corr-xyz789",
+                "timestamp": "2025-10-20T15:30:45.123456Z"
+              }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not Found",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            },
+            "example": {
+              "type": "https://httpstatuses.com/404",
+              "title": "Not Found",
+              "status": 404,
+              "detail": "Requested resource does not exist",
+              "extensions": {
+                "correlation_id": "corr-xyz789",
+                "timestamp": "2025-10-20T15:30:45.123456Z"
+              }
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "Validation Error",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            },
+            "example": {
+              "type": "https://httpstatuses.com/422",
+              "title": "Validation Error",
+              "status": 422,
+              "detail": "Request body failed validation",
+              "extensions": {
+                "correlation_id": "corr-xyz789",
+                "timestamp": "2025-10-20T15:30:45.123456Z"
+              }
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Too Many Requests",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            },
+            "example": {
+              "type": "https://httpstatuses.com/429",
+              "title": "Too Many Requests",
+              "status": 429,
+              "detail": "Rate limit exceeded",
+              "extensions": {
+                "correlation_id": "corr-xyz789",
+                "timestamp": "2025-10-20T15:30:45.123456Z"
+              }
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Internal Server Error",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            },
+            "example": {
+              "type": "https://httpstatuses.com/500",
+              "title": "Internal Server Error",
+              "status": 500,
+              "detail": "An unexpected error occurred",
+              "extensions": {
+                "correlation_id": "corr-xyz789",
+                "timestamp": "2025-10-20T15:30:45.123456Z"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "health"
+    }
+  ],
+  "servers": [
+    {
+      "url": "/v2"
+    },
+    {
+      "url": "/v1"
+    }
+  ],
+  "security": [
+    {
+      "HTTPBearer": []
+    }
+  ]
+}

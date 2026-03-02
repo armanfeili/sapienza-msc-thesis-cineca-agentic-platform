@@ -1,0 +1,1057 @@
+\babel@toc {english}{}\relax 
+\contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Motivation and Context}{1}{section.1.1}%
+\contentsline {subsection}{\numberline {1.1.1}The Rise of AI Agents in Enterprise Applications}{1}{subsection.1.1.1}%
+\contentsline {subsection}{\numberline {1.1.2}The High-Performance Computing Context}{1}{subsection.1.1.2}%
+\contentsline {subsection}{\numberline {1.1.3}CINECA: Italy's National Supercomputing Center}{2}{subsection.1.1.3}%
+\contentsline {subsection}{\numberline {1.1.4}The Gap Between Research and Production}{3}{subsection.1.1.4}%
+\contentsline {subsection}{\numberline {1.1.5}The Model Context Protocol Opportunity}{3}{subsection.1.1.5}%
+\contentsline {subsection}{\numberline {1.1.6}Chapter Summary}{3}{subsection.1.1.6}%
+\contentsline {section}{\numberline {1.2}Primary Use Cases and Stakeholders}{4}{section.1.2}%
+\contentsline {subsection}{\numberline {1.2.1}Stakeholder Analysis}{4}{subsection.1.2.1}%
+\contentsline {subsubsection}{End Users (Researchers and Analysts)}{4}{section*.2}%
+\contentsline {paragraph}{Key Requirements:}{4}{section*.3}%
+\contentsline {subsubsection}{Administrators and Operators}{5}{section*.4}%
+\contentsline {paragraph}{Key Requirements:}{5}{section*.5}%
+\contentsline {subsubsection}{Security and Compliance Officers}{5}{section*.6}%
+\contentsline {paragraph}{Key Requirements:}{5}{section*.7}%
+\contentsline {subsubsection}{Developers and Integrators}{6}{section*.8}%
+\contentsline {paragraph}{Key Requirements:}{6}{section*.9}%
+\contentsline {subsection}{\numberline {1.2.2}Core Use Cases}{6}{subsection.1.2.2}%
+\contentsline {subsubsection}{UC1: Conversational Agent Interaction (Chat)}{6}{section*.10}%
+\contentsline {paragraph}{Description:}{6}{section*.11}%
+\contentsline {paragraph}{Actors:}{6}{section*.12}%
+\contentsline {paragraph}{Flow:}{6}{section*.13}%
+\contentsline {paragraph}{Success Criteria:}{7}{section*.14}%
+\contentsline {subsubsection}{UC2: Knowledge Graph Question Answering (Graph Q\&A)}{7}{section*.15}%
+\contentsline {paragraph}{Description:}{7}{section*.16}%
+\contentsline {paragraph}{Actors:}{7}{section*.17}%
+\contentsline {paragraph}{Flow:}{7}{section*.18}%
+\contentsline {paragraph}{Success Criteria:}{7}{section*.19}%
+\contentsline {subsubsection}{UC3: Long-Running Background Jobs (Workflow B)}{7}{section*.20}%
+\contentsline {paragraph}{Description:}{7}{section*.21}%
+\contentsline {paragraph}{Actors:}{8}{section*.22}%
+\contentsline {paragraph}{Flow:}{8}{section*.23}%
+\contentsline {paragraph}{Success Criteria:}{8}{section*.24}%
+\contentsline {subsubsection}{UC4: System Monitoring and Administration}{8}{section*.25}%
+\contentsline {paragraph}{Description:}{8}{section*.26}%
+\contentsline {paragraph}{Actors:}{8}{section*.27}%
+\contentsline {paragraph}{Flow:}{9}{section*.28}%
+\contentsline {paragraph}{Success Criteria:}{9}{section*.29}%
+\contentsline {subsubsection}{UC5: Tool Discovery and Invocation}{9}{section*.30}%
+\contentsline {paragraph}{Description:}{9}{section*.31}%
+\contentsline {paragraph}{Actors:}{9}{section*.32}%
+\contentsline {paragraph}{Flow:}{9}{section*.33}%
+\contentsline {paragraph}{Success Criteria:}{9}{section*.34}%
+\contentsline {subsection}{\numberline {1.2.3}Use Case Prioritization}{10}{subsection.1.2.3}%
+\contentsline {subsection}{\numberline {1.2.4}User Interface Mapping}{10}{subsection.1.2.4}%
+\contentsline {section}{\numberline {1.3}Industrial and Institutional Context}{10}{section.1.3}%
+\contentsline {subsection}{\numberline {1.3.1}CINECA Organizational Profile}{10}{subsection.1.3.1}%
+\contentsline {subsection}{\numberline {1.3.2}High-Performance Computing Environment Characteristics}{11}{subsection.1.3.2}%
+\contentsline {paragraph}{Resource Heterogeneity:}{11}{section*.36}%
+\contentsline {paragraph}{Job Scheduling Complexity:}{11}{section*.37}%
+\contentsline {paragraph}{Data Sensitivity Spectrum:}{11}{section*.38}%
+\contentsline {paragraph}{Multi-Institutional Collaboration:}{11}{section*.39}%
+\contentsline {paragraph}{Long-Running Workflows:}{11}{section*.40}%
+\contentsline {subsection}{\numberline {1.3.3}Institutional Constraints}{11}{subsection.1.3.3}%
+\contentsline {subsubsection}{Security and Compliance Requirements}{12}{section*.41}%
+\contentsline {subsubsection}{Multi-Tenancy Mandate}{12}{section*.42}%
+\contentsline {subsubsection}{Infrastructure Integration Requirements}{12}{section*.43}%
+\contentsline {subsubsection}{Operational Excellence Expectations}{13}{section*.44}%
+\contentsline {subsection}{\numberline {1.3.4}Bioinformatics Application Domain}{13}{subsection.1.3.4}%
+\contentsline {paragraph}{Knowledge Graph Queries:}{13}{section*.45}%
+\contentsline {paragraph}{Workflow Orchestration:}{13}{section*.46}%
+\contentsline {paragraph}{Data Privacy:}{13}{section*.47}%
+\contentsline {paragraph}{Reproducibility:}{13}{section*.48}%
+\contentsline {subsection}{\numberline {1.3.5}Enterprise Context Beyond CINECA}{13}{subsection.1.3.5}%
+\contentsline {subsection}{\numberline {1.3.6}Technology Environment}{14}{subsection.1.3.6}%
+\contentsline {section}{\numberline {1.4}Problem Statement}{14}{section.1.4}%
+\contentsline {subsection}{\numberline {1.4.1}The Production Deployment Gap}{14}{subsection.1.4.1}%
+\contentsline {subsection}{\numberline {1.4.2}Challenge 1: Security and Access Control}{14}{subsection.1.4.2}%
+\contentsline {paragraph}{Multi-Layer Authentication:}{15}{section*.49}%
+\contentsline {paragraph}{Fine-Grained Authorization:}{15}{section*.50}%
+\contentsline {paragraph}{Tool-Level Security:}{15}{section*.51}%
+\contentsline {paragraph}{Audit and Compliance:}{15}{section*.52}%
+\contentsline {subsection}{\numberline {1.4.3}Challenge 2: Multi-Tenancy Requirements}{15}{subsection.1.4.3}%
+\contentsline {paragraph}{Data Isolation:}{15}{section*.53}%
+\contentsline {paragraph}{Configuration Isolation:}{15}{section*.54}%
+\contentsline {paragraph}{Resource Isolation:}{15}{section*.55}%
+\contentsline {paragraph}{Administrative Delegation:}{15}{section*.56}%
+\contentsline {subsection}{\numberline {1.4.4}Challenge 3: Knowledge Graph Integration}{16}{subsection.1.4.4}%
+\contentsline {paragraph}{Natural Language to Query Translation:}{16}{section*.57}%
+\contentsline {paragraph}{Query Safety:}{16}{section*.58}%
+\contentsline {paragraph}{Result Synthesis:}{16}{section*.59}%
+\contentsline {subsection}{\numberline {1.4.5}Challenge 4: Operational Reliability}{16}{subsection.1.4.5}%
+\contentsline {paragraph}{Health Monitoring:}{16}{section*.60}%
+\contentsline {paragraph}{Observability:}{16}{section*.61}%
+\contentsline {paragraph}{Graceful Degradation:}{17}{section*.62}%
+\contentsline {paragraph}{Long-Running Operations:}{17}{section*.63}%
+\contentsline {subsection}{\numberline {1.4.6}Challenge 5: LLM Provider Management}{17}{subsection.1.4.6}%
+\contentsline {paragraph}{Provider Abstraction:}{17}{section*.64}%
+\contentsline {paragraph}{Resilience:}{17}{section*.65}%
+\contentsline {paragraph}{Cost Management:}{17}{section*.66}%
+\contentsline {paragraph}{Model Selection:}{17}{section*.67}%
+\contentsline {subsection}{\numberline {1.4.7}Challenge 6: Tool Ecosystem Extensibility}{18}{subsection.1.4.7}%
+\contentsline {paragraph}{Standardized Tool Protocol:}{18}{section*.68}%
+\contentsline {paragraph}{Tool Authorization:}{18}{section*.69}%
+\contentsline {paragraph}{Tool Lifecycle:}{18}{section*.70}%
+\contentsline {subsection}{\numberline {1.4.8}Problem Summary}{18}{subsection.1.4.8}%
+\contentsline {section}{\numberline {1.5}Research Objectives}{18}{section.1.5}%
+\contentsline {subsection}{\numberline {1.5.1}Primary Objective}{19}{subsection.1.5.1}%
+\contentsline {subsection}{\numberline {1.5.2}Sub-Objectives}{19}{subsection.1.5.2}%
+\contentsline {subsubsection}{SO1: Security and Governance Architecture}{19}{section*.72}%
+\contentsline {paragraph}{Objective:}{19}{section*.73}%
+\contentsline {paragraph}{Success Criteria:}{19}{section*.74}%
+\contentsline {subsubsection}{SO2: Multi-Tenancy Implementation}{19}{section*.75}%
+\contentsline {paragraph}{Objective:}{19}{section*.76}%
+\contentsline {paragraph}{Success Criteria:}{20}{section*.77}%
+\contentsline {subsubsection}{SO3: Graph Database Integration with NL-to-Cypher}{20}{section*.78}%
+\contentsline {paragraph}{Objective:}{20}{section*.79}%
+\contentsline {paragraph}{Success Criteria:}{20}{section*.80}%
+\contentsline {subsubsection}{SO4: Operational Observability Stack}{20}{section*.81}%
+\contentsline {paragraph}{Objective:}{20}{section*.82}%
+\contentsline {paragraph}{Success Criteria:}{21}{section*.83}%
+\contentsline {subsubsection}{SO5: LLM Provider Resilience and Management}{21}{section*.84}%
+\contentsline {paragraph}{Objective:}{21}{section*.85}%
+\contentsline {paragraph}{Success Criteria:}{21}{section*.86}%
+\contentsline {subsubsection}{SO6: Extensible Tool Ecosystem}{21}{section*.87}%
+\contentsline {paragraph}{Objective:}{21}{section*.88}%
+\contentsline {paragraph}{Success Criteria:}{22}{section*.89}%
+\contentsline {subsection}{\numberline {1.5.3}Non-Objectives}{22}{subsection.1.5.3}%
+\contentsline {subsection}{\numberline {1.5.4}Objective Traceability}{22}{subsection.1.5.4}%
+\contentsline {subsection}{\numberline {1.5.5}Validation Approach}{22}{subsection.1.5.5}%
+\contentsline {section}{\numberline {1.6}Scope and Non-Goals}{23}{section.1.6}%
+\contentsline {subsection}{\numberline {1.6.1}In-Scope Elements}{23}{subsection.1.6.1}%
+\contentsline {subsubsection}{Agent Orchestration Engine}{23}{section*.91}%
+\contentsline {subsubsection}{MCP Tool Framework}{23}{section*.92}%
+\contentsline {subsubsection}{Graph Database Integration}{24}{section*.93}%
+\contentsline {subsubsection}{Security Framework}{24}{section*.94}%
+\contentsline {subsubsection}{Observability Stack}{24}{section*.95}%
+\contentsline {subsubsection}{Background Job System (Workflow B Infrastructure)}{24}{section*.96}%
+\contentsline {subsubsection}{User Interfaces}{25}{section*.97}%
+\contentsline {subsubsection}{Deployment Infrastructure}{25}{section*.98}%
+\contentsline {subsection}{\numberline {1.6.2}Out-of-Scope Elements (Non-Goals)}{25}{subsection.1.6.2}%
+\contentsline {subsubsection}{Advanced RAG Pipeline}{25}{section*.99}%
+\contentsline {paragraph}{Rationale:}{25}{section*.100}%
+\contentsline {subsubsection}{Multi-Agent Collaboration}{26}{section*.101}%
+\contentsline {paragraph}{Rationale:}{26}{section*.102}%
+\contentsline {subsubsection}{Advanced Agent Architectures}{26}{section*.103}%
+\contentsline {paragraph}{Rationale:}{26}{section*.104}%
+\contentsline {subsubsection}{Real-Time Streaming Responses}{26}{section*.105}%
+\contentsline {paragraph}{Rationale:}{26}{section*.106}%
+\contentsline {subsubsection}{Code Execution Sandbox}{27}{section*.107}%
+\contentsline {paragraph}{Rationale:}{27}{section*.108}%
+\contentsline {subsubsection}{Conversation Memory Systems}{27}{section*.109}%
+\contentsline {paragraph}{Rationale:}{27}{section*.110}%
+\contentsline {subsubsection}{MLOps and Model Training}{27}{section*.111}%
+\contentsline {paragraph}{Rationale:}{27}{section*.112}%
+\contentsline {subsection}{\numberline {1.6.3}Boundary Cases}{28}{subsection.1.6.3}%
+\contentsline {subsection}{\numberline {1.6.4}Scope Summary}{28}{subsection.1.6.4}%
+\contentsline {subsection}{\numberline {1.6.5}Extensibility for Future Work}{28}{subsection.1.6.5}%
+\contentsline {section}{\numberline {1.7}Implementation Snapshot}{29}{section.1.7}%
+\contentsline {section}{\numberline {1.8}Contributions}{29}{section.1.8}%
+\contentsline {subsection}{\numberline {1.8.1}Primary Contributions}{29}{subsection.1.8.1}%
+\contentsline {subsubsection}{C1: Enterprise-Grade Agent Orchestration Architecture}{29}{section*.114}%
+\contentsline {paragraph}{Novelty:}{29}{section*.115}%
+\contentsline {subsubsection}{C2: Native MCP Tool Ecosystem}{30}{section*.116}%
+\contentsline {paragraph}{Novelty:}{30}{section*.117}%
+\contentsline {subsubsection}{C3: Natural Language to Cypher Pipeline with Safety Validation}{30}{section*.118}%
+\contentsline {paragraph}{Novelty:}{30}{section*.119}%
+\contentsline {subsubsection}{C4: Comprehensive Security and Governance Framework}{31}{section*.120}%
+\contentsline {paragraph}{Novelty:}{31}{section*.121}%
+\contentsline {subsubsection}{C5: Production-Ready Observability Stack}{31}{section*.122}%
+\contentsline {paragraph}{Novelty:}{31}{section*.123}%
+\contentsline {subsubsection}{C6: Asynchronous Job System with Progress Streaming (Workflow B)}{32}{section*.124}%
+\contentsline {paragraph}{Novelty:}{32}{section*.125}%
+\contentsline {subsection}{\numberline {1.8.2}Secondary Contributions}{32}{subsection.1.8.2}%
+\contentsline {subsubsection}{Reference Implementation}{33}{section*.126}%
+\contentsline {subsubsection}{Comparative Analysis}{33}{section*.127}%
+\contentsline {subsubsection}{Deployment Experience}{33}{section*.128}%
+\contentsline {subsection}{\numberline {1.8.3}Contribution Summary}{33}{subsection.1.8.3}%
+\contentsline {subsection}{\numberline {1.8.4}Artifact Availability}{33}{subsection.1.8.4}%
+\contentsline {section}{\numberline {1.9}Thesis Structure}{34}{section.1.9}%
+\contentsline {subsection}{\numberline {1.9.1}Part I: Introduction and Background}{34}{subsection.1.9.1}%
+\contentsline {paragraph}{Chapter~\ref {ch:introduction}: Introduction}{34}{section*.130}%
+\contentsline {paragraph}{Chapter~\ref {ch:background}: Background and Related Work}{34}{section*.131}%
+\contentsline {paragraph}{Chapter~\ref {ch:requirements}: Requirements and Design Goals}{34}{section*.132}%
+\contentsline {subsection}{\numberline {1.9.2}Part II: Architecture and Design}{35}{subsection.1.9.2}%
+\contentsline {paragraph}{Chapter~\ref {ch:architecture}: System Architecture}{35}{section*.133}%
+\contentsline {paragraph}{Chapter~\ref {ch:orchestration}: Agent Orchestration Engine}{35}{section*.134}%
+\contentsline {paragraph}{Chapter~\ref {ch:mcp-tools}: MCP Tools Ecosystem}{35}{section*.135}%
+\contentsline {paragraph}{Chapter~\ref {ch:jobs-workers}: Background Jobs and Workers}{35}{section*.136}%
+\contentsline {subsection}{\numberline {1.9.3}Part III: Security and Governance}{35}{subsection.1.9.3}%
+\contentsline {paragraph}{Chapter~\ref {ch:security}: Security Framework}{35}{section*.137}%
+\contentsline {subsection}{\numberline {1.9.4}Part IV: Observability and Operations}{36}{subsection.1.9.4}%
+\contentsline {paragraph}{Chapter~\ref {ch:observability}: Observability}{36}{section*.138}%
+\contentsline {subsection}{\numberline {1.9.5}Part V: Implementation, Deployment, and Evaluation}{36}{subsection.1.9.5}%
+\contentsline {paragraph}{Chapter~\ref {ch:implementation}: Implementation and Engineering Practices}{36}{section*.139}%
+\contentsline {paragraph}{Chapter~\ref {ch:deployment}: Configuration and Deployment}{36}{section*.140}%
+\contentsline {paragraph}{Chapter~\ref {ch:evaluation}: Evaluation}{36}{section*.141}%
+\contentsline {paragraph}{Chapter~\ref {ch:conclusions}: Conclusions and Future Work}{36}{section*.142}%
+\contentsline {subsection}{\numberline {1.9.6}Appendices}{36}{subsection.1.9.6}%
+\contentsline {subsection}{\numberline {1.9.7}Reading Paths}{37}{subsection.1.9.7}%
+\contentsline {paragraph}{For Architects and Technical Leaders:}{37}{section*.143}%
+\contentsline {paragraph}{For Developers and Implementers:}{37}{section*.144}%
+\contentsline {paragraph}{For Researchers:}{37}{section*.145}%
+\contentsline {paragraph}{For Operations Engineers:}{37}{section*.146}%
+\contentsline {subsection}{\numberline {1.9.8}Notation and Conventions}{37}{subsection.1.9.8}%
+\contentsline {chapter}{\numberline {2}Background and Related Work}{39}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Large Language Models and AI Agents}{39}{section.2.1}%
+\contentsline {subsection}{\numberline {2.1.1}Evolution of Large Language Models}{39}{subsection.2.1.1}%
+\contentsline {paragraph}{Foundational Models and Scaling Laws}{39}{section*.147}%
+\contentsline {paragraph}{Open-Weight Models}{40}{section*.148}%
+\contentsline {paragraph}{Emergent Capabilities}{40}{section*.149}%
+\contentsline {subsection}{\numberline {2.1.2}Definition and Characteristics of AI Agents}{41}{subsection.2.1.2}%
+\contentsline {paragraph}{Agent Components}{41}{section*.150}%
+\contentsline {paragraph}{Agent Autonomy Spectrum}{41}{section*.151}%
+\contentsline {subsection}{\numberline {2.1.3}Agent Architectures and Reasoning Patterns}{42}{subsection.2.1.3}%
+\contentsline {paragraph}{ReAct (Reasoning and Acting)}{42}{section*.152}%
+\contentsline {paragraph}{Chain-of-Thought (CoT) Prompting}{42}{section*.153}%
+\contentsline {paragraph}{Plan-and-Execute}{43}{section*.154}%
+\contentsline {paragraph}{Tree-of-Thought and Graph-of-Thought}{43}{section*.155}%
+\contentsline {paragraph}{Multi-Agent Architectures}{43}{section*.156}%
+\contentsline {subsection}{\numberline {2.1.4}Tool Use in LLM Agents}{43}{subsection.2.1.4}%
+\contentsline {paragraph}{Function Calling}{44}{section*.157}%
+\contentsline {paragraph}{Tool Categories}{44}{section*.158}%
+\contentsline {paragraph}{Tool Safety and Governance}{44}{section*.159}%
+\contentsline {subsection}{\numberline {2.1.5}Challenges in Production Agent Deployment}{45}{subsection.2.1.5}%
+\contentsline {paragraph}{Reliability and Error Handling}{45}{section*.160}%
+\contentsline {paragraph}{Latency and Cost Management}{45}{section*.161}%
+\contentsline {paragraph}{Security and Compliance}{45}{section*.162}%
+\contentsline {paragraph}{Observability}{46}{section*.163}%
+\contentsline {section}{\numberline {2.2}Agent Orchestration Frameworks}{46}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}Overview of the Framework Landscape}{46}{subsection.2.2.1}%
+\contentsline {paragraph}{Abstraction Level}{46}{section*.164}%
+\contentsline {paragraph}{Deployment Model}{46}{section*.165}%
+\contentsline {paragraph}{Scope of Concerns}{47}{section*.166}%
+\contentsline {subsection}{\numberline {2.2.2}LangChain}{47}{subsection.2.2.2}%
+\contentsline {paragraph}{Architecture}{47}{section*.167}%
+\contentsline {paragraph}{Strengths}{47}{section*.168}%
+\contentsline {paragraph}{Limitations for Enterprise Use}{48}{section*.169}%
+\contentsline {paragraph}{LangGraph Extension}{48}{section*.170}%
+\contentsline {subsection}{\numberline {2.2.3}LlamaIndex}{48}{subsection.2.2.3}%
+\contentsline {paragraph}{Core Concepts}{49}{section*.171}%
+\contentsline {paragraph}{Strengths}{49}{section*.172}%
+\contentsline {paragraph}{Limitations}{49}{section*.173}%
+\contentsline {subsection}{\numberline {2.2.4}Microsoft Semantic Kernel}{49}{subsection.2.2.4}%
+\contentsline {paragraph}{Design Philosophy}{50}{section*.174}%
+\contentsline {paragraph}{Strengths}{50}{section*.175}%
+\contentsline {paragraph}{Limitations}{50}{section*.176}%
+\contentsline {subsection}{\numberline {2.2.5}OpenAI Assistants API}{50}{subsection.2.2.5}%
+\contentsline {paragraph}{Capabilities}{50}{section*.177}%
+\contentsline {paragraph}{Strengths}{51}{section*.178}%
+\contentsline {paragraph}{Limitations}{51}{section*.179}%
+\contentsline {subsection}{\numberline {2.2.6}AutoGen}{51}{subsection.2.2.6}%
+\contentsline {paragraph}{Multi-Agent Paradigm}{51}{section*.180}%
+\contentsline {paragraph}{Strengths}{52}{section*.181}%
+\contentsline {paragraph}{Limitations}{52}{section*.182}%
+\contentsline {subsection}{\numberline {2.2.7}CrewAI}{52}{subsection.2.2.7}%
+\contentsline {paragraph}{Core Abstractions}{52}{section*.183}%
+\contentsline {paragraph}{Strengths}{52}{section*.184}%
+\contentsline {paragraph}{Limitations}{53}{section*.185}%
+\contentsline {subsection}{\numberline {2.2.8}State-of-the-Art Comparison Matrix}{53}{subsection.2.2.8}%
+\contentsline {paragraph}{Framing: platform vs. protocol vs. library}{53}{section*.186}%
+\contentsline {paragraph}{Decision summary}{53}{section*.187}%
+\contentsline {paragraph}{Strengths of Cineca relative to common frameworks}{53}{section*.189}%
+\contentsline {paragraph}{Trade-offs}{54}{section*.190}%
+\contentsline {subsection}{\numberline {2.2.9}Extended Framework Comparison}{54}{subsection.2.2.9}%
+\contentsline {paragraph}{Platform Categories}{54}{section*.192}%
+\contentsline {paragraph}{Evaluation Dimensions}{55}{section*.193}%
+\contentsline {paragraph}{Key Observations}{55}{section*.194}%
+\contentsline {subsection}{\numberline {2.2.10}Positioning of the Cineca Agentic Platform}{56}{subsection.2.2.10}%
+\contentsline {paragraph}{Target Audience}{56}{section*.195}%
+\contentsline {paragraph}{Differentiation}{56}{section*.196}%
+\contentsline {paragraph}{Complementary Use}{56}{section*.197}%
+\contentsline {section}{\numberline {2.3}Model Context Protocol (MCP)}{57}{section.2.3}%
+\contentsline {subsection}{\numberline {2.3.1}Origins and Motivation}{57}{subsection.2.3.1}%
+\contentsline {subsection}{\numberline {2.3.2}Protocol Architecture}{57}{subsection.2.3.2}%
+\contentsline {paragraph}{Core Components}{57}{section*.198}%
+\contentsline {paragraph}{Communication Flow}{58}{section*.199}%
+\contentsline {subsection}{\numberline {2.3.3}Tool Definitions}{58}{subsection.2.3.3}%
+\contentsline {paragraph}{Tool Schema Structure}{58}{section*.200}%
+\contentsline {paragraph}{Capability Annotations}{59}{section*.201}%
+\contentsline {subsection}{\numberline {2.3.4}MCP Servers and Ecosystem}{59}{subsection.2.3.4}%
+\contentsline {paragraph}{Reference Servers}{59}{section*.202}%
+\contentsline {paragraph}{Community Servers}{60}{section*.203}%
+\contentsline {paragraph}{Server Implementation Patterns}{60}{section*.204}%
+\contentsline {subsection}{\numberline {2.3.5}Advantages for Enterprise Integration}{60}{subsection.2.3.5}%
+\contentsline {paragraph}{Standardization}{60}{section*.205}%
+\contentsline {paragraph}{Security Boundaries}{60}{section*.206}%
+\contentsline {paragraph}{Incremental Adoption}{61}{section*.207}%
+\contentsline {subsection}{\numberline {2.3.6}Relationship to the Cineca Agentic Platform}{61}{subsection.2.3.6}%
+\contentsline {paragraph}{MCP-Aligned Design}{61}{section*.208}%
+\contentsline {paragraph}{Enterprise Extensions}{61}{section*.209}%
+\contentsline {paragraph}{Interoperability Considerations}{61}{section*.210}%
+\contentsline {subsection}{\numberline {2.3.7}MCP Tool Categories in the Platform}{62}{subsection.2.3.7}%
+\contentsline {section}{\numberline {2.4}Graph Databases and Natural Language Interfaces}{62}{section.2.4}%
+\contentsline {subsection}{\numberline {2.4.1}Graph Database Fundamentals}{63}{subsection.2.4.1}%
+\contentsline {paragraph}{Property Graph Model}{63}{section*.212}%
+\contentsline {paragraph}{Graph vs.\ Relational Databases}{63}{section*.213}%
+\contentsline {paragraph}{Use Cases in AI Systems}{64}{section*.214}%
+\contentsline {subsection}{\numberline {2.4.2}Cypher Query Language}{64}{subsection.2.4.2}%
+\contentsline {paragraph}{Syntax Overview}{64}{section*.215}%
+\contentsline {paragraph}{Key Cypher Clauses}{64}{section*.216}%
+\contentsline {paragraph}{Advantages of Cypher}{65}{section*.217}%
+\contentsline {subsection}{\numberline {2.4.3}Memgraph and Neo4j}{65}{subsection.2.4.3}%
+\contentsline {paragraph}{Neo4j}{65}{section*.218}%
+\contentsline {paragraph}{Memgraph}{65}{section*.219}%
+\contentsline {paragraph}{Platform-Specific Considerations}{66}{section*.220}%
+\contentsline {subsection}{\numberline {2.4.4}Natural Language to Cypher Translation}{66}{subsection.2.4.4}%
+\contentsline {paragraph}{Problem Definition}{66}{section*.221}%
+\contentsline {paragraph}{Challenges}{66}{section*.222}%
+\contentsline {paragraph}{Approaches}{67}{section*.223}%
+\contentsline {paragraph}{LLM-Based NL-to-Cypher Pipeline}{67}{section*.224}%
+\contentsline {paragraph}{Safety Considerations}{68}{section*.225}%
+\contentsline {subsection}{\numberline {2.4.5}Graph Schema for Bioinformatics Workflows}{68}{subsection.2.4.5}%
+\contentsline {paragraph}{Node Types}{68}{section*.226}%
+\contentsline {paragraph}{Relationship Types}{69}{section*.227}%
+\contentsline {paragraph}{Schema-Aware Query Generation}{69}{section*.228}%
+\contentsline {subsection}{\numberline {2.4.6}Comparison with Document-Based Retrieval}{69}{subsection.2.4.6}%
+\contentsline {section}{\numberline {2.5}Retrieval-Augmented Generation and Knowledge Graphs}{70}{section.2.5}%
+\contentsline {subsection}{\numberline {2.5.1}Retrieval-Augmented Generation Overview}{70}{subsection.2.5.1}%
+\contentsline {paragraph}{Standard RAG Architecture}{70}{section*.230}%
+\contentsline {paragraph}{RAG Variants}{71}{section*.231}%
+\contentsline {subsection}{\numberline {2.5.2}Knowledge Graphs in AI Systems}{71}{subsection.2.5.2}%
+\contentsline {paragraph}{Knowledge Graph Characteristics}{71}{section*.232}%
+\contentsline {paragraph}{Knowledge Graph Construction}{71}{section*.233}%
+\contentsline {subsection}{\numberline {2.5.3}Comparison: RAG over Documents vs.\ NL-to-Cypher over Graphs}{72}{subsection.2.5.3}%
+\contentsline {paragraph}{Document-Based RAG}{72}{section*.234}%
+\contentsline {paragraph}{Graph-Based NL-to-Cypher}{72}{section*.235}%
+\contentsline {paragraph}{Comparative Summary}{73}{section*.236}%
+\contentsline {subsection}{\numberline {2.5.4}Platform Design Choice: Graph-Native Approach}{73}{subsection.2.5.4}%
+\contentsline {paragraph}{Domain Characteristics}{73}{section*.238}%
+\contentsline {paragraph}{Query Requirements}{74}{section*.239}%
+\contentsline {paragraph}{Precision Requirements}{74}{section*.240}%
+\contentsline {paragraph}{Future Extension: Hybrid Approach}{74}{section*.241}%
+\contentsline {subsection}{\numberline {2.5.5}Graph RAG: Emerging Hybrid Approaches}{74}{subsection.2.5.5}%
+\contentsline {paragraph}{Document Graphs}{74}{section*.242}%
+\contentsline {paragraph}{Knowledge-Enhanced RAG}{75}{section*.243}%
+\contentsline {paragraph}{LLM-Constructed Graphs}{75}{section*.244}%
+\contentsline {subsection}{\numberline {2.5.6}Implications for Thesis Scope}{75}{subsection.2.5.6}%
+\contentsline {section}{\numberline {2.6}Security and Multi-Tenancy Foundations}{75}{section.2.6}%
+\contentsline {subsection}{\numberline {2.6.1}Authentication Fundamentals}{76}{subsection.2.6.1}%
+\contentsline {paragraph}{OAuth 2.0}{76}{section*.245}%
+\contentsline {paragraph}{OpenID Connect (OIDC)}{76}{section*.246}%
+\contentsline {paragraph}{JSON Web Tokens (JWT)}{77}{section*.247}%
+\contentsline {paragraph}{Token Validation}{77}{section*.248}%
+\contentsline {subsection}{\numberline {2.6.2}Role-Based Access Control (RBAC)}{77}{subsection.2.6.2}%
+\contentsline {paragraph}{RBAC Components}{77}{section*.249}%
+\contentsline {paragraph}{RBAC Models}{78}{section*.250}%
+\contentsline {paragraph}{Scope-Based Authorization}{78}{section*.251}%
+\contentsline {paragraph}{RBAC in AI Agent Systems}{78}{section*.252}%
+\contentsline {subsection}{\numberline {2.6.3}Multi-Tenant Architecture Patterns}{78}{subsection.2.6.3}%
+\contentsline {paragraph}{Tenancy Models}{79}{section*.253}%
+\contentsline {paragraph}{Isolation Dimensions}{79}{section*.254}%
+\contentsline {paragraph}{Implementation Patterns}{79}{section*.255}%
+\contentsline {paragraph}{Multi-Tenancy in AI Systems}{80}{section*.256}%
+\contentsline {subsection}{\numberline {2.6.4}Audit Logging and Compliance}{80}{subsection.2.6.4}%
+\contentsline {paragraph}{Audit Log Requirements}{80}{section*.257}%
+\contentsline {paragraph}{Audit Log Properties}{80}{section*.258}%
+\contentsline {paragraph}{Compliance Frameworks}{81}{section*.259}%
+\contentsline {paragraph}{Audit Logging in AI Systems}{81}{section*.260}%
+\contentsline {subsection}{\numberline {2.6.5}Security Challenges in AI Agent Systems}{81}{subsection.2.6.5}%
+\contentsline {paragraph}{Prompt Injection}{81}{section*.261}%
+\contentsline {paragraph}{Data Exfiltration}{81}{section*.262}%
+\contentsline {paragraph}{Excessive Agency}{82}{section*.263}%
+\contentsline {paragraph}{Model Vulnerabilities}{82}{section*.264}%
+\contentsline {subsection}{\numberline {2.6.6}Security Principles for Enterprise AI Platforms}{82}{subsection.2.6.6}%
+\contentsline {paragraph}{Defense in Depth}{82}{section*.265}%
+\contentsline {paragraph}{Principle of Least Privilege}{82}{section*.266}%
+\contentsline {paragraph}{Secure by Default}{82}{section*.267}%
+\contentsline {paragraph}{Auditability}{83}{section*.268}%
+\contentsline {section}{\numberline {2.7}Observability in Distributed Systems}{83}{section.2.7}%
+\contentsline {subsection}{\numberline {2.7.1}The Three Pillars of Observability}{83}{subsection.2.7.1}%
+\contentsline {paragraph}{Metrics}{83}{section*.269}%
+\contentsline {paragraph}{Logs}{84}{section*.270}%
+\contentsline {paragraph}{Traces}{84}{section*.271}%
+\contentsline {subsection}{\numberline {2.7.2}Metrics: Prometheus and Beyond}{84}{subsection.2.7.2}%
+\contentsline {paragraph}{Prometheus Architecture}{85}{section*.272}%
+\contentsline {paragraph}{Metric Types}{85}{section*.273}%
+\contentsline {paragraph}{Labels and Cardinality}{85}{section*.274}%
+\contentsline {paragraph}{Grafana Visualization}{85}{section*.275}%
+\contentsline {paragraph}{Metrics in AI Systems}{86}{section*.276}%
+\contentsline {subsection}{\numberline {2.7.3}Logging: Structured and Correlated}{86}{subsection.2.7.3}%
+\contentsline {paragraph}{Structured Logging}{86}{section*.277}%
+\contentsline {paragraph}{Log Levels}{86}{section*.278}%
+\contentsline {paragraph}{Log Correlation}{87}{section*.279}%
+\contentsline {paragraph}{Log Management}{87}{section*.280}%
+\contentsline {paragraph}{Logging in AI Systems}{87}{section*.281}%
+\contentsline {subsection}{\numberline {2.7.4}Distributed Tracing: OpenTelemetry}{87}{subsection.2.7.4}%
+\contentsline {paragraph}{OpenTelemetry Concepts}{87}{section*.282}%
+\contentsline {paragraph}{Context Propagation}{88}{section*.283}%
+\contentsline {paragraph}{Sampling}{88}{section*.284}%
+\contentsline {paragraph}{Tracing Backends}{88}{section*.285}%
+\contentsline {paragraph}{Tracing in AI Systems}{88}{section*.286}%
+\contentsline {subsection}{\numberline {2.7.5}Health Checks and Probes}{88}{subsection.2.7.5}%
+\contentsline {paragraph}{Kubernetes Probe Types}{89}{section*.287}%
+\contentsline {paragraph}{Probe Implementation}{89}{section*.288}%
+\contentsline {paragraph}{Health Check Design}{89}{section*.289}%
+\contentsline {paragraph}{Component Health}{89}{section*.290}%
+\contentsline {subsection}{\numberline {2.7.6}Observability Patterns for AI Platforms}{90}{subsection.2.7.6}%
+\contentsline {paragraph}{LLM Observability}{90}{section*.291}%
+\contentsline {paragraph}{Agent Observability}{90}{section*.292}%
+\contentsline {paragraph}{Multi-Tenant Observability}{90}{section*.293}%
+\contentsline {paragraph}{Production Readiness Checklist}{90}{section*.294}%
+\contentsline {subsection}{\numberline {2.7.7}Chapter Summary}{91}{subsection.2.7.7}%
+\contentsline {chapter}{\numberline {3}Requirements and Design Goals}{93}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Functional Requirements}{93}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}Stakeholder Analysis}{93}{subsection.3.1.1}%
+\contentsline {subsection}{\numberline {3.1.2}Use Case Categories}{94}{subsection.3.1.2}%
+\contentsline {subsection}{\numberline {3.1.3}Terminology}{94}{subsection.3.1.3}%
+\contentsline {subsection}{\numberline {3.1.4}Agent Execution Requirements}{95}{subsection.3.1.4}%
+\contentsline {subsection}{\numberline {3.1.5}Model Management Requirements}{95}{subsection.3.1.5}%
+\contentsline {subsection}{\numberline {3.1.6}Tool Ecosystem Requirements}{95}{subsection.3.1.6}%
+\contentsline {subsection}{\numberline {3.1.7}Graph Query Requirements}{95}{subsection.3.1.7}%
+\contentsline {subsection}{\numberline {3.1.8}Background Job Requirements}{95}{subsection.3.1.8}%
+\contentsline {subsection}{\numberline {3.1.9}Administrative and Operational Requirements}{95}{subsection.3.1.9}%
+\contentsline {subsection}{\numberline {3.1.10}API Design Requirements}{95}{subsection.3.1.10}%
+\contentsline {paragraph}{Complete API Reference}{97}{section*.302}%
+\contentsline {subsection}{\numberline {3.1.11}User Interface Requirements}{97}{subsection.3.1.11}%
+\contentsline {subsection}{\numberline {3.1.12}Requirements Summary}{97}{subsection.3.1.12}%
+\contentsline {section}{\numberline {3.2}Non-Functional Requirements}{97}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Security Requirements}{99}{subsection.3.2.1}%
+\contentsline {subsubsection}{Authentication Architecture}{99}{section*.306}%
+\contentsline {subsubsection}{Authorization Model}{104}{section*.307}%
+\contentsline {subsection}{\numberline {3.2.2}Multi-Tenancy Requirements}{104}{subsection.3.2.2}%
+\contentsline {subsubsection}{Tenant Isolation Architecture}{104}{section*.310}%
+\contentsline {subsection}{\numberline {3.2.3}Reliability Requirements}{105}{subsection.3.2.3}%
+\contentsline {subsubsection}{Circuit Breaker Implementation}{105}{section*.312}%
+\contentsline {subsection}{\numberline {3.2.4}Performance Requirements}{106}{subsection.3.2.4}%
+\contentsline {subsection}{\numberline {3.2.5}Auditability and Compliance Requirements}{106}{subsection.3.2.5}%
+\contentsline {subsection}{\numberline {3.2.6}Observability Requirements}{106}{subsection.3.2.6}%
+\contentsline {subsubsection}{Three Pillars of Observability}{106}{section*.316}%
+\contentsline {subsection}{\numberline {3.2.7}Scalability Requirements}{108}{subsection.3.2.7}%
+\contentsline {subsection}{\numberline {3.2.8}Rate Limiting Requirements}{108}{subsection.3.2.8}%
+\contentsline {subsection}{\numberline {3.2.9}Requirements Summary}{110}{subsection.3.2.9}%
+\contentsline {section}{\numberline {3.3}Constraints and Assumptions}{110}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}Institutional Constraints}{110}{subsection.3.3.1}%
+\contentsline {subsection}{\numberline {3.3.2}Technical Infrastructure Constraints}{110}{subsection.3.3.2}%
+\contentsline {subsection}{\numberline {3.3.3}Technology Stack Constraints}{110}{subsection.3.3.3}%
+\contentsline {subsubsection}{Dependency Version Constraints}{112}{section*.322}%
+\contentsline {subsection}{\numberline {3.3.4}Regulatory and Compliance Constraints}{112}{subsection.3.3.4}%
+\contentsline {subsubsection}{Compliance Implementation Mapping}{112}{section*.323}%
+\contentsline {subsection}{\numberline {3.3.5}Development Process Constraints}{112}{subsection.3.3.5}%
+\contentsline {subsection}{\numberline {3.3.6}Assumptions}{113}{subsection.3.3.6}%
+\contentsline {subsection}{\numberline {3.3.7}Scope Boundaries}{113}{subsection.3.3.7}%
+\contentsline {subsubsection}{In Scope}{113}{section*.326}%
+\contentsline {subsubsection}{Out of Scope (Non-Goals)}{115}{section*.327}%
+\contentsline {subsection}{\numberline {3.3.8}Constraint and Assumption Validation}{115}{subsection.3.3.8}%
+\contentsline {section}{\numberline {3.4}Design Principles}{116}{section.3.4}%
+\contentsline {subsection}{\numberline {3.4.1}Separation of Concerns: Three-Layer Architecture}{116}{subsection.3.4.1}%
+\contentsline {subsubsection}{Layer Responsibilities}{116}{section*.329}%
+\contentsline {subsubsection}{Layer Coupling Rules}{117}{section*.330}%
+\contentsline {subsection}{\numberline {3.4.2}Defense in Depth: Security Layering}{117}{subsection.3.4.2}%
+\contentsline {subsubsection}{Security Principle Applications}{117}{section*.332}%
+\contentsline {subsection}{\numberline {3.4.3}Fail-Safe Defaults}{118}{subsection.3.4.3}%
+\contentsline {subsection}{\numberline {3.4.4}Extensibility and Modularity}{118}{subsection.3.4.4}%
+\contentsline {subsubsection}{Extension Points}{118}{section*.333}%
+\contentsline {subsubsection}{Modularity Principles}{118}{section*.335}%
+\contentsline {subsection}{\numberline {3.4.5}Observability by Design}{119}{subsection.3.4.5}%
+\contentsline {subsubsection}{Instrumentation Principles}{119}{section*.336}%
+\contentsline {subsubsection}{Observability Integration Points}{119}{section*.337}%
+\contentsline {subsection}{\numberline {3.4.6}Enterprise-First Design Trade-offs}{119}{subsection.3.4.6}%
+\contentsline {subsubsection}{Trade-off Implications}{121}{section*.340}%
+\contentsline {subsection}{\numberline {3.4.7}Stateless API Design}{121}{subsection.3.4.7}%
+\contentsline {subsubsection}{Statelessness Benefits}{121}{section*.341}%
+\contentsline {subsection}{\numberline {3.4.8}Adapter Pattern for External Integration}{122}{subsection.3.4.8}%
+\contentsline {subsubsection}{Adapter Responsibilities}{122}{section*.343}%
+\contentsline {subsection}{\numberline {3.4.9}Repository Pattern for Data Access}{122}{subsection.3.4.9}%
+\contentsline {subsection}{\numberline {3.4.10}Principle Summary}{123}{subsection.3.4.10}%
+\contentsline {section}{\numberline {3.5}Evaluation Criteria}{123}{section.3.5}%
+\contentsline {subsection}{\numberline {3.5.1}Evaluation Framework}{123}{subsection.3.5.1}%
+\contentsline {subsection}{\numberline {3.5.2}Functional Completeness Criteria}{124}{subsection.3.5.2}%
+\contentsline {subsubsection}{Feature Coverage Analysis}{124}{section*.346}%
+\contentsline {subsection}{\numberline {3.5.3}Performance Evaluation Criteria}{125}{subsection.3.5.3}%
+\contentsline {subsubsection}{Load Testing Methodology}{125}{section*.347}%
+\contentsline {subsubsection}{LLM Operation Exclusion}{125}{section*.348}%
+\contentsline {subsection}{\numberline {3.5.4}Security Evaluation Criteria}{125}{subsection.3.5.4}%
+\contentsline {subsubsection}{Security Test Categories}{126}{section*.350}%
+\contentsline {subsection}{\numberline {3.5.5}Reliability Evaluation Criteria}{126}{subsection.3.5.5}%
+\contentsline {subsubsection}{Fault Injection Methods}{126}{section*.352}%
+\contentsline {subsection}{\numberline {3.5.6}Observability Evaluation Criteria}{127}{subsection.3.5.6}%
+\contentsline {subsection}{\numberline {3.5.7}Operational Readiness Criteria}{127}{subsection.3.5.7}%
+\contentsline {subsection}{\numberline {3.5.8}Testing Coverage Criteria}{127}{subsection.3.5.8}%
+\contentsline {subsubsection}{Test Pyramid Adherence}{127}{section*.356}%
+\contentsline {subsection}{\numberline {3.5.9}Comparative Evaluation Criteria}{127}{subsection.3.5.9}%
+\contentsline {subsubsection}{Comparison Methodology}{130}{section*.358}%
+\contentsline {subsection}{\numberline {3.5.10}Evaluation Summary Matrix}{130}{subsection.3.5.10}%
+\contentsline {section}{\numberline {3.6}Requirements Traceability Matrix}{130}{section.3.6}%
+\contentsline {subsection}{\numberline {3.6.1}Traceability Matrix Structure}{130}{subsection.3.6.1}%
+\contentsline {subsection}{\numberline {3.6.2}Functional Requirements Traceability}{131}{subsection.3.6.2}%
+\contentsline {subsubsection}{Agent Execution Requirements}{131}{section*.360}%
+\contentsline {subsubsection}{Model Management Requirements}{131}{section*.361}%
+\contentsline {subsubsection}{Tool Ecosystem Requirements}{132}{section*.362}%
+\contentsline {subsubsection}{Graph Query Requirements}{133}{section*.363}%
+\contentsline {subsubsection}{Background Job Requirements (Workflow B)}{134}{section*.364}%
+\contentsline {subsubsection}{API Design Requirements}{135}{section*.365}%
+\contentsline {subsection}{\numberline {3.6.3}Non-Functional Requirements Traceability}{136}{subsection.3.6.3}%
+\contentsline {subsubsection}{Security Requirements}{136}{section*.366}%
+\contentsline {subsubsection}{Multi-Tenancy Requirements}{136}{section*.367}%
+\contentsline {subsubsection}{Reliability Requirements}{137}{section*.368}%
+\contentsline {subsubsection}{Observability Requirements}{138}{section*.369}%
+\contentsline {subsection}{\numberline {3.6.4}Traceability Summary}{138}{subsection.3.6.4}%
+\contentsline {subsection}{\numberline {3.6.5}Verification Method Legend}{139}{subsection.3.6.5}%
+\contentsline {section}{\numberline {3.7}Chapter Summary}{139}{section.3.7}%
+\contentsline {chapter}{\numberline {4}System Architecture}{141}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Executive Summary}{141}{section.4.1}%
+\contentsline {subsection}{\numberline {4.1.1}Platform Overview}{141}{subsection.4.1.1}%
+\contentsline {subsection}{\numberline {4.1.2}Platform Statistics}{141}{subsection.4.1.2}%
+\contentsline {section}{\numberline {4.2}High-Level Architecture Overview}{142}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}Architectural Layers}{142}{subsection.4.2.1}%
+\contentsline {section}{\numberline {4.3}Layer 1: Identity and Authentication}{145}{section.4.3}%
+\contentsline {subsection}{\numberline {4.3.1}Identity Provider (OIDC / Auth0)}{145}{subsection.4.3.1}%
+\contentsline {subsubsection}{JWT Token Claims}{145}{section*.375}%
+\contentsline {subsubsection}{Principal Object}{145}{section*.376}%
+\contentsline {subsection}{\numberline {4.3.2}User Interfaces}{145}{subsection.4.3.2}%
+\contentsline {subsubsection}{Agent Chat UI (Next.js/React)}{146}{section*.377}%
+\contentsline {subsubsection}{Control Panel UI (Streamlit)}{146}{section*.378}%
+\contentsline {subsection}{\numberline {4.3.3}Reverse Proxy / API Gateway (NGINX)}{146}{subsection.4.3.3}%
+\contentsline {section}{\numberline {4.4}Layer 2: Security Middleware Stack}{146}{section.4.4}%
+\contentsline {subsection}{\numberline {4.4.1}Middleware Pipeline}{146}{subsection.4.4.1}%
+\contentsline {subsection}{\numberline {4.4.2}RBAC Permission Matrix}{147}{subsection.4.4.2}%
+\contentsline {subsection}{\numberline {4.4.3}Rate Limiter}{147}{subsection.4.4.3}%
+\contentsline {subsection}{\numberline {4.4.4}Input Guard}{147}{subsection.4.4.4}%
+\contentsline {subsection}{\numberline {4.4.5}Output Guard}{148}{subsection.4.4.5}%
+\contentsline {section}{\numberline {4.5}Layer 3: API Layer}{148}{section.4.5}%
+\contentsline {section}{\numberline {4.6}Layer 4: Execution Workflows}{148}{section.4.6}%
+\contentsline {subsection}{\numberline {4.6.1}Workflow Comparison}{149}{subsection.4.6.1}%
+\contentsline {subsection}{\numberline {4.6.2}Workflow A: Agent Runs}{149}{subsection.4.6.2}%
+\contentsline {subsection}{\numberline {4.6.3}Workflow B: Long-Running Jobs}{149}{subsection.4.6.3}%
+\contentsline {subsection}{\numberline {4.6.4}Job Creation Flow}{150}{subsection.4.6.4}%
+\contentsline {subsection}{\numberline {4.6.5}Worker Processing Loop}{150}{subsection.4.6.5}%
+\contentsline {section}{\numberline {4.7}Layer 5: Service Layer (Orchestrator)}{150}{section.4.7}%
+\contentsline {subsection}{\numberline {4.7.1}Phase 1: Intent Classification}{150}{subsection.4.7.1}%
+\contentsline {subsection}{\numberline {4.7.2}Phase 2: TODO Planning}{151}{subsection.4.7.2}%
+\contentsline {subsection}{\numberline {4.7.3}Phase 3: Step Execution}{151}{subsection.4.7.3}%
+\contentsline {subsection}{\numberline {4.7.4}Phase 4: Finalization}{151}{subsection.4.7.4}%
+\contentsline {section}{\numberline {4.8}Layer 6: LLM Providers}{151}{section.4.8}%
+\contentsline {subsection}{\numberline {4.8.1}Supported Providers}{152}{subsection.4.8.1}%
+\contentsline {subsubsection}{Ollama (Local)}{152}{section*.382}%
+\contentsline {subsubsection}{OpenAI (Cloud)}{152}{section*.383}%
+\contentsline {subsubsection}{Azure OpenAI}{152}{section*.384}%
+\contentsline {subsection}{\numberline {4.8.2}Provider Selection Hierarchy}{152}{subsection.4.8.2}%
+\contentsline {section}{\numberline {4.9}Layer 7: MCP Runtime and Tools}{152}{section.4.9}%
+\contentsline {subsection}{\numberline {4.9.1}Tool Categories}{152}{subsection.4.9.1}%
+\contentsline {subsection}{\numberline {4.9.2}Tool Invocation Flow}{153}{subsection.4.9.2}%
+\contentsline {subsection}{\numberline {4.9.3}Tool Manifest Schema}{153}{subsection.4.9.3}%
+\contentsline {section}{\numberline {4.10}Layer 8: NL-to-Cypher Pipeline}{154}{section.4.10}%
+\contentsline {subsection}{\numberline {4.10.1}Pipeline Stages}{154}{subsection.4.10.1}%
+\contentsline {subsection}{\numberline {4.10.2}End-to-End Example}{154}{subsection.4.10.2}%
+\contentsline {section}{\numberline {4.11}Layer 9: Data Layer}{154}{section.4.11}%
+\contentsline {subsection}{\numberline {4.11.1}Database Comparison}{154}{subsection.4.11.1}%
+\contentsline {subsection}{\numberline {4.11.2}Redis (Speed Layer)}{155}{subsection.4.11.2}%
+\contentsline {subsection}{\numberline {4.11.3}PostgreSQL (Durability Layer)}{155}{subsection.4.11.3}%
+\contentsline {subsection}{\numberline {4.11.4}Memgraph (Graph Layer)}{155}{subsection.4.11.4}%
+\contentsline {section}{\numberline {4.12}Layer 10: Adapters}{156}{section.4.12}%
+\contentsline {subsection}{\numberline {4.12.1}LLM Adapters}{156}{subsection.4.12.1}%
+\contentsline {subsection}{\numberline {4.12.2}Database Adapters}{156}{subsection.4.12.2}%
+\contentsline {section}{\numberline {4.13}Layer 11: Resilience Framework}{156}{section.4.13}%
+\contentsline {subsection}{\numberline {4.13.1}Circuit Breaker Pattern}{156}{subsection.4.13.1}%
+\contentsline {subsection}{\numberline {4.13.2}Retry Strategy}{156}{subsection.4.13.2}%
+\contentsline {subsection}{\numberline {4.13.3}Provider Fallback Chain}{157}{subsection.4.13.3}%
+\contentsline {subsection}{\numberline {4.13.4}Cost Tracking}{157}{subsection.4.13.4}%
+\contentsline {section}{\numberline {4.14}Layer 12: Background Framework}{157}{section.4.14}%
+\contentsline {subsection}{\numberline {4.14.1}Scheduled Tasks}{157}{subsection.4.14.1}%
+\contentsline {section}{\numberline {4.15}Layer 13: Observability and Monitoring}{157}{section.4.15}%
+\contentsline {subsection}{\numberline {4.15.1}Tracing (OpenTelemetry)}{158}{subsection.4.15.1}%
+\contentsline {subsection}{\numberline {4.15.2}Prometheus Metrics}{158}{subsection.4.15.2}%
+\contentsline {subsection}{\numberline {4.15.3}Grafana Dashboards}{158}{subsection.4.15.3}%
+\contentsline {subsection}{\numberline {4.15.4}Health Endpoints}{159}{subsection.4.15.4}%
+\contentsline {section}{\numberline {4.16}Summary}{159}{section.4.16}%
+\contentsline {chapter}{\numberline {5}Agent Orchestration Engine}{161}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Orchestration Design}{161}{section.5.1}%
+\contentsline {subsection}{\numberline {5.1.1}Orchestrator Architecture and Responsibilities}{161}{subsection.5.1.1}%
+\contentsline {subsection}{\numberline {5.1.2}Execution Flow Overview}{162}{subsection.5.1.2}%
+\contentsline {paragraph}{Phase 1: Intent Classification}{162}{section*.389}%
+\contentsline {paragraph}{Phase 2: TODO Planning}{163}{section*.390}%
+\contentsline {paragraph}{Phase 3: Step Execution}{164}{section*.391}%
+\contentsline {paragraph}{Phase 4: Finalization}{164}{section*.392}%
+\contentsline {subsection}{\numberline {5.1.3}OrchestrationResult Data Structure}{164}{subsection.5.1.3}%
+\contentsline {subsection}{\numberline {5.1.4}Timeout Configuration and Budget Management}{165}{subsection.5.1.4}%
+\contentsline {subsection}{\numberline {5.1.5}Execution Modes and Run Types}{165}{subsection.5.1.5}%
+\contentsline {subsubsection}{Synchronous vs.\ Asynchronous Execution}{165}{section*.394}%
+\contentsline {paragraph}{Workflow A: Synchronous Mode (BackgroundTasks)}{165}{section*.395}%
+\contentsline {paragraph}{Workflow B: Asynchronous Mode (Job Queue Workers)}{166}{section*.396}%
+\contentsline {subsubsection}{Test and Demo Modes}{166}{section*.397}%
+\contentsline {paragraph}{Test Mode}{166}{section*.398}%
+\contentsline {paragraph}{Demo Mode}{166}{section*.399}%
+\contentsline {subsubsection}{Simple vs.\ Complex Request Handling}{167}{section*.400}%
+\contentsline {paragraph}{Simple Chat}{167}{section*.401}%
+\contentsline {paragraph}{Simple Graph Queries}{167}{section*.402}%
+\contentsline {paragraph}{Complex Workflows}{167}{section*.403}%
+\contentsline {subsection}{\numberline {5.1.6}Design Trade-offs and Rationale}{167}{subsection.5.1.6}%
+\contentsline {paragraph}{Centralization vs.\ Modularity}{167}{section*.404}%
+\contentsline {paragraph}{Dependency Tolerance vs.\ Feature Completeness}{167}{section*.405}%
+\contentsline {paragraph}{Flexibility vs.\ Type Safety}{167}{section*.406}%
+\contentsline {subsection}{\numberline {5.1.7}Integration Points}{168}{subsection.5.1.7}%
+\contentsline {section}{\numberline {5.2}Intent Classification}{168}{section.5.2}%
+\contentsline {subsection}{\numberline {5.2.1}Intent Classification Architecture}{168}{subsection.5.2.1}%
+\contentsline {subsubsection}{Intent Modes}{168}{section*.407}%
+\contentsline {subsubsection}{Classification Priority}{169}{section*.408}%
+\contentsline {subsubsection}{IntentClassification Result}{170}{section*.409}%
+\contentsline {subsection}{\numberline {5.2.2}Pattern Categories}{170}{subsection.5.2.2}%
+\contentsline {subsubsection}{CHAT Patterns}{170}{section*.410}%
+\contentsline {subsubsection}{GRAPH Patterns}{171}{section*.411}%
+\contentsline {subsubsection}{ADMIN Patterns}{171}{section*.412}%
+\contentsline {subsubsection}{DANGEROUS Patterns}{171}{section*.413}%
+\contentsline {subsubsection}{SECURITY Patterns}{171}{section*.414}%
+\contentsline {subsubsection}{EXPLAIN Patterns}{172}{section*.415}%
+\contentsline {subsection}{\numberline {5.2.3}Ambiguity Handling and Edge Cases}{172}{subsection.5.2.3}%
+\contentsline {paragraph}{Borderline CHAT vs GRAPH Prompts}{172}{section*.416}%
+\contentsline {paragraph}{DANGEROUS Mode Triggers}{172}{section*.417}%
+\contentsline {paragraph}{Confidence Thresholds as Design Trade-off}{173}{section*.418}%
+\contentsline {subsection}{\numberline {5.2.4}Confidence Thresholds}{173}{subsection.5.2.4}%
+\contentsline {subsection}{\numberline {5.2.5}Prompt Catalog and Pattern-Based Routing}{173}{subsection.5.2.5}%
+\contentsline {subsubsection}{Catalog Structure}{173}{section*.420}%
+\contentsline {subsubsection}{Catalog Categories}{174}{section*.421}%
+\contentsline {subsection}{\numberline {5.2.6}LLM Fallback Classification}{175}{subsection.5.2.6}%
+\contentsline {section}{\numberline {5.3}Agent Run Lifecycle}{175}{section.5.3}%
+\contentsline {subsection}{\numberline {5.3.1}State Machine Definition}{175}{subsection.5.3.1}%
+\contentsline {subsection}{\numberline {5.3.2}End-to-End Request Flow}{176}{subsection.5.3.2}%
+\contentsline {subsubsection}{Step 1: HTTP Request Reception}{176}{section*.424}%
+\contentsline {subsubsection}{Step 2: Authentication and Authorization}{176}{section*.425}%
+\contentsline {subsubsection}{Step 3: Run Creation and Persistence}{176}{section*.426}%
+\contentsline {subsubsection}{Step 4: Orchestrator Invocation}{177}{section*.427}%
+\contentsline {subsubsection}{Step 5: Intent Classification and Routing}{177}{section*.428}%
+\contentsline {subsubsection}{Step 6: Step Execution Loop}{177}{section*.429}%
+\contentsline {subsubsection}{Step 7: Response Assembly and Delivery}{178}{section*.430}%
+\contentsline {subsection}{\numberline {5.3.3}Polling and SSE Streaming}{178}{subsection.5.3.3}%
+\contentsline {paragraph}{Workflow A: Agent Runs Polling and SSE}{178}{section*.431}%
+\contentsline {paragraph}{Workflow B: Jobs Polling and SSE}{178}{section*.432}%
+\contentsline {subsection}{\numberline {5.3.4}Agent Run Internal Structure}{178}{subsection.5.3.4}%
+\contentsline {subsubsection}{Session Entity}{178}{section*.433}%
+\contentsline {subsubsection}{Run Entity}{179}{section*.434}%
+\contentsline {subsubsection}{Step Entity}{179}{section*.435}%
+\contentsline {subsection}{\numberline {5.3.5}Persistence and Caching Strategy}{179}{subsection.5.3.5}%
+\contentsline {paragraph}{PostgreSQL (Control Plane)}{179}{section*.436}%
+\contentsline {paragraph}{Redis (Data Plane)}{179}{section*.437}%
+\contentsline {subsection}{\numberline {5.3.6}Error Handling and Recovery}{179}{subsection.5.3.6}%
+\contentsline {section}{\numberline {5.4}NL-to-Cypher Pipeline}{179}{section.5.4}%
+\contentsline {subsection}{\numberline {5.4.1}Pipeline Architecture Overview}{179}{subsection.5.4.1}%
+\contentsline {subsection}{\numberline {5.4.2}Worked Example: End-to-End NL-to-Cypher Pipeline}{179}{subsection.5.4.2}%
+\contentsline {paragraph}{Input Query}{180}{section*.438}%
+\contentsline {paragraph}{Stage 1: Natural Language Normalization}{180}{section*.439}%
+\contentsline {paragraph}{Stage 2: Catalog Lookup}{180}{section*.440}%
+\contentsline {paragraph}{Stage 3: LLM-Based Cypher Generation}{180}{section*.441}%
+\contentsline {paragraph}{Stage 4: Safety Validation}{180}{section*.442}%
+\contentsline {paragraph}{Stage 5: Query Execution}{181}{section*.444}%
+\contentsline {paragraph}{Stage 6: Result Summarization}{181}{section*.445}%
+\contentsline {subsection}{\numberline {5.4.3}Pipeline Stages}{181}{subsection.5.4.3}%
+\contentsline {subsubsection}{Stage 1: Natural Language Normalization}{181}{section*.446}%
+\contentsline {subsubsection}{Stage 2: Catalog Lookup and Pattern Matching}{181}{section*.447}%
+\contentsline {subsubsection}{Stage 3: LLM-Based Cypher Generation}{181}{section*.448}%
+\contentsline {subsubsection}{Stage 4: Safety Validation}{181}{section*.449}%
+\contentsline {subsubsection}{Stage 5: Query Execution}{182}{section*.450}%
+\contentsline {subsubsection}{Stage 6: Result Summarization}{182}{section*.451}%
+\contentsline {subsection}{\numberline {5.4.4}Failure Modes and Safety Guardrails}{182}{subsection.5.4.4}%
+\contentsline {subsection}{\numberline {5.4.5}Test Mode for Deterministic Testing}{182}{subsection.5.4.5}%
+\contentsline {subsection}{\numberline {5.4.6}NL-to-Cypher Advantages over RAG}{182}{subsection.5.4.6}%
+\contentsline {subsubsection}{Design Alternatives Considered}{182}{section*.452}%
+\contentsline {paragraph}{Alternative 1: Direct Cypher Input}{182}{section*.453}%
+\contentsline {paragraph}{Alternative 2: Template-Based Query Generation}{182}{section*.454}%
+\contentsline {paragraph}{Alternative 3: Fine-Tuned Domain-Specific Model}{183}{section*.455}%
+\contentsline {subsection}{\numberline {5.4.7}Trade-offs and Limitations}{183}{subsection.5.4.7}%
+\contentsline {section}{\numberline {5.5}LLM Provider Management}{183}{section.5.5}%
+\contentsline {subsection}{\numberline {5.5.1}Provider Registry Architecture}{183}{subsection.5.5.1}%
+\contentsline {subsubsection}{Provider Model}{183}{section*.456}%
+\contentsline {subsubsection}{Model Instance Model}{183}{section*.457}%
+\contentsline {subsubsection}{Default Model Resolver (DMR)}{183}{section*.458}%
+\contentsline {subsection}{\numberline {5.5.2}Resilience Framework}{183}{subsection.5.5.2}%
+\contentsline {subsubsection}{LLMFallbackOrchestrator}{184}{section*.459}%
+\contentsline {subsubsection}{Call Flow with Resilience Checks}{184}{section*.460}%
+\contentsline {subsection}{\numberline {5.5.3}Budgeting and Cost Governance}{184}{subsection.5.5.3}%
+\contentsline {subsubsection}{Cost Calculation}{184}{section*.461}%
+\contentsline {subsubsection}{Cost Aggregation Levels}{184}{section*.462}%
+\contentsline {subsection}{\numberline {5.5.4}Circuit Breaker Implementation}{184}{subsection.5.5.4}%
+\contentsline {subsection}{\numberline {5.5.5}Provider Fallback Strategy}{184}{subsection.5.5.5}%
+\contentsline {subsection}{\numberline {5.5.6}Registry-Based Model Management}{184}{subsection.5.5.6}%
+\contentsline {subsection}{\numberline {5.5.7}Health Probes}{184}{subsection.5.5.7}%
+\contentsline {chapter}{\numberline {6}MCP Tools Ecosystem}{185}{chapter.6}%
+\contentsline {section}{\numberline {6.1}MCP Runtime Architecture}{185}{section.6.1}%
+\contentsline {subsection}{\numberline {6.1.1}Architectural Overview}{185}{subsection.6.1.1}%
+\contentsline {subsection}{\numberline {6.1.2}Tool Registry and Discovery}{186}{subsection.6.1.2}%
+\contentsline {subsection}{\numberline {6.1.3}Tool Execution Context}{186}{subsection.6.1.3}%
+\contentsline {subsection}{\numberline {6.1.4}The \texttt {@mcp\_tool} Decorator}{186}{subsection.6.1.4}%
+\contentsline {subsection}{\numberline {6.1.5}Schema Validation}{187}{subsection.6.1.5}%
+\contentsline {subsection}{\numberline {6.1.6}Audit Logging}{187}{subsection.6.1.6}%
+\contentsline {subsection}{\numberline {6.1.7}Telemetry and Metrics}{187}{subsection.6.1.7}%
+\contentsline {subsection}{\numberline {6.1.8}Error Handling}{187}{subsection.6.1.8}%
+\contentsline {section}{\numberline {6.2}Tooling Use Cases and Interaction Patterns}{187}{section.6.2}%
+\contentsline {subsection}{\numberline {6.2.1}Primary Use Cases}{187}{subsection.6.2.1}%
+\contentsline {subsubsection}{Graph Question-Answering}{187}{section*.463}%
+\contentsline {subsubsection}{System Health and Monitoring}{188}{section*.464}%
+\contentsline {subsubsection}{Administrative Operations}{188}{section*.465}%
+\contentsline {subsubsection}{Graph Data Management}{188}{section*.466}%
+\contentsline {subsubsection}{Session and Context Management}{188}{section*.467}%
+\contentsline {subsection}{\numberline {6.2.2}Interaction Patterns}{188}{subsection.6.2.2}%
+\contentsline {section}{\numberline {6.3}Tool Categories and Inventory}{188}{section.6.3}%
+\contentsline {subsection}{\numberline {6.3.1}Category Organization}{188}{subsection.6.3.1}%
+\contentsline {subsection}{\numberline {6.3.2}Graph Tools}{188}{subsection.6.3.2}%
+\contentsline {subsection}{\numberline {6.3.3}Security Tools}{189}{subsection.6.3.3}%
+\contentsline {subsection}{\numberline {6.3.4}System Tools}{189}{subsection.6.3.4}%
+\contentsline {subsection}{\numberline {6.3.5}Model Tools}{189}{subsection.6.3.5}%
+\contentsline {subsection}{\numberline {6.3.6}Other Tool Categories}{189}{subsection.6.3.6}%
+\contentsline {section}{\numberline {6.4}Tool Authorization}{189}{section.6.4}%
+\contentsline {subsection}{\numberline {6.4.1}Authorization Model}{189}{subsection.6.4.1}%
+\contentsline {subsection}{\numberline {6.4.2}Per-Tool RBAC}{189}{subsection.6.4.2}%
+\contentsline {subsection}{\numberline {6.4.3}Tenant Isolation}{190}{subsection.6.4.3}%
+\contentsline {subsection}{\numberline {6.4.4}Policy Files}{190}{subsection.6.4.4}%
+\contentsline {subsection}{\numberline {6.4.5}Authorization Decision Flow}{190}{subsection.6.4.5}%
+\contentsline {section}{\numberline {6.5}Extending the Tool Ecosystem}{190}{section.6.5}%
+\contentsline {subsection}{\numberline {6.5.1}Adding New Tools}{190}{subsection.6.5.1}%
+\contentsline {subsection}{\numberline {6.5.2}Extensibility Guide with Difficulty Ratings}{190}{subsection.6.5.2}%
+\contentsline {subsection}{\numberline {6.5.3}Testing Tools}{191}{subsection.6.5.3}%
+\contentsline {subsection}{\numberline {6.5.4}Best Practices}{191}{subsection.6.5.4}%
+\contentsline {paragraph}{Complete Tool Reference}{191}{section*.468}%
+\contentsline {chapter}{\numberline {7}Background Jobs and Workers}{193}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Asynchronous Job System}{193}{section.7.1}%
+\contentsline {subsection}{\numberline {7.1.1}Design Alternatives Considered}{193}{subsection.7.1.1}%
+\contentsline {paragraph}{Alternative 1: Database-Based Job Queue}{193}{section*.469}%
+\contentsline {paragraph}{Alternative 2: Message Queue Middleware}{194}{section*.470}%
+\contentsline {paragraph}{Alternative 3: Serverless/Cloud Functions}{194}{section*.471}%
+\contentsline {subsection}{\numberline {7.1.2}Design Goals and Requirements}{194}{subsection.7.1.2}%
+\contentsline {subsection}{\numberline {7.1.3}Distinguishing Agent Run States from Job States}{195}{subsection.7.1.3}%
+\contentsline {paragraph}{When Runs Execute via Jobs (Workflow B) vs Synchronous (Workflow A)}{195}{section*.473}%
+\contentsline {paragraph}{State Synchronization (Workflow B)}{196}{section*.474}%
+\contentsline {subsection}{\numberline {7.1.4}Job Lifecycle State Machine}{196}{subsection.7.1.4}%
+\contentsline {subsection}{\numberline {7.1.5}Job Document Structure}{196}{subsection.7.1.5}%
+\contentsline {subsection}{\numberline {7.1.6}Job Type Registry}{197}{subsection.7.1.6}%
+\contentsline {subsection}{\numberline {7.1.7}Storage Abstraction Layer}{197}{subsection.7.1.7}%
+\contentsline {subsection}{\numberline {7.1.8}Storage Backend Implementations}{197}{subsection.7.1.8}%
+\contentsline {subsection}{\numberline {7.1.9}Idempotency Mechanism}{198}{subsection.7.1.9}%
+\contentsline {section}{\numberline {7.2}Worker Architecture}{198}{section.7.2}%
+\contentsline {subsection}{\numberline {7.2.1}Process Separation Model}{198}{subsection.7.2.1}%
+\contentsline {subsection}{\numberline {7.2.2}Queue Polling Mechanism}{198}{subsection.7.2.2}%
+\contentsline {subsection}{\numberline {7.2.3}Job Execution Flow}{198}{subsection.7.2.3}%
+\contentsline {subsection}{\numberline {7.2.4}Heartbeat Mechanism}{198}{subsection.7.2.4}%
+\contentsline {subsection}{\numberline {7.2.5}Job Type Dispatching}{198}{subsection.7.2.5}%
+\contentsline {subsection}{\numberline {7.2.6}Graceful Shutdown}{199}{subsection.7.2.6}%
+\contentsline {section}{\numberline {7.3}Job Events and SSE Streaming}{199}{section.7.3}%
+\contentsline {subsection}{\numberline {7.3.1}SSE Event Model}{199}{subsection.7.3.1}%
+\contentsline {subsection}{\numberline {7.3.2}Ring Buffer Architecture}{199}{subsection.7.3.2}%
+\contentsline {subsection}{\numberline {7.3.3}Monotonic Event IDs}{200}{subsection.7.3.3}%
+\contentsline {subsection}{\numberline {7.3.4}Event Replay for Reconnection}{200}{subsection.7.3.4}%
+\contentsline {subsection}{\numberline {7.3.5}SSE Endpoint Implementation}{200}{subsection.7.3.5}%
+\contentsline {section}{\numberline {7.4}Job Cancellation}{200}{section.7.4}%
+\contentsline {subsection}{\numberline {7.4.1}Cancellation Model}{200}{subsection.7.4.1}%
+\contentsline {subsection}{\numberline {7.4.2}Cancel Flag Mechanism}{200}{subsection.7.4.2}%
+\contentsline {subsection}{\numberline {7.4.3}Cancellation Flow}{200}{subsection.7.4.3}%
+\contentsline {subsection}{\numberline {7.4.4}Atomic Cancellation with Lua Scripts}{200}{subsection.7.4.4}%
+\contentsline {section}{\numberline {7.5}High Availability and Fault-Tolerance Patterns}{201}{section.7.5}%
+\contentsline {subsection}{\numberline {7.5.1}Worker Heartbeat and Dead-Worker Detection}{201}{subsection.7.5.1}%
+\contentsline {subsection}{\numberline {7.5.2}Orphaned Job Recovery}{201}{subsection.7.5.2}%
+\contentsline {subsection}{\numberline {7.5.3}Graceful Degradation}{201}{subsection.7.5.3}%
+\contentsline {subsection}{\numberline {7.5.4}Health Probe Integration}{201}{subsection.7.5.4}%
+\contentsline {subsection}{\numberline {7.5.5}Known Limitations}{201}{subsection.7.5.5}%
+\contentsline {section}{\numberline {7.6}Background Framework}{201}{section.7.6}%
+\contentsline {subsection}{\numberline {7.6.1}Framework Overview}{201}{subsection.7.6.1}%
+\contentsline {subsection}{\numberline {7.6.2}BackgroundManager Class}{202}{subsection.7.6.2}%
+\contentsline {subsection}{\numberline {7.6.3}Scheduled Task Categories}{202}{subsection.7.6.3}%
+\contentsline {subsection}{\numberline {7.6.4}FastAPI Lifespan Integration}{202}{subsection.7.6.4}%
+\contentsline {subsection}{\numberline {7.6.5}Metrics Emission}{202}{subsection.7.6.5}%
+\contentsline {chapter}{\numberline {8}Security Framework}{203}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Authentication}{203}{section.8.1}%
+\contentsline {subsection}{\numberline {8.1.1}OIDC/JWT-Based Authentication}{203}{subsection.8.1.1}%
+\contentsline {subsection}{\numberline {8.1.2}Authentication Flow Details}{204}{subsection.8.1.2}%
+\contentsline {section}{\numberline {8.2}Authorization}{204}{section.8.2}%
+\contentsline {subsection}{\numberline {8.2.1}RBAC Model}{204}{subsection.8.2.1}%
+\contentsline {subsection}{\numberline {8.2.2}RBAC Implementation Details}{204}{subsection.8.2.2}%
+\contentsline {section}{\numberline {8.3}Multi-Tenancy}{204}{section.8.3}%
+\contentsline {subsection}{\numberline {8.3.1}Tenant Isolation Model}{205}{subsection.8.3.1}%
+\contentsline {subsection}{\numberline {8.3.2}Database-Level Isolation}{205}{subsection.8.3.2}%
+\contentsline {section}{\numberline {8.4}Rate Limiting}{205}{section.8.4}%
+\contentsline {subsection}{\numberline {8.4.1}Backend Architecture}{205}{subsection.8.4.1}%
+\contentsline {section}{\numberline {8.5}Data Protection}{205}{section.8.5}%
+\contentsline {subsection}{\numberline {8.5.1}PII Scrubbing}{205}{subsection.8.5.1}%
+\contentsline {subsection}{\numberline {8.5.2}Output Guard}{205}{subsection.8.5.2}%
+\contentsline {subsection}{\numberline {8.5.3}Intent Filter}{206}{subsection.8.5.3}%
+\contentsline {section}{\numberline {8.6}Threat Model and Attack Scenarios}{206}{section.8.6}%
+\contentsline {subsection}{\numberline {8.6.1}Threat Categories}{206}{subsection.8.6.1}%
+\contentsline {section}{\numberline {8.7}Audit Logging}{206}{section.8.7}%
+\contentsline {subsection}{\numberline {8.7.1}Audit Event Model}{206}{subsection.8.7.1}%
+\contentsline {subsection}{\numberline {8.7.2}Output Channels}{206}{subsection.8.7.2}%
+\contentsline {section}{\numberline {8.8}Security Strengths and Weaknesses}{207}{section.8.8}%
+\contentsline {subsection}{\numberline {8.8.1}Strengths}{207}{subsection.8.8.1}%
+\contentsline {subsection}{\numberline {8.8.2}Weaknesses and Limitations}{207}{subsection.8.8.2}%
+\contentsline {subsection}{\numberline {8.8.3}Ethics and Privacy Considerations}{207}{subsection.8.8.3}%
+\contentsline {paragraph}{PII Protection Mechanisms}{207}{section*.475}%
+\contentsline {paragraph}{Data Minimization and Purpose Limitation}{208}{section*.476}%
+\contentsline {paragraph}{Consent and Lawful Basis}{208}{section*.477}%
+\contentsline {paragraph}{Ethical AI Considerations}{208}{section*.478}%
+\contentsline {subsection}{\numberline {8.8.4}Recommendations for Production Deployment}{208}{subsection.8.8.4}%
+\contentsline {chapter}{\numberline {9}Observability}{209}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Metrics}{209}{section.9.1}%
+\contentsline {subsection}{\numberline {9.1.1}Metrics Architecture Overview}{209}{subsection.9.1.1}%
+\contentsline {subsection}{\numberline {9.1.2}Comprehensive Metrics Catalog}{209}{subsection.9.1.2}%
+\contentsline {section}{\numberline {9.2}Logging}{210}{section.9.2}%
+\contentsline {subsection}{\numberline {9.2.1}Logging Architecture Overview}{210}{subsection.9.2.1}%
+\contentsline {subsection}{\numberline {9.2.2}Structured Log Schema}{210}{subsection.9.2.2}%
+\contentsline {subsection}{\numberline {9.2.3}Request Context Correlation}{210}{subsection.9.2.3}%
+\contentsline {subsection}{\numberline {9.2.4}High-Frequency Log Filtering}{210}{subsection.9.2.4}%
+\contentsline {section}{\numberline {9.3}Tracing}{210}{section.9.3}%
+\contentsline {subsection}{\numberline {9.3.1}OpenTelemetry Integration Architecture}{211}{subsection.9.3.1}%
+\contentsline {subsection}{\numberline {9.3.2}Sampling Strategies}{211}{subsection.9.3.2}%
+\contentsline {subsection}{\numberline {9.3.3}OTLP Exporters}{211}{subsection.9.3.3}%
+\contentsline {subsection}{\numberline {9.3.4}Automatic Instrumentation}{211}{subsection.9.3.4}%
+\contentsline {section}{\numberline {9.4}Health Probes}{211}{section.9.4}%
+\contentsline {subsection}{\numberline {9.4.1}Health Probe Architecture}{211}{subsection.9.4.1}%
+\contentsline {subsection}{\numberline {9.4.2}Probe Types and Endpoints}{211}{subsection.9.4.2}%
+\contentsline {subsection}{\numberline {9.4.3}Probe Implementation Details}{212}{subsection.9.4.3}%
+\contentsline {subsection}{\numberline {9.4.4}Readiness Policy Evaluation}{212}{subsection.9.4.4}%
+\contentsline {section}{\numberline {9.5}Dashboards, SLOs, and Alerting}{212}{section.9.5}%
+\contentsline {subsection}{\numberline {9.5.1}Grafana Dashboard Architecture}{212}{subsection.9.5.1}%
+\contentsline {subsection}{\numberline {9.5.2}Service Level Objectives (SLOs)}{212}{subsection.9.5.2}%
+\contentsline {subsection}{\numberline {9.5.3}Alerting Rules}{212}{subsection.9.5.3}%
+\contentsline {section}{\numberline {9.6}Operational Playbooks and Runbooks}{212}{section.9.6}%
+\contentsline {subsection}{\numberline {9.6.1}Runbook Structure}{213}{subsection.9.6.1}%
+\contentsline {subsection}{\numberline {9.6.2}Database Unavailability}{213}{subsection.9.6.2}%
+\contentsline {subsection}{\numberline {9.6.3}LLM Provider Outages}{213}{subsection.9.6.3}%
+\contentsline {subsection}{\numberline {9.6.4}Job Queue Backlog}{213}{subsection.9.6.4}%
+\contentsline {subsection}{\numberline {9.6.5}High Error Rates and Latency}{213}{subsection.9.6.5}%
+\contentsline {subsection}{\numberline {9.6.6}Backup and Restore Procedures}{213}{subsection.9.6.6}%
+\contentsline {subsection}{\numberline {9.6.7}Using Metrics, Logs, and Traces for Triage}{213}{subsection.9.6.7}%
+\contentsline {chapter}{\numberline {10}Implementation and Engineering Practices}{215}{chapter.10}%
+\contentsline {section}{\numberline {10.1}Technology Stack}{215}{section.10.1}%
+\contentsline {subsection}{\numberline {10.1.1}Backend Core Technologies}{215}{subsection.10.1.1}%
+\contentsline {subsection}{\numberline {10.1.2}Data Persistence Layer}{215}{subsection.10.1.2}%
+\contentsline {subsection}{\numberline {10.1.3}Security and Authentication}{215}{subsection.10.1.3}%
+\contentsline {subsection}{\numberline {10.1.4}Observability Stack}{216}{subsection.10.1.4}%
+\contentsline {subsection}{\numberline {10.1.5}LLM Provider Integration}{216}{subsection.10.1.5}%
+\contentsline {subsection}{\numberline {10.1.6}Presentation Layer Technologies}{216}{subsection.10.1.6}%
+\contentsline {subsection}{\numberline {10.1.7}Development and Quality Tools}{216}{subsection.10.1.7}%
+\contentsline {section}{\numberline {10.2}Codebase Structure}{216}{section.10.2}%
+\contentsline {subsection}{\numberline {10.2.1}Project Root Organization}{216}{subsection.10.2.1}%
+\contentsline {subsection}{\numberline {10.2.2}Source Code Organization}{216}{subsection.10.2.2}%
+\contentsline {subsection}{\numberline {10.2.3}Key Entry Points}{216}{subsection.10.2.3}%
+\contentsline {subsection}{\numberline {10.2.4}Database Layer}{217}{subsection.10.2.4}%
+\contentsline {section}{\numberline {10.3}Coding Standards and Conventions}{217}{section.10.3}%
+\contentsline {subsection}{\numberline {10.3.1}Code Formatting and Style}{217}{subsection.10.3.1}%
+\contentsline {subsection}{\numberline {10.3.2}Naming Conventions}{217}{subsection.10.3.2}%
+\contentsline {subsection}{\numberline {10.3.3}Error Handling Patterns}{217}{subsection.10.3.3}%
+\contentsline {subsection}{\numberline {10.3.4}Logging Conventions}{217}{subsection.10.3.4}%
+\contentsline {subsection}{\numberline {10.3.5}Type Annotations and Mypy}{217}{subsection.10.3.5}%
+\contentsline {section}{\numberline {10.4}Testing Strategy}{217}{section.10.4}%
+\contentsline {subsection}{\numberline {10.4.1}Testing Categories and Markers}{218}{subsection.10.4.1}%
+\contentsline {subsection}{\numberline {10.4.2}Testing Infrastructure Details}{218}{subsection.10.4.2}%
+\contentsline {subsection}{\numberline {10.4.3}Memgraph NL Test Mode}{218}{subsection.10.4.3}%
+\contentsline {subsection}{\numberline {10.4.4}Continuous Integration and Quality Gates}{218}{subsection.10.4.4}%
+\contentsline {section}{\numberline {10.5}Platform Engineering Utilities}{218}{section.10.5}%
+\contentsline {subsection}{\numberline {10.5.1}Pagination and ETags}{218}{subsection.10.5.1}%
+\contentsline {subsection}{\numberline {10.5.2}Idempotency}{218}{subsection.10.5.2}%
+\contentsline {subsection}{\numberline {10.5.3}JSON Utilities}{218}{subsection.10.5.3}%
+\contentsline {subsection}{\numberline {10.5.4}Provider Resolution}{219}{subsection.10.5.4}%
+\contentsline {subsection}{\numberline {10.5.5}Deprecation Framework}{219}{subsection.10.5.5}%
+\contentsline {chapter}{\numberline {11}Configuration and Deployment}{221}{chapter.11}%
+\contentsline {section}{\numberline {11.1}Configuration System}{221}{section.11.1}%
+\contentsline {subsection}{\numberline {11.1.1}Configuration Architecture}{221}{subsection.11.1.1}%
+\contentsline {subsection}{\numberline {11.1.2}Configuration Categories}{221}{subsection.11.1.2}%
+\contentsline {subsection}{\numberline {11.1.3}Compute Configuration}{221}{subsection.11.1.3}%
+\contentsline {section}{\numberline {11.2}Environment Profiles (Development, Testing, Production)}{222}{section.11.2}%
+\contentsline {subsection}{\numberline {11.2.1}Environment Comparison}{222}{subsection.11.2.1}%
+\contentsline {section}{\numberline {11.3}Docker Deployment}{222}{section.11.3}%
+\contentsline {subsection}{\numberline {11.3.1}Docker Compose Architecture}{222}{subsection.11.3.1}%
+\contentsline {section}{\numberline {11.4}Deployment Topologies and Scaling Strategies}{223}{section.11.4}%
+\contentsline {subsection}{\numberline {11.4.1}Scaling Patterns}{223}{subsection.11.4.1}%
+\contentsline {section}{\numberline {11.5}Production Considerations}{223}{section.11.5}%
+\contentsline {subsection}{\numberline {11.5.1}Security Headers}{223}{subsection.11.5.1}%
+\contentsline {subsection}{\numberline {11.5.2}TLS Termination}{223}{subsection.11.5.2}%
+\contentsline {subsection}{\numberline {11.5.3}GPU Support}{224}{subsection.11.5.3}%
+\contentsline {section}{\numberline {11.6}Production Checklist}{224}{section.11.6}%
+\contentsline {section}{\numberline {11.7}Operational Scripts}{224}{section.11.7}%
+\contentsline {subsection}{\numberline {11.7.1}Makefile Targets}{224}{subsection.11.7.1}%
+\contentsline {subsection}{\numberline {11.7.2}Deployment Scripts}{224}{subsection.11.7.2}%
+\contentsline {section}{\numberline {11.8}Troubleshooting}{224}{section.11.8}%
+\contentsline {subsection}{\numberline {11.8.1}Common Issues}{224}{subsection.11.8.1}%
+\contentsline {subsection}{\numberline {11.8.2}Health Endpoints}{224}{subsection.11.8.2}%
+\contentsline {chapter}{\numberline {12}Evaluation}{227}{chapter.12}%
+\contentsline {section}{\numberline {12.1}Evaluation Methodology and Setup}{227}{section.12.1}%
+\contentsline {subsection}{\numberline {12.1.1}Evaluation Objectives}{227}{subsection.12.1.1}%
+\contentsline {subsection}{\numberline {12.1.2}Evaluation Hypotheses}{227}{subsection.12.1.2}%
+\contentsline {subsection}{\numberline {12.1.3}Metrics Definitions}{228}{subsection.12.1.3}%
+\contentsline {subsection}{\numberline {12.1.4}Test Environment}{228}{subsection.12.1.4}%
+\contentsline {subsection}{\numberline {12.1.5}Workload Description}{228}{subsection.12.1.5}%
+\contentsline {subsection}{\numberline {12.1.6}Test Suite Statistics}{228}{subsection.12.1.6}%
+\contentsline {section}{\numberline {12.2}Functional Evaluation}{229}{section.12.2}%
+\contentsline {subsection}{\numberline {12.2.1}API Contract Compliance}{229}{subsection.12.2.1}%
+\contentsline {subsection}{\numberline {12.2.2}Feature Completeness}{229}{subsection.12.2.2}%
+\contentsline {section}{\numberline {12.3}Performance Evaluation}{229}{section.12.3}%
+\contentsline {subsection}{\numberline {12.3.1}Baselines}{229}{subsection.12.3.1}%
+\contentsline {subsection}{\numberline {12.3.2}Response Time Analysis}{230}{subsection.12.3.2}%
+\contentsline {subsection}{\numberline {12.3.3}Throughput}{230}{subsection.12.3.3}%
+\contentsline {subsection}{\numberline {12.3.4}Resource Utilization}{230}{subsection.12.3.4}%
+\contentsline {subsection}{\numberline {12.3.5}Ablation Study}{230}{subsection.12.3.5}%
+\contentsline {section}{\numberline {12.4}Security Evaluation}{231}{section.12.4}%
+\contentsline {subsection}{\numberline {12.4.1}Authentication and Authorization}{231}{subsection.12.4.1}%
+\contentsline {subsection}{\numberline {12.4.2}Data Protection}{231}{subsection.12.4.2}%
+\contentsline {subsection}{\numberline {12.4.3}Penetration Testing}{231}{subsection.12.4.3}%
+\contentsline {section}{\numberline {12.5}Availability, Fault-Tolerance, and Degradation Behavior}{232}{section.12.5}%
+\contentsline {subsection}{\numberline {12.5.1}Circuit Breaker Evaluation}{232}{subsection.12.5.1}%
+\contentsline {subsection}{\numberline {12.5.2}Database Failure Scenarios}{232}{subsection.12.5.2}%
+\contentsline {section}{\numberline {12.6}Operational Cost and Budget Evaluation}{232}{section.12.6}%
+\contentsline {section}{\numberline {12.7}End-to-End Workflows}{233}{section.12.7}%
+\contentsline {section}{\numberline {12.8}Comparison with Related Work}{233}{section.12.8}%
+\contentsline {subsection}{\numberline {12.8.1}Feature Comparison}{233}{subsection.12.8.1}%
+\contentsline {paragraph}{Cineca Leaders}{233}{section*.489}%
+\contentsline {paragraph}{Competitive Positioning}{233}{section*.490}%
+\contentsline {paragraph}{Areas for Future Enhancement}{233}{section*.491}%
+\contentsline {subsection}{\numberline {12.8.2}Strategic Positioning}{234}{subsection.12.8.2}%
+\contentsline {section}{\numberline {12.9}Threats to Validity}{234}{section.12.9}%
+\contentsline {subsection}{\numberline {12.9.1}Internal Validity}{234}{subsection.12.9.1}%
+\contentsline {paragraph}{Threat: Confounding Variables}{234}{section*.492}%
+\contentsline {paragraph}{Impact}{234}{section*.493}%
+\contentsline {paragraph}{Mitigation}{234}{section*.494}%
+\contentsline {paragraph}{Residual Risk}{234}{section*.495}%
+\contentsline {paragraph}{Threat: Test Environment vs.\ Production Differences}{234}{section*.496}%
+\contentsline {paragraph}{Impact}{234}{section*.497}%
+\contentsline {paragraph}{Mitigation}{234}{section*.498}%
+\contentsline {paragraph}{Residual Risk}{234}{section*.499}%
+\contentsline {subsection}{\numberline {12.9.2}External Validity}{235}{subsection.12.9.2}%
+\contentsline {paragraph}{Threat: Context-Specific Results}{235}{section*.500}%
+\contentsline {paragraph}{Impact}{235}{section*.501}%
+\contentsline {paragraph}{Mitigation}{235}{section*.502}%
+\contentsline {paragraph}{Residual Risk}{235}{section*.503}%
+\contentsline {paragraph}{Threat: Synthetic vs.\ Real-World Workloads}{235}{section*.504}%
+\contentsline {paragraph}{Impact}{235}{section*.505}%
+\contentsline {paragraph}{Mitigation}{235}{section*.506}%
+\contentsline {paragraph}{Residual Risk}{235}{section*.507}%
+\contentsline {subsection}{\numberline {12.9.3}Construct and Reliability}{235}{subsection.12.9.3}%
+\contentsline {subsection}{\numberline {12.9.4}Reproducibility}{235}{subsection.12.9.4}%
+\contentsline {chapter}{\numberline {13}Conclusions and Future Work}{237}{chapter.13}%
+\contentsline {section}{\numberline {13.1}Summary of Contributions}{237}{section.13.1}%
+\contentsline {section}{\numberline {13.2}Lessons Learned}{238}{section.13.2}%
+\contentsline {subsection}{\numberline {13.2.1}Architectural Insights}{238}{subsection.13.2.1}%
+\contentsline {subsection}{\numberline {13.2.2}Best Practices Identified}{238}{subsection.13.2.2}%
+\contentsline {section}{\numberline {13.3}Limitations}{238}{section.13.3}%
+\contentsline {subsection}{\numberline {13.3.1}Scope Constraints}{238}{subsection.13.3.1}%
+\contentsline {subsection}{\numberline {13.3.2}Architectural Limitations}{238}{subsection.13.3.2}%
+\contentsline {subsection}{\numberline {13.3.3}Technical Debt}{238}{subsection.13.3.3}%
+\contentsline {section}{\numberline {13.4}Future Work}{239}{section.13.4}%
+\contentsline {subsection}{\numberline {13.4.1}High-Priority Enhancements}{239}{subsection.13.4.1}%
+\contentsline {subsection}{\numberline {13.4.2}Agent Capability Extensions}{239}{subsection.13.4.2}%
+\contentsline {subsection}{\numberline {13.4.3}Infrastructure Improvements}{239}{subsection.13.4.3}%
+\contentsline {subsection}{\numberline {13.4.4}Roadmap Priority}{239}{subsection.13.4.4}%
+\contentsline {section}{\numberline {13.5}Implications for Enterprise AI Architectures}{239}{section.13.5}%
+\contentsline {subsection}{\numberline {13.5.1}Enterprise-First Design Philosophy}{239}{subsection.13.5.1}%
+\contentsline {subsection}{\numberline {13.5.2}Key Patterns}{239}{subsection.13.5.2}%
+\contentsline {subsection}{\numberline {13.5.3}Concluding Remarks}{239}{subsection.13.5.3}%
+\contentsline {chapter}{\numberline {A}API Endpoint Reference}{241}{appendix.A}%
+\contentsline {section}{\numberline {A.1}API Overview}{241}{section.A.1}%
+\contentsline {subsection}{\numberline {A.1.1}Base URL and Versioning}{241}{subsection.A.1.1}%
+\contentsline {subsection}{\numberline {A.1.2}Authentication}{241}{subsection.A.1.2}%
+\contentsline {subsection}{\numberline {A.1.3}Common Response Headers}{242}{subsection.A.1.3}%
+\contentsline {section}{\numberline {A.2}Endpoint Categories}{242}{section.A.2}%
+\contentsline {section}{\numberline {A.3}Agent Endpoints}{242}{section.A.3}%
+\contentsline {subsection}{\numberline {A.3.1}Session Management}{243}{subsection.A.3.1}%
+\contentsline {subsection}{\numberline {A.3.2}Agent Runs}{243}{subsection.A.3.2}%
+\contentsline {section}{\numberline {A.4}Jobs Endpoints}{243}{section.A.4}%
+\contentsline {section}{\numberline {A.5}Model Management Endpoints}{243}{section.A.5}%
+\contentsline {subsection}{\numberline {A.5.1}Model Instances}{243}{subsection.A.5.1}%
+\contentsline {subsection}{\numberline {A.5.2}LLM Providers}{243}{subsection.A.5.2}%
+\contentsline {section}{\numberline {A.6}Health Endpoints}{243}{section.A.6}%
+\contentsline {section}{\numberline {A.7}Tools Endpoints}{244}{section.A.7}%
+\contentsline {section}{\numberline {A.8}Admin Endpoints}{244}{section.A.8}%
+\contentsline {subsection}{\numberline {A.8.1}Tenant Management}{244}{subsection.A.8.1}%
+\contentsline {subsection}{\numberline {A.8.2}Process Management}{244}{subsection.A.8.2}%
+\contentsline {section}{\numberline {A.9}Error Response Format}{244}{section.A.9}%
+\contentsline {subsection}{\numberline {A.9.1}HTTP Status Codes}{245}{subsection.A.9.1}%
+\contentsline {section}{\numberline {A.10}Pagination}{245}{section.A.10}%
+\contentsline {section}{\numberline {A.11}Documentation Access}{245}{section.A.11}%
+\contentsline {chapter}{\numberline {B}MCP Tool Reference}{247}{appendix.B}%
+\contentsline {section}{\numberline {B.1}Tool Architecture Overview}{247}{section.B.1}%
+\contentsline {subsection}{\numberline {B.1.1}Tool Registration}{247}{subsection.B.1.1}%
+\contentsline {subsection}{\numberline {B.1.2}Common Response Format}{247}{subsection.B.1.2}%
+\contentsline {section}{\numberline {B.2}Graph Tools}{248}{section.B.2}%
+\contentsline {subsection}{\numberline {B.2.1}graph.query}{248}{subsection.B.2.1}%
+\contentsline {subsection}{\numberline {B.2.2}graph.secure\_query}{248}{subsection.B.2.2}%
+\contentsline {subsection}{\numberline {B.2.3}graph.schema}{248}{subsection.B.2.3}%
+\contentsline {subsection}{\numberline {B.2.4}graph.search}{248}{subsection.B.2.4}%
+\contentsline {subsection}{\numberline {B.2.5}graph.crud}{248}{subsection.B.2.5}%
+\contentsline {subsection}{\numberline {B.2.6}graph.bulk}{249}{subsection.B.2.6}%
+\contentsline {subsection}{\numberline {B.2.7}graph.analytics}{249}{subsection.B.2.7}%
+\contentsline {subsection}{\numberline {B.2.8}graph.generate\_cypher}{249}{subsection.B.2.8}%
+\contentsline {section}{\numberline {B.3}Security Tools}{249}{section.B.3}%
+\contentsline {subsection}{\numberline {B.3.1}security.check}{249}{subsection.B.3.1}%
+\contentsline {subsection}{\numberline {B.3.2}security.audit}{249}{subsection.B.3.2}%
+\contentsline {subsection}{\numberline {B.3.3}security.permissions}{249}{subsection.B.3.3}%
+\contentsline {subsection}{\numberline {B.3.4}security.allowed\_operations}{249}{subsection.B.3.4}%
+\contentsline {subsection}{\numberline {B.3.5}security.describe\_principal}{249}{subsection.B.3.5}%
+\contentsline {section}{\numberline {B.4}System Tools}{249}{section.B.4}%
+\contentsline {subsection}{\numberline {B.4.1}system.health}{249}{subsection.B.4.1}%
+\contentsline {subsection}{\numberline {B.4.2}system.status}{249}{subsection.B.4.2}%
+\contentsline {subsection}{\numberline {B.4.3}system.metrics}{250}{subsection.B.4.3}%
+\contentsline {subsection}{\numberline {B.4.4}system.backup}{250}{subsection.B.4.4}%
+\contentsline {section}{\numberline {B.5}Data Tools}{250}{section.B.5}%
+\contentsline {subsection}{\numberline {B.5.1}data.archive}{250}{subsection.B.5.1}%
+\contentsline {subsection}{\numberline {B.5.2}data.quality}{250}{subsection.B.5.2}%
+\contentsline {section}{\numberline {B.6}Model Tools}{250}{section.B.6}%
+\contentsline {subsection}{\numberline {B.6.1}model.manage}{250}{subsection.B.6.1}%
+\contentsline {subsection}{\numberline {B.6.2}model.test}{250}{subsection.B.6.2}%
+\contentsline {section}{\numberline {B.7}Output Tools}{250}{section.B.7}%
+\contentsline {subsection}{\numberline {B.7.1}output.format}{250}{subsection.B.7.1}%
+\contentsline {subsection}{\numberline {B.7.2}output.summarize}{250}{subsection.B.7.2}%
+\contentsline {section}{\numberline {B.8}Additional Tools}{250}{section.B.8}%
+\contentsline {section}{\numberline {B.9}Tool Discovery API}{251}{section.B.9}%
+\contentsline {section}{\numberline {B.10}Security and Audit}{251}{section.B.10}%
+\contentsline {chapter}{\numberline {C}Database Schema}{253}{appendix.C}%
+\contentsline {section}{\numberline {C.1}PostgreSQL Schema}{253}{section.C.1}%
+\contentsline {subsection}{\numberline {C.1.1}Core Tables}{253}{subsection.C.1.1}%
+\contentsline {subsubsection}{Tenants Table}{253}{section*.523}%
+\contentsline {subsubsection}{Jobs Table}{253}{section*.524}%
+\contentsline {subsection}{\numberline {C.1.2}Agent Tables}{254}{subsection.C.1.2}%
+\contentsline {subsubsection}{Agent Sessions}{254}{section*.525}%
+\contentsline {subsubsection}{Agent Runs}{254}{section*.526}%
+\contentsline {subsection}{\numberline {C.1.3}Provider Tables}{255}{subsection.C.1.3}%
+\contentsline {section}{\numberline {C.2}Memgraph Schema}{255}{section.C.2}%
+\contentsline {subsection}{\numberline {C.2.1}Node Types}{256}{subsection.C.2.1}%
+\contentsline {subsection}{\numberline {C.2.2}Relationship Types}{256}{subsection.C.2.2}%
+\contentsline {section}{\numberline {C.3}Redis Key Patterns}{256}{section.C.3}%
+\contentsline {section}{\numberline {C.4}Migration History}{256}{section.C.4}%
+\contentsline {chapter}{\numberline {D}Architecture Decision Records (ADR) Summary}{259}{appendix.D}%
+\contentsline {section}{\numberline {D.1}ADR Process}{259}{section.D.1}%
+\contentsline {subsection}{\numberline {D.1.1}ADR Format}{259}{subsection.D.1.1}%
+\contentsline {section}{\numberline {D.2}Recorded Decisions}{259}{section.D.2}%
+\contentsline {subsection}{\numberline {D.2.1}ADR-0001: Record Architecture Decisions}{259}{subsection.D.2.1}%
+\contentsline {section}{\numberline {D.3}Implicit Decisions}{259}{section.D.3}%
+\contentsline {subsection}{\numberline {D.3.1}Three-Layer Architecture}{260}{subsection.D.3.1}%
+\contentsline {subsection}{\numberline {D.3.2}PostgreSQL as Control Plane}{260}{subsection.D.3.2}%
+\contentsline {subsection}{\numberline {D.3.3}Redis as Data Plane}{260}{subsection.D.3.3}%
+\contentsline {subsection}{\numberline {D.3.4}Memgraph for Graph Domain}{260}{subsection.D.3.4}%
+\contentsline {subsection}{\numberline {D.3.5}MCP-Style Tool Protocol}{260}{subsection.D.3.5}%
+\contentsline {subsection}{\numberline {D.3.6}OIDC/JWT for Authentication}{260}{subsection.D.3.6}%
+\contentsline {subsection}{\numberline {D.3.7}Multi-Tenant Isolation}{260}{subsection.D.3.7}%
+\contentsline {subsection}{\numberline {D.3.8}Dual UI Architecture}{260}{subsection.D.3.8}%
+\contentsline {section}{\numberline {D.4}Pending Decisions}{260}{section.D.4}%
+\contentsline {chapter}{\numberline {E}Configuration Reference}{263}{appendix.E}%
+\contentsline {section}{\numberline {E.1}Configuration Loading}{263}{section.E.1}%
+\contentsline {subsection}{\numberline {E.1.1}Secrets Management}{263}{subsection.E.1.1}%
+\contentsline {section}{\numberline {E.2}Application Settings}{264}{section.E.2}%
+\contentsline {section}{\numberline {E.3}Database Settings}{265}{section.E.3}%
+\contentsline {subsection}{\numberline {E.3.1}PostgreSQL}{265}{subsection.E.3.1}%
+\contentsline {subsection}{\numberline {E.3.2}Memgraph}{265}{subsection.E.3.2}%
+\contentsline {subsection}{\numberline {E.3.3}Redis}{265}{subsection.E.3.3}%
+\contentsline {section}{\numberline {E.4}Security Settings}{265}{section.E.4}%
+\contentsline {subsection}{\numberline {E.4.1}OIDC/JWT Authentication}{265}{subsection.E.4.1}%
+\contentsline {section}{\numberline {E.5}LLM Settings}{265}{section.E.5}%
+\contentsline {subsection}{\numberline {E.5.1}Provider Configuration}{265}{subsection.E.5.1}%
+\contentsline {subsection}{\numberline {E.5.2}Ollama Settings}{265}{subsection.E.5.2}%
+\contentsline {section}{\numberline {E.6}Rate Limiting}{265}{section.E.6}%
+\contentsline {section}{\numberline {E.7}Jobs Settings}{265}{section.E.7}%
+\contentsline {section}{\numberline {E.8}Observability Settings}{265}{section.E.8}%
+\contentsline {chapter}{\numberline {F}Example Configurations and Environment Templates}{269}{appendix.F}%
+\contentsline {section}{\numberline {F.1}Development Environment}{269}{section.F.1}%
+\contentsline {subsection}{\numberline {F.1.1}Minimal Development Setup}{269}{subsection.F.1.1}%
+\contentsline {section}{\numberline {F.2}Testing Environment}{270}{section.F.2}%
+\contentsline {subsection}{\numberline {F.2.1}CI/CD Test Configuration}{270}{subsection.F.2.1}%
+\contentsline {section}{\numberline {F.3}Production Environment}{270}{section.F.3}%
+\contentsline {subsection}{\numberline {F.3.1}Full Production Configuration}{270}{subsection.F.3.1}%
+\contentsline {section}{\numberline {F.4}GPU-Enabled Configuration}{271}{section.F.4}%
+\contentsline {section}{\numberline {F.5}Security Hardening Checklist}{272}{section.F.5}%
+\contentsline {chapter}{\numberline {G}Glossary of Terms}{273}{appendix.G}%
+\contentsline {section}{\numberline {G.1}General Terms}{273}{section.G.1}%
+\contentsline {section}{\numberline {G.2}Architecture Terms}{273}{section.G.2}%
+\contentsline {section}{\numberline {G.3}LLM and AI Terms}{274}{section.G.3}%
+\contentsline {section}{\numberline {G.4}Database Terms}{274}{section.G.4}%
+\contentsline {section}{\numberline {G.5}Security Terms}{275}{section.G.5}%
+\contentsline {section}{\numberline {G.6}Platform-Specific Terms}{275}{section.G.6}%
+\contentsline {section}{\numberline {G.7}Acronyms}{276}{section.G.7}%
+\contentsline {chapter}{Bibliography}{277}{section*.551}%

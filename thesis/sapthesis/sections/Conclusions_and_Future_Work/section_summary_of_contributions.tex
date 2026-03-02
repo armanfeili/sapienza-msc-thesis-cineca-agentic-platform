@@ -1,0 +1,149 @@
+% TODO checklist: Inspected files for this section:
+% - README.md (project overview, key features, metrics)
+% - Q&A.md (questions 50, 41, 45 - advantages, comparison, extensibility)
+% - comparison.md (positioning against SOTA)
+% - sapthesis-doc.tex (abstract, contributions section reference)
+
+\section{Summary of Contributions}
+\label{sec:summary}
+
+This thesis has presented the design, implementation, and evaluation of the Cineca Agentic Platform, an enterprise-grade AI agent orchestration system developed in collaboration with CINECA, Italy's national supercomputing center. This section summarizes the main achievements and contributions of this work.
+
+\subsection{Primary Contributions}
+
+The primary contributions of this thesis span six interconnected areas, each addressing critical gaps in the current landscape of AI agent systems:
+
+\paragraph{1. Enterprise-Grade Agent Orchestration Architecture}
+
+The platform introduces a novel three-layer architecture that cleanly separates concerns across the \textbf{Core Backend Layer} (FastAPI application, API routers, services, adapters), the \textbf{Data and Persistence Layer} (PostgreSQL, Redis, Memgraph), and the \textbf{Presentation Layer} (Next.js and Streamlit UIs). This separation enables:
+
+\begin{itemize}
+    \item Independent scaling of API, data, and presentation components
+    \item Clear boundaries for security enforcement and tenant isolation
+    \item Modular extension without architectural disruption
+    \item Production-ready deployment with Docker Compose orchestration
+\end{itemize}
+
+The orchestration engine, implemented in over 8,000 lines of Python code, manages multi-step agent runs with TODO-based planning, step execution, and comprehensive metrics collection. Unlike research-oriented frameworks, the platform is designed from the ground up for production workloads with enterprise requirements.
+
+\paragraph{2. Native Model Context Protocol (MCP) Tool Ecosystem}
+
+The platform implements a comprehensive MCP tool ecosystem comprising \textbf{34 tools across 17 categories}, including:
+
+\begin{itemize}
+    \item \textbf{Graph tools} (8): Cypher query execution, secure querying, schema inspection, analytics, CRUD operations, bulk operations, and NL-to-Cypher generation
+    \item \textbf{Security tools} (5): Constraint validation, audit logging, permission checking, operation enumeration, and principal description
+    \item \textbf{System tools} (4): Health checking, status monitoring, metrics access, and backup operations
+    \item \textbf{Additional tools} (17): Cache management, data archival, error reporting, session management, tenancy operations, and visualization
+\end{itemize}
+
+Each tool follows a consistent invocation pattern with JSON-schema validation, scope-based authorization, timeout enforcement, and comprehensive audit logging. The \texttt{@mcp\_tool} decorator provides a declarative approach to tool registration with automatic discovery.
+
+\paragraph{3. Natural Language to Cypher Pipeline}
+
+The NL-to-Cypher pipeline represents a significant contribution to graph-native AI systems, enabling intuitive querying of the Memgraph knowledge graph through natural language. The pipeline implements a \textbf{six-layer safety validation} approach:
+
+\begin{enumerate}
+    \item \textbf{Syntax validation}: Cypher parser verification
+    \item \textbf{Read-only enforcement}: Prevention of WRITE, DELETE, and MERGE operations
+    \item \textbf{Tenant boundary isolation}: Mandatory tenant\_id filtering
+    \item \textbf{Depth limits}: Path traversal bounds to prevent expensive queries
+    \item \textbf{Timeout guards}: Query execution time limits
+    \item \textbf{Result size caps}: Node and relationship count limits
+\end{enumerate}
+
+This approach addresses the critical security and performance challenges inherent in exposing graph databases to LLM-generated queries, providing deterministic guarantees that surpass typical vector-based RAG approaches.
+
+\paragraph{4. Comprehensive Security and Governance Framework}
+
+The security framework implements defense-in-depth principles with multiple enforcement layers:
+
+\begin{itemize}
+    \item \textbf{Authentication}: OIDC/JWT-based authentication with Auth0 integration, JWKS key caching, and automatic token refresh
+    \item \textbf{Authorization}: Role-Based Access Control (RBAC) with 15+ scopes, wildcard support, and per-tool authorization
+    \item \textbf{Multi-tenancy}: Native tenant isolation at the database level with \texttt{X-Tenant-ID} header propagation
+    \item \textbf{Rate limiting}: Redis-backed sliding window algorithm with per-user and per-tenant quotas
+    \item \textbf{Data protection}: PII scrubbing with regex-based detection, output guards for LLM responses, and intent filtering for dangerous operations
+    \item \textbf{Audit logging}: Append-only audit records for compliance and forensics
+\end{itemize}
+
+This security posture distinguishes the platform from research-oriented frameworks that typically delegate security concerns to the deployment environment.
+
+\paragraph{5. Production-Ready Observability Stack}
+
+The observability implementation addresses the three pillars of modern distributed systems monitoring:
+
+\begin{itemize}
+    \item \textbf{Metrics}: Prometheus instrumentation with 30+ custom metrics covering HTTP requests, agent runs, job execution, tool invocations, LLM calls, and provider health
+    \item \textbf{Tracing}: OpenTelemetry integration with trace context propagation, OTLP export, and sampling configuration for production environments
+    \item \textbf{Logging}: Structured logging with structlog, JSON format for production, request ID correlation, and PII scrubbing
+    \item \textbf{Health probes}: Kubernetes-style liveness, readiness, and startup probes with component-level health checks
+\end{itemize}
+
+The observability stack enables operational excellence in production deployments, supporting SLO monitoring, incident response, and capacity planning.
+
+\paragraph{6. Asynchronous Job System with Real-Time Streaming}
+
+The background job framework supports long-running agent tasks with enterprise-grade reliability:
+
+\begin{itemize}
+    \item \textbf{Dual-store architecture}: PostgreSQL for authoritative job records, Redis for queuing and fast state access
+    \item \textbf{State machine}: Well-defined transitions (queued $\rightarrow$ running $\rightarrow$ finished/failed/cancelled) with database constraints
+    \item \textbf{Worker architecture}: Separate worker processes with heartbeat monitoring, graceful shutdown, and dead worker detection
+    \item \textbf{SSE streaming}: Real-time progress updates via Server-Sent Events with ring buffer and Last-Event-ID support
+    \item \textbf{Idempotency}: Request deduplication with configurable expiration windows
+\end{itemize}
+
+\subsection{Quantitative Achievements}
+
+The platform's scope and maturity are reflected in the following metrics:
+
+\begin{table}[ht]
+\centering
+\caption{Platform implementation metrics.}
+\label{tab:implementation-metrics}
+\begin{tabular}{lr}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+API Endpoints & 76 across 16 categories \\
+MCP Tools & 34 across 17 categories \\
+Router Modules & 23 \\
+PostgreSQL Tables & 12+ with 26 migrations \\
+Test Files & 272 \\
+Test Functions & 2,700+ \\
+Lines of Test Code & $\sim$64,500 \\
+Source Code Lines & $\sim$77,000 \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Design Decisions Validated}
+
+Several key design decisions have been validated through implementation and evaluation:
+
+\paragraph{Graph-Native Over Vector-Only}
+The choice to implement native Memgraph integration with NL-to-Cypher, rather than relying solely on vector-based RAG, has proven advantageous for structured reasoning, multi-hop queries, and aggregation operations. The safety validation layers address the risks inherent in LLM-generated database queries.
+
+\paragraph{Multi-Provider LLM Architecture}
+The provider registry with circuit breakers and fallback strategies has demonstrated resilience against provider outages and rate limiting. The cost tracking mechanism enables budget governance for enterprise deployments.
+
+\paragraph{Dual-UI Strategy}
+The combination of a Next.js conversational interface for end-users and a Streamlit control panel for operators addresses distinct persona needs while maintaining a single backend API as the source of truth.
+
+\paragraph{Security-First Design}
+The comprehensive security framework, while adding implementation complexity, has enabled the platform to meet enterprise compliance requirements that would be difficult to retrofit into a simpler design.
+
+\subsection{Contribution to the Field}
+
+This work contributes to the emerging field of enterprise AI agent systems by providing:
+
+\begin{enumerate}
+    \item A \textbf{reference architecture} for production-grade agent orchestration that can inform future platform designs
+    \item An \textbf{open-source implementation} demonstrating that enterprise concerns (security, tenancy, observability) can be addressed without sacrificing agent capabilities
+    \item \textbf{Practical insights} into the trade-offs between framework flexibility and production readiness
+    \item A \textbf{comparison framework} for evaluating agent platforms against enterprise requirements
+\end{enumerate}
+
+The platform's positioning relative to state-of-the-art systems (LangChain, LlamaIndex, Semantic Kernel, OpenAI Assistants, AutoGen, crewAI) demonstrates that enterprise-first design is complementary to, rather than in conflict with, sophisticated agent capabilities.
+

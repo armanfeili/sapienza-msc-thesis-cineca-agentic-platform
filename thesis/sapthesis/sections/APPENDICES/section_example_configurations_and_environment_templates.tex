@@ -1,0 +1,354 @@
+% TODO checklist: Inspected files:
+% - docker-compose.yml
+% - docs/guides/environment-variables.md
+% - docs/guides/configuration.md
+% - README.md (Running the Platform section)
+% - src/config.py
+
+\chapter{Example Configurations and Environment Templates}
+\label{app:example-configs}
+
+This appendix provides example configuration files and environment templates for different deployment scenarios.
+
+%------------------------------------------------------------------------------
+\section{Development Environment}
+\label{app:config:dev}
+
+\subsection{Minimal Development Setup}
+
+For local development with Docker Compose:
+
+\begin{lstlisting}[language=bash,caption={.env.development}]
+# Application
+APP_ENV=dev
+LOG_LEVEL=DEBUG
+ENABLE_DOCS=true
+
+# PostgreSQL
+DB_HOST=postgres
+DB_PORT=5432
+DB_NAME=cineca_platform
+DB_USER=cineca_user
+DB_PASSWORD=dev_password
+DB_SSLMODE=disable
+DB_POOL_SIZE=10
+
+# Memgraph
+MG_HOST=memgraph
+MG_PORT=7687
+
+# Redis
+REDIS_URL=redis://redis:6379/0
+
+# LLM (Ollama)
+OLLAMA_BASE_URL=http://ollama:11434/v1
+OLLAMA_TIMEOUT_SECS=180
+DEFAULT_MODEL_NAME=phi3:mini
+
+# Jobs
+USE_POSTGRES_JOBS=true
+ALLOWED_JOB_TYPES=demo,test,long-running
+
+# Security (development)
+OIDC_ISSUER=https://dev.auth0.com/
+OIDC_AUDIENCE=https://api.dev.example.com
+ENABLE_ADMIN_ROUTES=1
+
+# Internal utilities
+INTERNAL_DB_UTILS_ENABLED=true
+\end{lstlisting}
+
+%------------------------------------------------------------------------------
+\section{Testing Environment}
+\label{app:config:test}
+
+\subsection{CI/CD Test Configuration}
+
+For automated testing with mocked services:
+
+\begin{lstlisting}[language=bash,caption={.env.test}]
+# Application
+APP_ENV=test
+LOG_LEVEL=WARNING
+ENABLE_DOCS=false
+
+# PostgreSQL (test database)
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=cineca_test
+DB_USER=test_user
+DB_PASSWORD=test_password
+DB_SSLMODE=disable
+DB_POOL_SIZE=5
+
+# Memgraph (test instance)
+MG_HOST=localhost
+MG_PORT=7687
+
+# Redis (test database)
+REDIS_URL=redis://localhost:6379/1
+
+# LLM (mock mode)
+DEMO_MODE=true
+LLM_FALLBACK_MODE=always
+
+# Memgraph response (fast fallback for tests)
+MEMGRAPH_RESPONSE_MODE=fallback-only
+MEMGRAPH_BUILDER_LLM_TIMEOUT_MS=500
+
+# Jobs (in-memory for isolation)
+JOB_STORE_BACKEND=memory
+USE_POSTGRES_JOBS=false
+
+# Rate limiting (disabled for tests)
+RATE_LIMIT_ENABLED=false
+
+# Security (test tokens)
+OIDC_ISSUER=https://test.auth0.com/
+OIDC_JWKS_URL=tests/fixtures/jwks.json
+\end{lstlisting}
+
+%------------------------------------------------------------------------------
+\section{Production Environment}
+\label{app:config:prod}
+
+\subsection{Full Production Configuration}
+
+For production deployment with enterprise security:
+
+\begin{lstlisting}[language=bash,caption={.env.production}]
+# Application
+APP_ENV=prod
+APP_HOST=0.0.0.0
+APP_PORT=8000
+LOG_LEVEL=INFO
+ENABLE_DOCS=false
+
+# PostgreSQL (managed database)
+DB_HOST=postgres-primary.internal.example.com
+DB_PORT=5432
+DB_NAME=cineca_platform
+DB_USER=cineca_prod_user
+DB_PASSWORD=${SECRET_DB_PASSWORD}  # From secrets manager
+DB_SSLMODE=verify-full
+DB_POOL_SIZE=50
+DB_POOL_TIMEOUT=60
+DB_POOL_RECYCLE=1800
+DB_POOL_PRE_PING=true
+
+# Memgraph (production cluster)
+MG_HOST=memgraph.internal.example.com
+MG_PORT=7687
+MG_USER=${SECRET_MG_USER}
+MG_PASSWORD=${SECRET_MG_PASSWORD}
+MG_TLS=true
+
+# Redis (production cluster)
+REDIS_URL=redis://:${REDIS_PASSWORD}@redis.internal.example.com:6379/0
+
+# LLM Providers
+OLLAMA_BASE_URL=http://ollama.internal.example.com:11434/v1
+OLLAMA_TIMEOUT_SECS=120
+LLM_WARMUP_TIMEOUT=300
+LLM_MAX_TOKENS=4096
+LLM_MAX_STEPS=15
+EGRESS_ALLOWLIST=api.openai.com,ollama.internal.example.com
+
+# Memgraph Response (production with LLM)
+MEMGRAPH_RESPONSE_MODE=llm-best-effort
+MEMGRAPH_BUILDER_LLM_TIMEOUT_MS=30000
+
+# Jobs (PostgreSQL-backed)
+USE_POSTGRES_JOBS=true
+JOB_STORE_BACKEND=redis
+JOB_TTL_DAYS=30
+ALLOWED_JOB_TYPES=agent.run,data.process,ml.train
+
+# Security (OIDC)
+OIDC_ISSUER=https://auth.example.com/
+OIDC_AUDIENCE=https://api.example.com
+OIDC_JWKS_URL=https://auth.example.com/.well-known/jwks.json
+OIDC_TIMEOUT_S=5
+
+# Security headers
+ENABLE_SECURITY_HEADERS=true
+ENABLE_HSTS=true
+HSTS_MAX_AGE=31536000
+SECURE_COOKIES=true
+TRUST_PROXY=true
+
+# Rate limiting
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_BACKEND=redis
+RATE_LIMIT_DEFAULT_LIMIT=100
+RATE_LIMIT_DEFAULT_WINDOW=60
+
+# Observability
+PROMETHEUS_METRICS_ENABLED=true
+OTEL_SERVICE_NAME=cineca-agentic-platform
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector.internal:4317
+
+# Background scheduler
+SCHEDULER_ENABLED=true
+SCHEDULED_HEALTHCHECK_INTERVAL_SECONDS=60
+SCHEDULED_CLEANUP_INTERVAL_SECONDS=3600
+PROVIDER_HEALTH_REFRESH_INTERVAL=3600
+
+# Data retention
+RETENTION_DAYS=90
+BACKUP_RETENTION_DAYS=30
+
+# Internal utilities (disabled in production)
+INTERNAL_DB_UTILS_ENABLED=false
+ENABLE_ADMIN_ROUTES=false
+\end{lstlisting}
+
+%------------------------------------------------------------------------------
+\section{Docker Compose Override}
+\label{app:config:docker-override}
+
+\subsection{Production Override}
+
+\begin{lstlisting}[language=yaml,caption={docker-compose.prod.yml}]
+version: '3.8'
+
+services:
+  app:
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+    environment:
+      - APP_ENV=prod
+      - LOG_LEVEL=INFO
+    healthcheck:
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  worker:
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+    environment:
+      - JOB_WORKER_POLL_INTERVAL=0.5
+      - JOB_WORKER_HEARTBEAT_INTERVAL=10.0
+
+  postgres:
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    volumes:
+      - /mnt/ssd/postgres:/var/lib/postgresql/data
+
+  redis:
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "2gb"]
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+\end{lstlisting}
+
+%------------------------------------------------------------------------------
+\section{GPU-Enabled Configuration}
+\label{app:config:gpu}
+
+For deployments with GPU acceleration:
+
+\begin{lstlisting}[language=bash,caption={.env.gpu}]
+# GPU settings
+HAS_GPU=true
+LLM_DEVICE=gpu
+
+# Ollama with GPU
+OLLAMA_NUM_PARALLEL=4
+OLLAMA_MAX_LOADED_MODELS=2
+OLLAMA_FLASH_ATTENTION=1
+OLLAMA_NUM_CTX=4096
+
+# Faster LLM timeouts with GPU
+OLLAMA_TIMEOUT_SECS=60
+LLM_WARMUP_TIMEOUT=120
+MEMGRAPH_BUILDER_LLM_TIMEOUT_MS=10000
+\end{lstlisting}
+
+\subsection{Docker Compose GPU Override}
+
+\begin{lstlisting}[language=yaml,caption={docker-compose.gpu.yml}]
+version: '3.8'
+
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - OLLAMA_NUM_PARALLEL=4
+\end{lstlisting}
+
+%------------------------------------------------------------------------------
+\section{Minimal Standalone Configuration}
+\label{app:config:standalone}
+
+For single-node deployments without Docker:
+
+\begin{lstlisting}[language=bash,caption={.env.standalone}]
+# Application
+APP_ENV=prod
+APP_HOST=127.0.0.1
+APP_PORT=8000
+
+# Local PostgreSQL
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_NAME=cineca_platform
+DB_SSLMODE=disable
+
+# Local Memgraph
+MG_HOST=127.0.0.1
+MG_PORT=7687
+
+# Local Redis
+REDIS_URL=redis://127.0.0.1:6379/0
+
+# Local Ollama
+OLLAMA_BASE_URL=http://127.0.0.1:11434/v1
+
+# Simplified settings
+JOB_STORE_BACKEND=memory
+SCHEDULER_ENABLED=false
+\end{lstlisting}
+
+%------------------------------------------------------------------------------
+\section{Security Hardening Checklist}
+\label{app:config:security-checklist}
+
+Before deploying to production, verify:
+
+\begin{enumerate}
+    \item \texttt{DB\_PASSWORD} changed from default
+    \item \texttt{JWT\_SECRET} replaced with secure value
+    \item \texttt{DB\_SSLMODE=require} or higher
+    \item \texttt{OIDC\_ISSUER} and \texttt{OIDC\_AUDIENCE} configured
+    \item \texttt{ENABLE\_DOCS=false}
+    \item \texttt{ENABLE\_ADMIN\_ROUTES=false} (or use RBAC)
+    \item \texttt{INTERNAL\_DB\_UTILS\_ENABLED=false}
+    \item \texttt{SECURE\_COOKIES=true}
+    \item \texttt{ENABLE\_HSTS=true}
+    \item All secrets loaded from secure vault
+\end{enumerate}
+

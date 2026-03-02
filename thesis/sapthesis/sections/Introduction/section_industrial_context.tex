@@ -1,0 +1,145 @@
+% TODO checklist:
+% - [x] README.md: CINECA description, deployment context
+% - [x] Q&A.md: Q1 (Platform overview), institutional context references
+% - [x] sapthesis-doc.tex: Abstract and supervisor affiliations
+
+\section{Industrial and Institutional Context}
+\label{sec:industrial-context}
+
+This thesis emerges from a collaboration between Sapienza Università di Roma and CINECA, Italy's national supercomputing consortium. This section elaborates on the institutional context, constraints, and opportunities that shaped the platform's design.
+
+\subsection{CINECA Organizational Profile}
+
+CINECA (Consorzio Interuniversitario del Nord Est per il Calcolo Automatico) was established in 1969 as an interuniversity consortium for automatic computation. Today, it operates as Italy's primary high-performance computing center, serving:
+
+\begin{itemize}
+    \item Over 70 Italian universities and research institutions as consortium members
+    \item Thousands of researchers across physics, chemistry, life sciences, engineering, and social sciences
+    \item European research collaborations through PRACE (Partnership for Advanced Computing in Europe)
+    \item Public administration entities requiring computational services
+    \item Industrial partners seeking HPC capabilities for research and development
+\end{itemize}
+
+CINECA operates several of Europe's most powerful supercomputers, including systems ranked among the world's top 500, and maintains extensive infrastructure for data storage, networking, and scientific software.
+
+\subsection{High-Performance Computing Environment Characteristics}
+
+HPC environments present distinctive characteristics that influence software architecture decisions:
+
+\paragraph{Resource Heterogeneity:}
+HPC centers manage diverse computational resources including traditional CPU clusters, GPU-accelerated systems, specialized hardware for specific scientific applications, and high-capacity storage systems. Software must accommodate this heterogeneity gracefully.
+
+\paragraph{Job Scheduling Complexity:}
+Computational resources are allocated through sophisticated scheduling systems (such as SLURM, PBS, or LSF) that balance competing priorities, enforce resource quotas, and optimize utilization. Users interact with these systems through command-line interfaces that can present substantial learning curves.
+
+\paragraph{Data Sensitivity Spectrum:}
+Research data spans a wide sensitivity spectrum, from publicly available datasets to highly restricted clinical or defense-related information. Access control must be precise and auditable.
+
+\paragraph{Multi-Institutional Collaboration:}
+Research projects frequently involve collaborators from multiple institutions, each with their own authentication systems, policies, and compliance requirements. Federated identity and fine-grained access control are essential.
+
+\paragraph{Long-Running Workflows:}
+Scientific computations often run for hours, days, or even weeks. Systems must support long-lived operations with checkpointing, resumption, and progress tracking capabilities.
+
+\subsection{Institutional Constraints}
+
+The collaboration with CINECA introduced several constraints that directly influenced platform architecture:
+
+\subsubsection{Security and Compliance Requirements}
+
+As a national research infrastructure, CINECA must comply with European data protection regulations (GDPR), national security requirements, and research ethics standards. The platform must:
+
+\begin{itemize}
+    \item Implement strong authentication using institutional identity providers
+    \item Provide complete audit trails for all data access and system operations
+    \item Support data residency requirements (data must remain within European jurisdiction)
+    \item Enable compliance with sector-specific regulations (e.g., health data protection)
+\end{itemize}
+
+\subsubsection{Multi-Tenancy Mandate}
+
+CINECA serves diverse user communities that must be logically isolated from one another:
+
+\begin{itemize}
+    \item Different universities may require separate tenant environments
+    \item Research projects may need dedicated spaces with project-specific configurations
+    \item Industrial partners require isolation from academic users
+    \item Administrative boundaries must be enforceable and auditable
+\end{itemize}
+
+The platform's multi-tenancy model, with tenant-scoped data isolation and per-tenant configuration defaults, directly addresses this constraint.
+
+\subsubsection{Infrastructure Integration Requirements}
+
+The platform must integrate with existing CINECA infrastructure:
+
+\begin{itemize}
+    \item Identity management systems (LDAP, SAML, institutional IdPs via OIDC)
+    \item Existing databases and data warehouses
+    \item Monitoring and alerting systems (Prometheus ecosystem)
+    \item Container orchestration platforms (Docker, Kubernetes)
+    \item Network security policies and firewall configurations
+\end{itemize}
+
+\subsubsection{Operational Excellence Expectations}
+
+As a production service supporting research activities, the platform must meet operational excellence standards:
+
+\begin{itemize}
+    \item High availability with defined SLOs for uptime and response time
+    \item Comprehensive monitoring with proactive alerting
+    \item Graceful degradation under component failures
+    \item Clear operational procedures and runbooks
+    \item Capacity for horizontal scaling to meet demand
+\end{itemize}
+
+\subsection{Bioinformatics Application Domain}
+
+While the platform is designed as a general-purpose agent orchestration system, initial deployment focuses on bioinformatics applications within CINECA's life sciences computing initiatives. This domain presents specific requirements:
+
+\paragraph{Knowledge Graph Queries:}
+Researchers need to query interconnected biological data---genes, proteins, pathways, diseases, publications, and researchers---using natural language. The graph database integration with NL-to-Cypher capabilities directly serves this need.
+
+\paragraph{Workflow Orchestration:}
+Bioinformatics analyses typically involve multi-step pipelines with dependencies. The job system with progress streaming supports these long-running workflows.
+
+\paragraph{Data Privacy:}
+Clinical and genetic data require strict access controls and audit logging. The security framework addresses these requirements.
+
+\paragraph{Reproducibility:}
+Scientific analyses must be reproducible. Complete logging of agent reasoning, tool invocations, and data access supports this requirement.
+
+\subsection{Enterprise Context Beyond CINECA}
+
+While developed for CINECA, the platform architecture addresses challenges common to many enterprise environments:
+
+\begin{description}
+    \item[Financial Services:] Multi-tenant access controls, audit requirements, and data protection needs mirror those in banking and insurance.
+    
+    \item[Healthcare:] Patient data privacy, regulatory compliance, and multi-institutional collaboration requirements align with healthcare IT challenges.
+    
+    \item[Manufacturing:] Integration with existing enterprise systems, long-running processes, and operational monitoring match manufacturing IT needs.
+    
+    \item[Government:] Security classifications, multi-agency collaboration, and compliance requirements parallel government IT environments.
+\end{description}
+
+The architectural patterns and implementation strategies presented in this thesis thus have applicability beyond the specific CINECA context, providing a reference for enterprise AI agent deployments across sectors.
+
+\subsection{Technology Environment}
+
+The platform operates within a technology environment characterized by:
+
+\begin{itemize}
+    \item \textbf{Container-Native Deployment:} All services are containerized for deployment on Docker and Kubernetes platforms.
+    
+    \item \textbf{Python Ecosystem:} The backend leverages Python's rich ecosystem for machine learning, data processing, and web services.
+    
+    \item \textbf{Open Source Foundation:} Core infrastructure components (PostgreSQL, Redis, Memgraph) are open-source, avoiding vendor lock-in.
+    
+    \item \textbf{Cloud-Agnostic Design:} While deployable on cloud platforms, the architecture avoids dependencies on specific cloud provider services.
+    
+    \item \textbf{Local LLM Support:} Integration with Ollama enables deployment of language models on local infrastructure, addressing data sovereignty concerns.
+\end{itemize}
+
+This technology environment reflects both CINECA's operational preferences and broader industry trends toward open, portable, and privacy-respecting AI infrastructure.
+

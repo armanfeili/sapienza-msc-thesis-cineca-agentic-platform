@@ -1,0 +1,380 @@
+% =============================================================================
+% SECTION: Observability in Distributed Systems
+% Chapter: Background and Related Work
+% =============================================================================
+%
+% TODO Checklist (verified in codebase/docs):
+% [x] Reviewed Q&A.md Q42-Q43 for observability stack details
+% [x] Reviewed src/observability/ for metrics, tracing, middleware implementation
+% [x] Reviewed src/health/components.py for health check patterns
+% [x] Reviewed ops/prometheus/ and ops/grafana/ for monitoring configuration
+% [x] Cross-referenced OpenTelemetry and Prometheus documentation
+% [x] This section covers conceptual foundations; implementation details in Ch. 11
+%
+% =============================================================================
+
+\section{Observability in Distributed Systems}
+\label{sec:observability-background}
+
+Observability is a critical concern for operating complex distributed systems. This section introduces the conceptual foundations of observability---metrics, logs, and traces---along with the tools and patterns commonly used to implement them. Platform-specific implementation details are presented in Chapter~\ref{ch:observability}.
+
+\subsection{The Three Pillars of Observability}
+
+Observability refers to the ability to understand the internal state of a system by examining its external outputs. In distributed systems, observability is typically achieved through three complementary signals:
+
+\paragraph{Metrics}
+
+Metrics are numerical measurements collected over time, typically aggregated into time series. They answer questions about system behavior at an aggregate level:
+
+\begin{itemize}
+    \item How many requests per second is the system handling?
+    \item What is the 99th percentile latency?
+    \item What percentage of requests are failing?
+    \item How much memory/CPU is being used?
+\end{itemize}
+
+Metrics are characterized by:
+\begin{itemize}
+    \item \textbf{Low cardinality}: Metrics are aggregated, so storage grows slowly with traffic.
+    \item \textbf{Fixed schema}: Metric names and label sets are predefined.
+    \item \textbf{Statistical aggregation}: Counts, gauges, histograms, and summaries.
+    \item \textbf{Alerting}: Metrics power alerting rules for anomaly detection.
+\end{itemize}
+
+\paragraph{Logs}
+
+Logs are timestamped records of discrete events. They provide detailed information about what happened at specific moments:
+
+\begin{itemize}
+    \item Request received with parameters X, Y, Z.
+    \item Error occurred: connection timeout to database.
+    \item User authenticated successfully.
+    \item Background job completed in 3.2 seconds.
+\end{itemize}
+
+Logs are characterized by:
+\begin{itemize}
+    \item \textbf{High cardinality}: Each event can have unique attributes.
+    \item \textbf{Flexible schema}: Log content can vary by event type.
+    \item \textbf{Full context}: Logs can include detailed error messages, stack traces, and payloads.
+    \item \textbf{Forensics}: Logs enable after-the-fact investigation of issues.
+\end{itemize}
+
+\paragraph{Traces}
+
+Traces capture the path of a request through a distributed system, showing how different services interact to fulfill a request:
+
+\begin{itemize}
+    \item Request entered at API gateway.
+    \item API gateway routed to service A.
+    \item Service A called service B and database C in parallel.
+    \item Response returned after 45ms total.
+\end{itemize}
+
+Traces are characterized by:
+\begin{itemize}
+    \item \textbf{Causality}: Traces show parent-child relationships between operations.
+    \item \textbf{Timing}: Each span includes start time and duration.
+    \item \textbf{Context propagation}: Trace context is passed between services.
+    \item \textbf{Root cause analysis}: Traces help identify which service caused delays or failures.
+\end{itemize}
+
+\subsection{Metrics: Prometheus and Beyond}
+
+Prometheus~% TODO: add bibitem for Prometheus
+has become the de facto standard for metrics in cloud-native systems, particularly in Kubernetes environments.
+
+\paragraph{Prometheus Architecture}
+
+Prometheus follows a pull-based model:
+\begin{itemize}
+    \item \textbf{Targets}: Services expose metrics at an HTTP endpoint (typically \texttt{/metrics}).
+    \item \textbf{Scraping}: Prometheus periodically fetches metrics from configured targets.
+    \item \textbf{Storage}: Metrics are stored in a time-series database.
+    \item \textbf{Querying}: PromQL provides a powerful query language for analysis.
+    \item \textbf{Alerting}: Alertmanager handles alert routing and notification.
+\end{itemize}
+
+\paragraph{Metric Types}
+
+Prometheus defines four metric types:
+
+\begin{itemize}
+    \item \textbf{Counter}: A cumulative value that only increases (e.g., total requests).
+    \item \textbf{Gauge}: A value that can increase or decrease (e.g., current memory usage).
+    \item \textbf{Histogram}: Observations counted into configurable buckets (e.g., request latency distribution).
+    \item \textbf{Summary}: Similar to histogram but calculates quantiles client-side.
+\end{itemize}
+
+\paragraph{Labels and Cardinality}
+
+Prometheus metrics can have labels (key-value pairs) that add dimensions:
+
+\begin{lstlisting}[language=Python,caption={Example Prometheus metrics with labels}]
+# Counter with labels
+http_requests_total{method="GET", path="/api/v1/users", status="200"} 12345
+
+# Histogram with labels
+http_request_duration_seconds_bucket{method="POST", le="0.5"} 1000
+http_request_duration_seconds_bucket{method="POST", le="1.0"} 1500
+\end{lstlisting}
+
+High-cardinality labels (e.g., user IDs, request IDs) should be avoided as they create many time series, increasing storage and query costs.
+
+\paragraph{Grafana Visualization}
+
+Grafana~% TODO: add bibitem for Grafana
+is commonly paired with Prometheus for visualization:
+\begin{itemize}
+    \item Dashboard creation with multiple panels.
+    \item PromQL integration for querying metrics.
+    \item Alerting integration with various notification channels.
+    \item Template variables for dynamic dashboards.
+\end{itemize}
+
+\paragraph{Metrics in AI Systems}
+
+AI agent platforms require metrics specific to their domain:
+\begin{itemize}
+    \item LLM invocation counts and latencies.
+    \item Token usage (input and output tokens).
+    \item Tool invocation success/failure rates.
+    \item Agent run completion times and step counts.
+    \item Model provider health status.
+    \item Rate limit utilization.
+\end{itemize}
+
+\subsection{Logging: Structured and Correlated}
+
+Modern logging practices have evolved from unstructured text to structured, machine-parseable formats.
+
+\paragraph{Structured Logging}
+
+Structured logs encode events as key-value pairs or JSON objects:
+
+\begin{lstlisting}[language=Python,caption={Structured log example}]
+{
+    "timestamp": "2025-01-15T10:30:45.123Z",
+    "level": "INFO",
+    "message": "Request completed",
+    "request_id": "abc-123",
+    "method": "POST",
+    "path": "/api/v1/agent-runs",
+    "status": 201,
+    "duration_ms": 156,
+    "user_id": "user-456"
+}
+\end{lstlisting}
+
+Structured logs enable:
+\begin{itemize}
+    \item Efficient parsing and indexing.
+    \item Consistent field names across services.
+    \item Faceted search and filtering.
+    \item Correlation by request ID or trace ID.
+\end{itemize}
+
+\paragraph{Log Levels}
+
+Standard log levels convey severity:
+\begin{itemize}
+    \item \textbf{DEBUG}: Detailed information for debugging (typically disabled in production).
+    \item \textbf{INFO}: Normal operational events.
+    \item \textbf{WARNING}: Unexpected but recoverable situations.
+    \item \textbf{ERROR}: Failures that affect individual requests.
+    \item \textbf{CRITICAL}: Severe failures affecting system operation.
+\end{itemize}
+
+\paragraph{Log Correlation}
+
+In distributed systems, correlating logs across services is essential:
+\begin{itemize}
+    \item \textbf{Request ID}: A unique identifier assigned at the edge and propagated through all services.
+    \item \textbf{Trace ID}: A distributed tracing identifier that links logs to traces.
+    \item \textbf{Session ID}: Links logs across multiple requests in a user session.
+\end{itemize}
+
+\paragraph{Log Management}
+
+Production systems typically use log aggregation solutions:
+\begin{itemize}
+    \item \textbf{ELK Stack}: Elasticsearch, Logstash, Kibana.
+    \item \textbf{Loki}: Prometheus-style logging by Grafana Labs.
+    \item \textbf{Cloud services}: AWS CloudWatch, Google Cloud Logging, Azure Monitor.
+\end{itemize}
+
+\paragraph{Logging in AI Systems}
+
+AI agent platforms have specific logging considerations:
+\begin{itemize}
+    \item \textbf{PII handling}: Prompts and responses may contain personal information.
+    \item \textbf{Size management}: LLM interactions can be verbose; selective logging is needed.
+    \item \textbf{Audit requirements}: Security-relevant events must be logged immutably.
+    \item \textbf{Debug visibility}: Reasoning traces help understand agent behavior.
+\end{itemize}
+
+\subsection{Distributed Tracing: OpenTelemetry}
+
+OpenTelemetry~% TODO: add bibitem for OpenTelemetry
+has emerged as the vendor-neutral standard for distributed tracing (and increasingly for metrics and logs as well).
+
+\paragraph{OpenTelemetry Concepts}
+
+\begin{itemize}
+    \item \textbf{Trace}: The complete path of a request through the system.
+    \item \textbf{Span}: A single operation within a trace, with start time, duration, and attributes.
+    \item \textbf{Context}: Metadata propagated between services (trace ID, span ID, flags).
+    \item \textbf{Exporter}: Component that sends telemetry to backends (Jaeger, Zipkin, cloud services).
+    \item \textbf{Instrumentation}: Code that creates spans (auto-instrumentation or manual).
+\end{itemize}
+
+\paragraph{Context Propagation}
+
+Trace context is propagated through:
+\begin{itemize}
+    \item HTTP headers (W3C Trace Context standard).
+    \item Message queue metadata.
+    \item gRPC metadata.
+    \item Custom protocols.
+\end{itemize}
+
+\paragraph{Sampling}
+
+Not all traces need to be collected:
+\begin{itemize}
+    \item \textbf{Head-based sampling}: Decision made at trace start (e.g., sample 10\% of traces).
+    \item \textbf{Tail-based sampling}: Decision made after trace completes (e.g., keep all error traces).
+    \item \textbf{Adaptive sampling}: Sampling rate adjusts based on traffic.
+\end{itemize}
+
+Production systems typically sample traces to control costs while ensuring error traces are always captured.
+
+\paragraph{Tracing Backends}
+
+Popular tracing backends include:
+\begin{itemize}
+    \item \textbf{Jaeger}: Open-source, CNCF-graduated project.
+    \item \textbf{Zipkin}: Open-source, originated at Twitter.
+    \item \textbf{Tempo}: Grafana Labs' scalable tracing backend.
+    \item \textbf{Cloud services}: AWS X-Ray, Google Cloud Trace, Azure Application Insights.
+\end{itemize}
+
+\paragraph{Tracing in AI Systems}
+
+AI agent platforms benefit from tracing for:
+\begin{itemize}
+    \item Visualizing the flow through agent steps.
+    \item Identifying slow LLM calls or tool invocations.
+    \item Understanding retry and fallback behavior.
+    \item Correlating frontend requests to backend operations.
+\end{itemize}
+
+\subsection{Health Checks and Probes}
+
+Health checks enable orchestration systems to manage application lifecycle and traffic routing.
+
+\paragraph{Kubernetes Probe Types}
+
+Kubernetes defines three probe types:
+
+\begin{itemize}
+    \item \textbf{Liveness probe}: Determines if the container is running. Failure triggers container restart.
+    
+    \item \textbf{Readiness probe}: Determines if the container is ready to receive traffic. Failure removes the pod from load balancer endpoints.
+    
+    \item \textbf{Startup probe}: Determines if the application has started. Used for slow-starting applications to prevent premature liveness failures.
+\end{itemize}
+
+\paragraph{Probe Implementation}
+
+Probes are typically implemented as:
+\begin{itemize}
+    \item \textbf{HTTP GET}: Check returns 2xx status code.
+    \item \textbf{TCP socket}: Check opens a connection.
+    \item \textbf{Command execution}: Check runs a command in the container.
+\end{itemize}
+
+\paragraph{Health Check Design}
+
+Effective health checks follow several principles:
+
+\begin{itemize}
+    \item \textbf{Liveness should be simple}: Check that the process is responsive, not full dependency health.
+    
+    \item \textbf{Readiness should check dependencies}: Check that the application can actually handle requests (database connected, caches warm, etc.).
+    
+    \item \textbf{Avoid cascading failures}: A dependency being down should affect readiness, not liveness.
+    
+    \item \textbf{Fast response}: Health checks should respond quickly to avoid timeout issues.
+    
+    \item \textbf{Appropriate failure thresholds}: Configure failure thresholds to avoid flapping.
+\end{itemize}
+
+\paragraph{Component Health}
+
+Complex applications may have multiple components with independent health:
+\begin{itemize}
+    \item Database connectivity.
+    \item Cache connectivity.
+    \item External API availability.
+    \item Background worker status.
+    \item Model provider health.
+\end{itemize}
+
+Aggregating component health into overall readiness requires policy decisions about which components are critical.
+
+\subsection{Observability Patterns for AI Platforms}
+
+AI agent platforms present specific observability challenges and patterns:
+
+\paragraph{LLM Observability}
+
+Monitoring LLM interactions requires:
+\begin{itemize}
+    \item \textbf{Latency tracking}: Per-model, per-provider latency distributions.
+    \item \textbf{Token counting}: Input and output token usage for cost tracking.
+    \item \textbf{Error classification}: Distinguishing rate limits, timeouts, and content errors.
+    \item \textbf{Quality metrics}: Optional evaluation of response quality.
+\end{itemize}
+
+\paragraph{Agent Observability}
+
+Monitoring agent behavior requires:
+\begin{itemize}
+    \item \textbf{Run metrics}: Completion rate, step count, duration.
+    \item \textbf{Tool metrics}: Invocation counts, success rates, latencies.
+    \item \textbf{Reasoning visibility}: Access to agent decision traces.
+    \item \textbf{Cost allocation}: Per-run, per-user, per-tenant cost tracking.
+\end{itemize}
+
+\paragraph{Multi-Tenant Observability}
+
+Multi-tenant systems need tenant-aware observability:
+\begin{itemize}
+    \item Metrics labeled by tenant for per-tenant dashboards.
+    \item Log filtering by tenant for support investigations.
+    \item Trace filtering by tenant for issue diagnosis.
+    \item Aggregated and tenant-specific SLO monitoring.
+\end{itemize}
+
+\paragraph{Production Readiness Checklist}
+
+A production-ready AI platform should have:
+
+\begin{enumerate}
+    \item \textbf{Comprehensive metrics}: Request rates, latencies, error rates, resource usage, business metrics.
+    
+    \item \textbf{Structured logging}: JSON logs with request correlation, appropriate log levels, PII protection.
+    
+    \item \textbf{Distributed tracing}: OpenTelemetry instrumentation, sampling configuration, trace-log correlation.
+    
+    \item \textbf{Health probes}: Kubernetes-compatible liveness, readiness, and startup probes.
+    
+    \item \textbf{Dashboards}: Grafana dashboards for operational visibility.
+    
+    \item \textbf{Alerting}: Alert rules for critical conditions with appropriate thresholds and routing.
+    
+    \item \textbf{Runbooks}: Documentation for responding to common alerts and issues.
+\end{enumerate}
+
+The Cineca Agentic Platform implements these observability capabilities, as detailed in Chapter~\ref{ch:observability}, providing operators with comprehensive visibility into system behavior.

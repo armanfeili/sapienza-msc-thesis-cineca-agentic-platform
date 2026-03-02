@@ -1,0 +1,587 @@
+% TODO checklist: Inspected files:
+% - db/postgres_control/README_postgres_control.md
+% - db/postgres_control/models/ (all ORM model files)
+% - db/postgres_control/alembic/versions/ (migration files 001-026)
+% - db/memgraph_domain/README_memgraph_domain.md
+% - db/migrations/README_migrations.md
+% - Q&A.md (Q10-12: Database layers)
+
+\chapter{Database Schema}
+\label{app:database-schema}
+
+This appendix documents the database schemas for the three persistence layers of the Cineca Agentic Platform: PostgreSQL (control plane), Redis (data plane), and Memgraph (graph domain).
+
+%------------------------------------------------------------------------------
+\section{PostgreSQL Schema}
+\label{app:db:postgresql}
+
+PostgreSQL serves as the authoritative control plane, storing tenants, agents, jobs, providers, models, tools, and audit logs. The schema is managed through 26+ Alembic migrations.
+
+\subsection{Core Tables}
+
+\subsubsection{Tenants Table}
+
+Multi-tenant organization management.
+
+\begin{lstlisting}[language=SQL]
+CREATE TABLE tenants (
+    id VARCHAR(255) PRIMARY KEY,        -- "tenant-abc123"
+    name VARCHAR(255) NOT NULL,         -- "ACME Corporation"
+    admin_email VARCHAR(255) NOT NULL,  -- "admin@acme.com" (RFC 5321 max length: 320)
+    metadata JSONB NOT NULL DEFAULT '{}', -- {"region": "us-east-1"}
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    version INTEGER NOT NULL DEFAULT 1  -- Optimistic locking
+);
+
+-- Constraints
+CHECK (char_length(name) BETWEEN 1 AND 255)  -- Name length constraint
+UNIQUE INDEX ix_tenants_name_lower_unique ON tenants(LOWER(name));  -- Case-insensitive unique name
+INDEX ix_tenants_admin_email_lower ON tenants(LOWER(admin_email));  -- Email lookup index
+INDEX ix_tenants_created_at_desc ON tenants(created_at DESC);       -- Pagination index
+\end{lstlisting}
+
+\textbf{Constraints:}
+\begin{itemize}
+    \item \texttt{PRIMARY KEY}: \texttt{id} (VARCHAR, tenant identifier)
+    \item \texttt{NOT NULL}: \texttt{id}, \texttt{name}, \texttt{admin_email}, \texttt{metadata}, \texttt{created_at}, \texttt{updated_at}, \texttt{version}
+    \item \texttt{UNIQUE}: \texttt{LOWER(name)} (case-insensitive tenant name uniqueness)
+    \item \texttt{CHECK}: Name length between 1 and 255 characters
+    \item \textbf{Tenant scoping}: Tenant ID serves as isolation boundary; all related tables reference \texttt{tenants.id} via foreign keys
+\end{itemize}
+
+\subsubsection{Jobs Table}
+
+Background task management with state machine.
+
+\begin{lstlisting}[language=SQL]
+CREATE TABLE jobs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),  -- Requires pgcrypto extension
+    type VARCHAR(100) NOT NULL,         -- "demo", "agent.run"
+    status VARCHAR(50) NOT NULL,        -- "queued"|"running"|"finished"|"failed"|"cancelled"
+    owner_sub VARCHAR(255) NOT NULL,    -- User subject
+    tenant_id VARCHAR(255) REFERENCES tenants(id) ON DELETE SET NULL,
+    payload_json JSONB,                 -- Input parameters
+    result_json JSONB,                  -- Output data
+    error_json JSONB,                   -- Error details
+    idempotency_key VARCHAR(255),       -- Duplicate prevention
+    priority INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    started_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
+    queue_latency_ms INTEGER,
+    exec_latency_ms INTEGER,
+    etag VARCHAR(64)
+);
+
+-- Constraints
+UNIQUE INDEX idx_jobs_idempotency ON jobs(owner_sub, idempotency_key) 
+    WHERE idempotency_key IS NOT NULL;  -- Partial unique index for idempotency
+INDEX idx_jobs_status_created ON jobs(status, created_at DESC);  -- Status query index
+INDEX idx_jobs_tenant_created ON jobs(tenant_id, created_at DESC) WHERE tenant_id IS NOT NULL;
+\end{lstlisting}
+
+\textbf{Constraints:}
+\begin{itemize}
+    \item \texttt{PRIMARY KEY}: \texttt{id} (UUID, auto-generated)
+    \item \texttt{NOT NULL}: \texttt{id}, \texttt{type}, \texttt{status}, \texttt{owner_sub}, \texttt{priority}, \texttt{created_at}
+    \item \texttt{FOREIGN KEY}: \texttt{tenant_id} REFERENCES \texttt{tenants(id)} ON DELETE SET NULL
+    \item \texttt{UNIQUE}: \texttt{(owner_sub, idempotency_key)} WHERE \texttt{idempotency_key IS NOT NULL} (partial index for idempotency enforcement)
+    \item \textbf{Tenant scoping}: Jobs reference \texttt{tenant_id} for multi-tenant isolation; nullable to support global/system jobs
+    \item \textbf{Note}: \texttt{gen_random_uuid()} requires \texttt{pgcrypto} extension
+\end{itemize}
+
+\subsection{Agent Tables}
+
+\subsubsection{Agent Sessions}
+
+Stateful conversation context.
+
+\begin{lstlisting}[language=SQL]
+CREATE TABLE agent_sessions (
+    session_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id VARCHAR(255) NOT NULL,
+    tenant_id VARCHAR(255) REFERENCES tenants(id) ON DELETE SET NULL,
+    status VARCHAR(50) NOT NULL,        -- "active"|"completed"|"cancelled"|"failed"
+    manager VARCHAR(100),               -- Manager type
+    temperature FLOAT NOT NULL DEFAULT 0.2,
+    max_steps INTEGER NOT NULL DEFAULT 8,
+    tools JSONB NOT NULL DEFAULT '[]',  -- Enabled tools
+    session_metadata JSONB NOT NULL DEFAULT '{}',
+    last_step_id UUID,
+    last_step_seq INTEGER NOT NULL DEFAULT 0,
+    etag VARCHAR(64),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Constraints
+INDEX idx_sessions_user_tenant ON agent_sessions(user_id, tenant_id);  -- User/tenant lookup
+\end{lstlisting}
+
+\textbf{Constraints:}
+\begin{itemize}
+    \item \texttt{PRIMARY KEY}: \texttt{session_id} (UUID)
+    \item \texttt{NOT NULL}: \texttt{session_id}, \texttt{user_id}, \texttt{status}, \texttt{temperature}, \texttt{max_steps}, \texttt{tools}, \texttt{session_metadata}, \texttt{last_step_seq}, \texttt{created_at}, \texttt{updated_at}
+    \item \texttt{FOREIGN KEY}: \texttt{tenant_id} REFERENCES \texttt{tenants(id)} ON DELETE SET NULL
+    \item \textbf{Tenant scoping}: Sessions are tenant-scoped via \texttt{tenant_id} foreign key
+\end{itemize}
+
+\subsubsection{Agent Steps}
+
+Individual steps within sessions.
+
+\begin{lstlisting}[language=SQL]
+CREATE TABLE agent_steps (
+    step_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID NOT NULL REFERENCES agent_sessions(session_id) ON DELETE CASCADE,
+    seq INTEGER NOT NULL,               -- Sequence number
+    type VARCHAR(50) NOT NULL,          -- "user"|"assistant"|"tool"|"system"|"error"|"message"
+    message TEXT,
+    tool VARCHAR(255),
+    input JSONB,
+    output JSONB,
+    status VARCHAR(50),                 -- "queued"|"running"|"completed"|"failed"|"cancelled"
+    started_at TIMESTAMPTZ,
+    finished_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Constraints
+INDEX idx_steps_session_seq ON agent_steps(session_id, seq);  -- Composite index for session step ordering
+INDEX idx_steps_timestamps ON agent_steps(started_at, finished_at) 
+    WHERE started_at IS NOT NULL;  -- Partial index for active/running steps
+UNIQUE INDEX idx_steps_session_seq_unique ON agent_steps(session_id, seq);  -- Ensure sequential ordering per session
+\end{lstlisting}
+
+\textbf{Constraints:}
+\begin{itemize}
+    \item \texttt{PRIMARY KEY}: \texttt{step_id} (UUID)
+    \item \texttt{NOT NULL}: \texttt{step_id}, \texttt{session_id}, \texttt{seq}, \texttt{type}, \texttt{created_at}
+    \item \texttt{FOREIGN KEY}: \texttt{session_id} REFERENCES \texttt{agent_sessions(session_id)} ON DELETE CASCADE (cascading delete)
+    \item \texttt{UNIQUE}: \texttt{(session_id, seq)} (ensures sequential ordering within each session)
+    \item \textbf{Tenant scoping}: Steps inherit tenant scope from parent session via \texttt{session_id} foreign key
+\end{itemize}
+
+\subsubsection{Agent Runs}
+
+Single agent execution records.
+
+\begin{lstlisting}[language=SQL]
+CREATE TABLE agent_runs (
+    run_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID REFERENCES agent_sessions(session_id),
+    user_id VARCHAR(255) NOT NULL,
+    tenant_id VARCHAR(255) REFERENCES tenants(id),
+    model_instance_name VARCHAR(255),
+    model_id VARCHAR(255),
+    provider_name VARCHAR(255),
+    provider_id VARCHAR(255),
+    status VARCHAR(50) NOT NULL,        -- "queued"|"running"|"succeeded"|"failed"|"cancelled"
+    latency_ms INTEGER,
+    trace_id VARCHAR(255),
+    request_id VARCHAR(255),
+    llm_error_type VARCHAR(100),
+    llm_error_message TEXT,
+    llm_error_occurred_at TIMESTAMPTZ,
+    todos JSONB DEFAULT '[]',
+    steps JSONB DEFAULT '[]',
+    output JSONB,
+    warnings JSONB DEFAULT '[]',
+    metrics JSONB,
+    run_metadata JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    started_at TIMESTAMPTZ,
+    finished_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_runs_tenant_user ON agent_runs(tenant_id, user_id, started_at);
+CREATE INDEX idx_runs_status ON agent_runs(status, started_at);
+CREATE INDEX idx_runs_output_gin ON agent_runs USING gin(output);
+CREATE INDEX idx_runs_metrics_gin ON agent_runs USING gin(metrics);
+\end{lstlisting}
+
+\subsection{Provider Tables}
+
+\subsubsection{Providers}
+
+LLM provider configuration.
+
+\begin{lstlisting}[language=SQL]
+CREATE TABLE providers (
+    id VARCHAR(255) PRIMARY KEY,        -- "ollama-local"
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(100) NOT NULL,         -- "openai_compatible", "ollama"
+    base_url VARCHAR(1000),
+    model VARCHAR(255),
+    tenant_id VARCHAR(255) REFERENCES tenants(id) ON DELETE CASCADE,  -- NULL for global
+    config_json JSONB NOT NULL DEFAULT '{}',
+    has_api_key BOOLEAN NOT NULL DEFAULT FALSE,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Constraints
+UNIQUE INDEX uq_provider_tenant_name ON providers(tenant_id, name);  -- Tenant-scoped unique provider name
+\end{lstlisting}
+
+\textbf{Constraints:}
+\begin{itemize}
+    \item \texttt{PRIMARY KEY}: \texttt{id} (VARCHAR)
+    \item \texttt{NOT NULL}: \texttt{id}, \texttt{name}, \texttt{type}, \texttt{config_json}, \texttt{has_api_key}, \texttt{enabled}, \texttt{created_at}, \texttt{updated_at}
+    \item \texttt{FOREIGN KEY}: \texttt{tenant_id} REFERENCES \texttt{tenants(id)} ON DELETE CASCADE (nullable for global providers)
+    \item \texttt{UNIQUE}: \texttt{(tenant_id, name)} (provider name uniqueness per tenant; global providers have \texttt{tenant_id=NULL})
+    \item \textbf{Tenant scoping}: Provider uniqueness is enforced per tenant via unique index; \texttt{tenant_id=NULL} represents global providers shared across all tenants
+\end{itemize}
+
+\subsubsection{Provider Secrets}
+
+Encrypted API keys (separate table for security).
+
+\begin{lstlisting}[language=SQL]
+CREATE TABLE provider_secrets (
+    provider_id VARCHAR(255) PRIMARY KEY REFERENCES providers(id) ON DELETE CASCADE,
+    api_key_encrypted TEXT NOT NULL,    -- Fernet-encrypted
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+\end{lstlisting}
+
+\textbf{Constraints:}
+\begin{itemize}
+    \item \texttt{PRIMARY KEY}: \texttt{provider_id} (VARCHAR, also foreign key)
+    \item \texttt{NOT NULL}: \texttt{provider_id}, \texttt{api_key_encrypted}, \texttt{created_at}, \texttt{updated_at}
+    \item \texttt{FOREIGN KEY}: \texttt{provider_id} REFERENCES \texttt{providers(id)} ON DELETE CASCADE (one-to-one relationship)
+    \item \textbf{Security}: Secrets stored in separate table with encrypted values; deletion cascades when provider is deleted
+\end{itemize}
+
+\subsection{Model Tables}
+
+\subsubsection{Model Instances}
+
+Loaded LLM model instances.
+
+\begin{lstlisting}[language=SQL]
+CREATE TABLE model_instances (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    instance_name VARCHAR(255) NOT NULL,
+    provider_id VARCHAR(255) REFERENCES providers(id) ON DELETE SET NULL,
+    model_id VARCHAR(255) NOT NULL,     -- Provider-specific model ID
+    tenant_id VARCHAR(255) REFERENCES tenants(id) ON DELETE SET NULL,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    loaded BOOLEAN NOT NULL DEFAULT FALSE,
+    capabilities JSONB NOT NULL DEFAULT '["chat"]',
+    config_json JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Constraints
+INDEX idx_instances_provider ON model_instances(provider_id);
+INDEX idx_instances_tenant ON model_instances(tenant_id) WHERE tenant_id IS NOT NULL;
+UNIQUE INDEX idx_instances_tenant_name ON model_instances(tenant_id, instance_name) 
+    WHERE tenant_id IS NOT NULL;  -- Tenant-scoped unique instance name
+\end{lstlisting}
+
+\textbf{Constraints:}
+\begin{itemize}
+    \item \texttt{PRIMARY KEY}: \texttt{id} (UUID)
+    \item \texttt{NOT NULL}: \texttt{id}, \texttt{instance_name}, \texttt{model_id}, \texttt{enabled}, \texttt{loaded}, \texttt{capabilities}, \texttt{config_json}, \texttt{created_at}, \texttt{updated_at}
+    \item \texttt{FOREIGN KEY}: \texttt{provider_id} REFERENCES \texttt{providers(id)} ON DELETE SET NULL; \texttt{tenant_id} REFERENCES \texttt{tenants(id)} ON DELETE SET NULL
+    \item \texttt{UNIQUE}: \texttt{(tenant_id, instance_name)} WHERE \texttt{tenant_id IS NOT NULL} (partial unique index for tenant-scoped instance names)
+    \item \textbf{Tenant scoping}: Instance names must be unique per tenant; global instances have \texttt{tenant_id=NULL}
+\end{itemize}
+
+\subsubsection{User Default Models}
+
+Per-user model preferences.
+
+\begin{lstlisting}[language=SQL]
+CREATE TABLE user_default_models (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),  -- Changed from SERIAL to UUID
+    user_id VARCHAR(255) NOT NULL,
+    tenant_id VARCHAR(255) NOT NULL,
+    chat_instance_id UUID NOT NULL REFERENCES model_instances(id) ON DELETE CASCADE,
+    created_by VARCHAR(255) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(user_id, tenant_id)  -- One default model per user per tenant
+);
+
+-- Constraints
+INDEX idx_user_default_models_user_tenant ON user_default_models(user_id, tenant_id);
+INDEX idx_user_default_models_instance ON user_default_models(chat_instance_id);
+\end{lstlisting}
+
+\textbf{Constraints:}
+\begin{itemize}
+    \item \texttt{PRIMARY KEY}: \texttt{id} (UUID)
+    \item \texttt{NOT NULL}: \texttt{id}, \texttt{user_id}, \texttt{tenant_id}, \texttt{chat_instance_id}, \texttt{created_by}, \texttt{created_at}, \texttt{updated_at}
+    \item \texttt{FOREIGN KEY}: \texttt{chat_instance_id} REFERENCES \texttt{model_instances(id)} ON DELETE CASCADE
+    \item \texttt{UNIQUE}: \texttt{(user_id, tenant_id)} (one default model preference per user per tenant)
+    \item \textbf{Tenant scoping}: User defaults are tenant-scoped via \texttt{tenant_id}; uniqueness enforced per (user, tenant) pair
+\end{itemize}
+
+\subsection{Tool Tables}
+
+\begin{lstlisting}[language=SQL]
+CREATE TABLE tools (
+    id VARCHAR(255) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    version VARCHAR(50) NOT NULL,
+    description TEXT,
+    input_schema JSONB,
+    output_schema JSONB,
+    owner_tenant_id VARCHAR(255) REFERENCES tenants(id) ON DELETE SET NULL,
+    version_number INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE tool_invocations (
+    eid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tool_name VARCHAR(255) NOT NULL,
+    status VARCHAR(50),
+    params_json JSONB,
+    result_json JSONB,
+    user_id VARCHAR(255),
+    tenant_id VARCHAR(255) REFERENCES tenants(id) ON DELETE SET NULL,
+    latency_ms INTEGER,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Constraints
+INDEX idx_tools_owner_tenant ON tools(owner_tenant_id) WHERE owner_tenant_id IS NOT NULL;
+INDEX idx_tool_invocations_tenant_user ON tool_invocations(tenant_id, user_id, created_at DESC);
+INDEX idx_tool_invocations_tool_tenant ON tool_invocations(tool_name, tenant_id, created_at DESC);
+\end{lstlisting}
+
+\textbf{Constraints:}
+\begin{itemize}
+    \item \textbf{Tools table}:
+    \begin{itemize}
+        \item \texttt{PRIMARY KEY}: \texttt{id} (VARCHAR)
+        \item \texttt{NOT NULL}: \texttt{id}, \texttt{name}, \texttt{version}, \texttt{version_number}, \texttt{created_at}, \texttt{updated_at}
+        \item \texttt{FOREIGN KEY}: \texttt{owner_tenant_id} REFERENCES \texttt{tenants(id)} ON DELETE SET NULL (nullable for global tools)
+        \item \textbf{Tenant scoping}: Tools can be tenant-owned or global (\texttt{owner_tenant_id=NULL})
+    \end{itemize}
+    \item \textbf{Tool Invocations table}:
+    \begin{itemize}
+        \item \texttt{PRIMARY KEY}: \texttt{eid} (UUID)
+        \item \texttt{NOT NULL}: \texttt{eid}, \texttt{tool_name}, \texttt{created_at}
+        \item \texttt{FOREIGN KEY}: \texttt{tenant_id} REFERENCES \texttt{tenants(id)} ON DELETE SET NULL
+        \item \textbf{Tenant scoping}: Invocations are tenant-scoped for audit and isolation
+    \end{itemize}
+\end{itemize}
+
+\subsection{Audit Tables}
+
+\begin{lstlisting}[language=SQL]
+CREATE TABLE internal_ops_events (
+    id BIGSERIAL PRIMARY KEY,
+    correlation_id VARCHAR(255) NOT NULL,
+    event_type VARCHAR(100) NOT NULL,
+    actor_sub VARCHAR(255) NOT NULL,
+    actor_type VARCHAR(50),
+    endpoint VARCHAR(255) NOT NULL,
+    http_method VARCHAR(10) NOT NULL,
+    request_params JSONB,
+    request_body JSONB,
+    http_status INTEGER NOT NULL,
+    response_body JSONB,
+    operation_result VARCHAR(50) NOT NULL,
+    duration_ms INTEGER,
+    idempotency_key VARCHAR(255),
+    is_idempotency_replay BOOLEAN NOT NULL DEFAULT FALSE,
+    cache_status VARCHAR(20),
+    error_type VARCHAR(100),
+    error_message TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    metadata JSONB
+);
+
+-- Constraints
+INDEX idx_ops_events_correlation ON internal_ops_events(correlation_id);  -- Trace lookup
+INDEX idx_ops_events_actor_time ON internal_ops_events(actor_sub, created_at DESC);  -- Actor audit trail
+INDEX idx_ops_events_created_at_desc ON internal_ops_events(created_at DESC);  -- Time-based queries
+\end{lstlisting}
+
+\textbf{Constraints:}
+\begin{itemize}
+    \item \texttt{PRIMARY KEY}: \texttt{id} (BIGSERIAL, auto-incrementing)
+    \item \texttt{NOT NULL}: \texttt{id}, \texttt{correlation_id}, \texttt{event_type}, \texttt{actor_sub}, \texttt{endpoint}, \texttt{http_method}, \texttt{http_status}, \texttt{operation_result}, \texttt{is_idempotency_replay}, \texttt{created_at}
+    \item \textbf{Tenant scoping}: Audit events capture tenant context via \texttt{request_params} or \texttt{metadata} JSONB fields (application-level enforcement)
+\end{itemize}
+
+%------------------------------------------------------------------------------
+\section{Memgraph Schema}
+\label{app:db:memgraph}
+
+Memgraph stores the bioinformatics knowledge graph with users, institutions, tasks, and files.
+
+\subsection{Node Types}
+
+\begin{table}[ht]
+\centering
+\caption{Memgraph Node Labels}
+\label{tab:memgraph-nodes}
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Label} & \textbf{Key Properties} \\
+    \hline
+    \texttt{User} & \texttt{user\_id}, \texttt{firstName}, \texttt{lastName}, \texttt{email}, \texttt{user\_name} \\
+    \texttt{Institution} & \texttt{name} \\
+    \texttt{Blast} & \texttt{task\_id}, \texttt{blasttype}, \texttt{blast\_version}, \texttt{dbname}, \texttt{status} \\
+    \texttt{CreateDb} & \texttt{task\_id}, \texttt{dbtype}, \texttt{dbname}, \texttt{status} \\
+    \texttt{SearchbyTaxon} & \texttt{task\_id}, \texttt{taxon}, \texttt{tool}, \texttt{status} \\
+    \texttt{File} & \texttt{file\_id}, \texttt{user\_filename}, \texttt{size}, \texttt{extension} \\
+    \texttt{Fasta} & \texttt{file\_id}, \texttt{user\_filename}, \texttt{size} \\
+    \texttt{BlastDb} & \texttt{file\_id}, \texttt{dbname}, \texttt{size} \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Relationship Types}
+
+\begin{table}[ht]
+\centering
+\caption{Memgraph Relationship Types}
+\label{tab:memgraph-rels}
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \hline
+    \textbf{Type} & \textbf{Direction} & \textbf{Description} \\
+    \hline
+    \texttt{WORKS\_AT} & \texttt{(User)$\rightarrow$(Institution)} & User employment \\
+    \texttt{RUNS} & \texttt{(User)$\rightarrow$(Task)} & User executes task \\
+    \texttt{INPUT} & \texttt{(File)$\rightarrow$(Task)} & File input to task \\
+    \texttt{OUTPUT} & \texttt{(Task)$\rightarrow$(File)} & Task produces file \\
+    \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Schema Diagram}
+
+\begin{verbatim}
+                    +--------------+
+                    | Institution  |
+                    +------^-------+
+                           | WORKS_AT
+                    +------+-------+
+                    |    User      |
+                    +------+-------+
+                           | RUNS
+           +---------------+----------------+
+           |               |                |
+    +------v------+ +------v------+ +-------v-------+
+    |    Blast    | | CreateDb    | | SearchbyTaxon |
+    +------+------+ +------+------+ +-------+-------+
+           |               |                |
+    INPUT -+- OUTPUT INPUT -+- OUTPUT INPUT -+- OUTPUT
+           |               |                |
+    +------v------+ +------v------+ +-------v-------+
+    |    File     | |  BlastDb    | |     Fasta     |
+    +-------------+ +-------------+ +---------------+
+\end{verbatim}
+
+%------------------------------------------------------------------------------
+\section{Redis Key Patterns}
+\label{app:db:redis}
+
+Redis serves as the low-latency data plane for caching, job queues, rate limiting, and session state.
+
+\begin{table}[ht]
+\centering
+\caption{Redis Key Patterns}
+\label{tab:redis-keys}
+\small
+\begin{tabularx}{\textwidth}{lrX}
+    \hline
+    \textbf{Pattern} & \textbf{TTL} & \textbf{Description} \\
+    \hline
+    \texttt{job:\{id\}:status} & 10d & Job state and metadata \\
+    \texttt{job:\{id\}:events} & 10d & Job event ring buffer \\
+    \texttt{job:queue:\{type\}} & -- & Job queue (BRPOP) \\
+    \texttt{idem:\{key\}} & 24h & Idempotency cache \\
+    \texttt{rate:\{user\}:\{window\}} & -- & Rate limit counters (ZSET) \\
+    \texttt{session:\{id\}} & 1h & Session state cache \\
+    \texttt{provider:\{id\}:health} & 2h & Provider health status \\
+    \texttt{default:model:\{scope\}} & 15m & Default model cache \\
+    \texttt{jwks:\{issuer\}} & 1h & JWKS public keys \\
+    \texttt{circuit:\{provider\}} & -- & Circuit breaker state \\
+    \hline
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Naming Conventions and Extensions}
+\label{app:db:naming}
+
+\subsection{Index Naming}
+
+The schema uses the following index naming conventions:
+
+\begin{itemize}
+    \item \texttt{ix\_*}: Standard indexes (e.g., \texttt{ix\_tenants\_name\_lower\_unique})
+    \item \texttt{idx\_*}: Performance indexes (e.g., \texttt{idx\_jobs\_status\_created})
+    \item \texttt{uq\_*}: Unique indexes (e.g., \texttt{uq\_provider\_tenant\_name})
+    \item Unique indexes may also use \texttt{ix\_*} prefix with \texttt{\_unique} suffix
+\end{itemize}
+
+\subsection{UUID Generation}
+
+The schema uses PostgreSQL's \texttt{gen\_random\_uuid()} function for UUID primary keys. This requires the \texttt{pgcrypto} extension:
+
+\begin{lstlisting}[language=SQL]
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+\end{lstlisting}
+
+Alternatively, the \texttt{uuid-ossp} extension can be used with \texttt{uuid\_generate\_v4()}:
+
+\begin{lstlisting}[language=SQL]
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Then use: DEFAULT uuid_generate_v4()
+\end{lstlisting}
+
+The current implementation uses \texttt{pgcrypto} for UUID generation.
+
+\subsection{Constraint Naming}
+
+\begin{itemize}
+    \item \textbf{Primary keys}: Use column name as constraint name (implicit \texttt{PRIMARY KEY})
+    \item \textbf{Foreign keys}: Use descriptive names when explicitly named (e.g., \texttt{FK\_jobs\_tenant\_id})
+    \item \textbf{Check constraints}: Use \texttt{ck\_*} prefix (e.g., \texttt{ck\_tenants\_name\_length})
+    \item \textbf{Unique constraints}: Use \texttt{uq\_*} prefix or \texttt{ix\_*\_unique} for unique indexes
+\end{itemize}
+
+%------------------------------------------------------------------------------
+\section{Migration History}
+\label{app:db:migrations}
+
+\begin{table}[ht]
+\centering
+\caption{Alembic Migration History}
+\label{tab:migrations}
+\small
+\begin{tabularx}{\textwidth}{lX}
+    \hline
+    \textbf{Revision} & \textbf{Description} \\
+    \hline
+    001 & Initial tenants table \\
+    002 & Tools and invocations tables \\
+    003 & Jobs and job events tables \\
+    004 & Providers and secrets tables \\
+    005 & Built-in manifests tables \\
+    006 & Model instances tables \\
+    007 & User default models \\
+    008 & Agent tables (sessions, steps, runs) \\
+    009--015 & Session and run column additions \\
+    016--019 & Model defaults fixes \\
+    020--025 & Agent run enhancements \\
+    026 & Performance indexes \\
+    \hline
+\end{tabularx}
+\end{table}
+

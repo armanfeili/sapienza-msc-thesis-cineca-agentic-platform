@@ -1,0 +1,19 @@
+# Streamlit UI Requirements
+
+# Core framework
+streamlit>=1.31.0
+
+# HTTP client
+requests>=2.31.0
+
+# JWT decoding
+PyJWT>=2.8.0
+
+# Data handling
+pandas>=2.1.0
+
+# Human-friendly time formatting
+humanize>=4.0.0
+
+# Environment and secrets
+python-dotenv>=1.0.0

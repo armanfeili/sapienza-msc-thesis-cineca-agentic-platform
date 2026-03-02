@@ -1,0 +1,411 @@
+% TODO checklist:
+% - Inspected: docker-compose.yml (main compose file, 356 lines)
+% - Inspected: docker-compose.override.yml (development overrides)
+% - Inspected: docker-compose.gpu.yml (GPU support)
+% - Inspected: docker-compose.nginx.yml (production proxy)
+% - Inspected: Dockerfile (multi-stage build, app and test-runner targets)
+% - Inspected: docker-entrypoint.sh (migrations and model initialization)
+% - Inspected: README.md quickstart section
+
+\section{Docker Deployment}
+\label{sec:docker-deployment}
+
+The Cineca Agentic Platform is designed for containerized deployment using Docker and Docker Compose. This section describes the container architecture, service definitions, networking configuration, and volume management that enable reproducible, scalable deployments across different environments.
+
+\subsection{Docker Compose Architecture}
+
+The platform's Docker Compose configuration defines a complete microservices deployment with the following services:
+
+\begin{table}[ht]
+\centering
+\caption{Docker Compose service definitions.}
+\label{tab:docker-services}
+\small
+\begin{tabular}{llp{6.5cm}}
+\hline
+\textbf{Service} & \textbf{Image} & \textbf{Purpose} \\
+\hline
+postgres & postgres:16-alpine & PostgreSQL control plane database \\
+app & Custom (Dockerfile) & FastAPI application server \\
+worker & Custom (Dockerfile) & Background job worker process \\
+memgraph & memgraph/memgraph-platform & Graph database for domain data \\
+redis & redis:7-alpine & Caching, job queues, rate limiting \\
+ollama & ollama/ollama:latest & Local LLM inference server \\
+prometheus & prom/prometheus:latest & Metrics collection and alerting \\
+grafana & grafana/grafana:11.0.0 & Metrics visualization and dashboards \\
+ui\_control\_panel & Custom (Streamlit) & Administrative control panel UI \\
+db-populate & Custom & Database seeding utility \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Service Configuration}
+
+\subsubsection{PostgreSQL Service}
+
+The PostgreSQL service provides the control plane database for storing tenants, agents, runs, jobs, and audit logs:
+
+\begin{lstlisting}[language=yaml, caption=PostgreSQL service configuration]
+postgres:
+  image: postgres:16-alpine
+  container_name: postgres
+  environment:
+    POSTGRES_DB: "${DB_NAME:-cineca_platform}"
+    POSTGRES_USER: "${DB_USER:-cineca_user}"
+    POSTGRES_PASSWORD: "${DB_PASSWORD:-change_me_now}"
+    POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=en_US.UTF-8"
+  ports:
+    - "${DB_PORT:-5432}:5432"
+  volumes:
+    - postgres_data:/var/lib/postgresql/data
+    - ./db/postgres_control/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cineca_user}"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+    start_period: 10s
+  restart: unless-stopped
+\end{lstlisting}
+
+Key configuration points:
+\begin{itemize}
+    \item Uses Alpine-based image for minimal footprint
+    \item Mounts initialization SQL for schema setup
+    \item Implements health check for dependency orchestration
+    \item Persists data in named volume
+\end{itemize}
+
+\subsubsection{Application Service}
+
+The main FastAPI application service is built from a custom Dockerfile:
+
+\begin{lstlisting}[language=yaml, caption=Application service configuration]
+app:
+  build:
+    context: .
+    dockerfile: Dockerfile
+    target: app
+  container_name: app
+  environment:
+    APP_HOST: "0.0.0.0"
+    APP_PORT: "8000"
+    LOG_LEVEL: "INFO"
+    MG_HOST: "${MG_HOST:-memgraph}"
+    REDIS_URL: "redis://redis:6379/0"
+    RATE_LIMIT_BACKEND: "redis"
+    DB_HOST: "${DB_HOST:-postgres}"
+    OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://ollama:11434/v1}"
+    OLLAMA_TIMEOUT_SECS: "${OLLAMA_TIMEOUT_SECS:-180}"
+    DEFAULT_MODEL_NAME: "${DEFAULT_MODEL_NAME:-phi3:mini}"
+  ports:
+    - "8000:8000"
+  depends_on:
+    postgres:
+      condition: service_healthy
+    memgraph:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    ollama:
+      condition: service_healthy
+  healthcheck:
+    test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+    interval: 15s
+    timeout: 5s
+    retries: 10
+    start_period: 40s
+  restart: unless-stopped
+\end{lstlisting}
+
+The service implements dependency ordering through health check conditions, ensuring that required infrastructure (PostgreSQL, Redis, Memgraph, Ollama) is available before the application starts.
+
+\subsubsection{Worker Service}
+
+The background job worker runs as a separate container with the same image but different entry command:
+
+\begin{lstlisting}[language=yaml, caption=Worker service configuration]
+worker:
+  build:
+    context: .
+    dockerfile: Dockerfile
+    target: app
+  container_name: jobs-worker
+  command: ["python", "-u", "-m", "src.workers.jobs_worker"]
+  healthcheck:
+    disable: true  # Worker doesn't run HTTP server
+  environment:
+    LOG_LEVEL: "INFO"
+    REDIS_URL: "redis://redis:6379/0"
+    DB_HOST: "${DB_HOST:-postgres}"
+    USE_POSTGRES_JOBS: "true"
+    JOB_WORKER_POLL_INTERVAL: "${JOB_WORKER_POLL_INTERVAL:-1.0}"
+    JOB_WORKER_HEARTBEAT_INTERVAL: "${JOB_WORKER_HEARTBEAT_INTERVAL:-5.0}"
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  restart: unless-stopped
+\end{lstlisting}
+
+\subsubsection{Ollama LLM Service}
+
+The Ollama service provides local LLM inference with configurable resource limits:
+
+\begin{lstlisting}[language=yaml, caption=Ollama service configuration]
+ollama:
+  image: ollama/ollama:latest
+  container_name: ollama
+  environment:
+    - OLLAMA_ORIGINS=*
+    - OLLAMA_NUM_PARALLEL=1
+    - OLLAMA_MAX_LOADED_MODELS=1
+    - OLLAMA_FLASH_ATTENTION=1
+    - OLLAMA_KEEP_ALIVE=10m
+    - OLLAMA_NUM_CTX=1024  # Reduced context for memory savings
+  ports:
+    - "11434:11434"
+  volumes:
+    - ./ops/ollama/models:/models:ro
+    - ollama_data:/root/.ollama
+  deploy:
+    resources:
+      limits:
+        cpus: '8'
+        memory: 10G
+      reservations:
+        cpus: '4'
+        memory: 7G
+  healthcheck:
+    test: ["CMD", "ollama", "list"]
+    interval: 10s
+    timeout: 5s
+    retries: 30
+    start_period: 10s
+  restart: unless-stopped
+\end{lstlisting}
+
+The resource limits ensure Ollama doesn't overwhelm the host system, particularly important on shared development machines.
+
+\subsection{Dockerfile Structure}
+
+The platform uses a multi-stage Dockerfile to optimize both production runtime and testing:
+
+\begin{lstlisting}[language=dockerfile, caption=Multi-stage Dockerfile structure]
+# Stage 1: Application Runtime
+FROM python:3.11-slim AS app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    VIRTUAL_ENV=/opt/venv \
+    PATH="/opt/venv/bin:$PATH" \
+    PYTHONPATH=/app
+
+# System dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tini curl ca-certificates build-essential \
+    pkg-config libssl-dev python3-dev postgresql-client
+
+# Create virtual environment
+RUN python -m venv "$VIRTUAL_ENV"
+WORKDIR /app
+
+# Install dependencies with cache mount
+COPY requirements.txt ./
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY src/ ./src/
+COPY db/ ./db/
+COPY docker-entrypoint.sh ./
+
+# Create non-root user
+RUN addgroup --system app && adduser --system --ingroup app app
+
+EXPOSE 8000
+
+# Health check against liveness endpoint
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
+    CMD curl -fsS "http://127.0.0.1:${APP_PORT}/v1/health/live" || exit 1
+
+# Use tini for proper signal handling
+ENTRYPOINT ["/usr/bin/tini", "--", "/app/docker-entrypoint.sh"]
+CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# Stage 2: Test Runner
+FROM python:3.11-slim AS test-runner
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    redis-server build-essential pkg-config libssl-dev python3-dev
+
+COPY pyproject.toml requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt pytest pytest-asyncio fakeredis
+
+COPY . /app
+
+CMD ["sh", "-c", "redis-server --daemonize yes && pytest -q"]
+\end{lstlisting}
+
+Key features of the Dockerfile:
+\begin{itemize}
+    \item \textbf{Tini init}: Proper signal handling for container orchestration
+    \item \textbf{BuildKit cache mounts}: Faster builds through pip cache persistence
+    \item \textbf{Non-root user}: Security best practice for production
+    \item \textbf{Health check}: Container health monitoring via liveness probe
+    \item \textbf{Virtual environment}: Isolated Python dependencies
+\end{itemize}
+
+\subsection{Container Entrypoint}
+
+The custom entrypoint script handles database migrations and model initialization:
+
+\begin{lstlisting}[language=bash, caption=docker-entrypoint.sh]
+#!/usr/bin/env bash
+set -e
+
+echo "Starting Cineca Agentic Platform..."
+
+# Run database migrations if PostgreSQL is configured
+if [ -n "$DB_HOST" ]; then
+    echo "Running database migrations..."
+    cd /app/db/postgres_control && alembic upgrade head || {
+        echo "Migration failed, but continuing..."
+    }
+    cd /app
+    
+    # Initialize default model in database
+    echo "Initializing default model..."
+    python scripts/ollama/init_default_model.py || {
+        echo "Default model initialization failed, but continuing..."
+    }
+fi
+
+# Execute the main command (CMD from Dockerfile)
+exec "$@"
+\end{lstlisting}
+
+This pattern ensures that:
+\begin{enumerate}
+    \item Database schema is always up-to-date before the application starts
+    \item Default LLM model is registered and warmed up
+    \item Failures in initialization don't prevent startup (graceful degradation)
+\end{enumerate}
+
+\subsection{Networking}
+
+All services communicate over a shared bridge network:
+
+\begin{lstlisting}[language=yaml, caption=Network configuration]
+networks:
+  app-net:
+    driver: bridge
+
+services:
+  app:
+    networks:
+      - app-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+\end{lstlisting}
+
+The \texttt{host.docker.internal} mapping enables containers to access host services, useful for development scenarios where some services run outside Docker.
+
+\subsection{Volume Management}
+
+The platform uses named volumes for persistent data:
+
+\begin{lstlisting}[language=yaml, caption=Volume definitions]
+volumes:
+  postgres_data:    # PostgreSQL database files
+  memgraph_data:    # Memgraph graph storage
+  redis_data:       # Redis persistence (AOF/RDB)
+  prometheus_data:  # Prometheus time-series data
+  grafana_data:     # Grafana dashboards and configuration
+  ollama_data:      # Ollama model cache
+\end{lstlisting}
+
+This configuration ensures data persistence across container restarts and updates.
+
+\subsection{Compose Override Files}
+
+The platform provides several Docker Compose override files for different deployment scenarios:
+
+\begin{table}[ht]
+\centering
+\caption{Docker Compose override files.}
+\label{tab:compose-overrides}
+\begin{tabular}{lp{9cm}}
+\hline
+\textbf{File} & \textbf{Purpose} \\
+\hline
+docker-compose.override.yml & Development defaults: hot reload, extended timeouts, demo mode \\
+docker-compose.override.dev.yml & Alternative development settings with host model mounts \\
+docker-compose.gpu.yml & GPU resource reservations for NVIDIA CUDA \\
+docker-compose.nginx.yml & Production NGINX reverse proxy configuration \\
+\hline
+\end{tabular}
+\end{table}
+
+Override files are combined using Docker Compose's layered configuration:
+
+\begin{lstlisting}[language=bash, caption=Using compose override files]
+# Development (automatic override)
+docker compose up -d
+
+# GPU deployment
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+
+# Production with NGINX
+docker compose -f docker-compose.yml -f docker-compose.nginx.yml up -d
+\end{lstlisting}
+
+\subsection{Deployment Commands}
+
+The Makefile provides convenient commands for common deployment operations:
+
+\begin{lstlisting}[language=bash, caption=Makefile deployment targets]
+# Start all services
+make up
+
+# Start with CPU profile (extended timeouts)
+make up-cpu
+
+# Start with GPU profile (CUDA support)
+make up-gpu
+
+# Stop all services
+make down
+
+# Stop and remove volumes (destructive)
+make clean
+
+# View logs
+make logs S=app  # Single service
+make logs        # All services
+
+# Check service status
+make ps
+\end{lstlisting}
+
+\subsection{Health Check Strategy}
+
+The deployment implements a comprehensive health check strategy:
+
+\begin{enumerate}
+    \item \textbf{Container-level}: Docker health checks monitor individual container health
+    \item \textbf{Dependency ordering}: Services wait for dependencies via \texttt{condition: service\_healthy}
+    \item \textbf{Application-level}: The FastAPI application exposes Kubernetes-style probes:
+    \begin{itemize}
+        \item \texttt{/v1/health/live}: Liveness probe (process alive)
+        \item \texttt{/v1/health/ready}: Readiness probe (ready for traffic)
+        \item \texttt{/v1/health/startup}: Startup probe (initialization complete)
+    \end{itemize}
+\end{enumerate}
+
+This multi-layered approach ensures robust startup sequencing and enables container orchestrators to make informed scheduling decisions.
+

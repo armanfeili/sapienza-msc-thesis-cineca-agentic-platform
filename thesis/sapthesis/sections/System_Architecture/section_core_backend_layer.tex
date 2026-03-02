@@ -1,0 +1,615 @@
+% TODO checklist:
+% - [x] README.md: API layer, routers, services, adapters
+% - [x] Q&A.md (Section B, Q9-Q14): Router modules, repository pattern, cross-cutting concerns
+% - [x] Q&A.md (Section C, Q16-Q22): Security, auth flow, RBAC, rate limiting
+% - [x] src/routers/: 23 router modules
+% - [x] src/schemas/: Pydantic schema definitions
+% - [x] src/services/: Service layer implementations
+% - [x] src/adapters/: LLM and external adapters
+% - [x] src/middleware/: Middleware implementations
+% - [x] src/errors/: Error handling utilities
+
+\section{Core Backend Layer}
+\label{sec:core-backend}
+
+The Core Backend Layer implements the platform's business logic, API surface, and orchestration engine. Built on FastAPI, this layer processes all client requests, enforces security policies, orchestrates agent execution, and coordinates with the data layer. This section details the implementation of cross-cutting concerns, API design, schemas, error handling, services, and adapters.
+
+\subsection{Cross-Cutting Concerns}
+\label{subsec:cross-cutting}
+
+Cross-cutting concerns are implemented through middleware, decorators, and shared utilities to ensure consistent behavior across all endpoints without polluting business logic. The platform implements fourteen distinct concerns, each discussed below.
+
+\subsubsection{Logging}
+
+The platform employs \texttt{structlog} for structured, machine-readable logging with automatic context enrichment. Configuration is centralized in \texttt{src/logging\_setup.py}.
+
+\paragraph{Key Features}
+\begin{itemize}
+    \item \textbf{Format Selection}: JSON output in production, colored console in development (controlled by \texttt{APP\_ENV})
+    \item \textbf{Context Binding}: Request ID, tenant ID, and user subject are automatically bound to all log entries
+    \item \textbf{Access Filtering}: High-frequency paths (\texttt{/metrics}, \texttt{/health}) are filtered to reduce noise
+    \item \textbf{Trace Correlation}: OpenTelemetry trace IDs are included when tracing is enabled
+\end{itemize}
+
+\begin{lstlisting}[language=Python, caption={Structured logging configuration pattern.}]
+import structlog
+
+structlog.configure(
+    processors=[
+        structlog.stdlib.filter_by_level,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.add_logger_name,
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+        structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+    ],
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    wrapper_class=structlog.stdlib.BoundLogger,
+)
+\end{lstlisting}
+
+\subsubsection{Metrics}
+
+Prometheus metrics are exposed via the \texttt{/metrics} endpoint, providing real-time observability into platform behavior. Implementation resides in \texttt{src/observability/metrics.py}.
+
+\paragraph{Metric Categories}
+Table~\ref{tab:metric-categories} summarizes the primary metric categories and their purposes.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Prometheus metric categories and examples.}
+    \label{tab:metric-categories}
+    \small
+    \begin{tabular}{llll}
+        \toprule
+        \textbf{Category} & \textbf{Metric Name} & \textbf{Type} & \textbf{Labels} \\
+        \midrule
+        HTTP & \texttt{http\_requests\_total} & Counter & method, path, status \\
+        HTTP & \texttt{http\_request\_duration\_seconds} & Histogram & method, path, status \\
+        Tools & \texttt{tools\_invocations\_total} & Counter & tool\_name, status \\
+        Tools & \texttt{tools\_invocation\_duration\_seconds} & Histogram & tool\_name \\
+        Agent & \texttt{agent\_run\_duration\_seconds} & Histogram & status, tenant\_id \\
+        Agent & \texttt{agent\_llm\_tokens\_total} & Counter & model, token\_type \\
+        Rate Limit & \texttt{rate\_limit\_exceeded\_total} & Counter & action, scope \\
+        Provider & \texttt{provider\_health\_status} & Gauge & provider, model \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Multiprocess Support}
+For Gunicorn deployments with multiple workers, the platform supports Prometheus multiprocess mode via the \texttt{PROMETHEUS\_MULTIPROC\_DIR} environment variable.
+
+\subsubsection{Tracing}
+
+Distributed tracing is implemented using OpenTelemetry, providing end-to-end visibility into request flows across services. Configuration is in \texttt{src/observability/tracing.py}.
+
+\paragraph{Configuration}
+\begin{itemize}
+    \item \textbf{Exporter}: OTLP over gRPC (port 4317) or HTTP/protobuf (port 4318)
+    \item \textbf{Sampling}: 100\% in development, 20\% in production (configurable)
+    \item \textbf{Instrumentations}: FastAPI (automatic spans), Requests library (outbound calls), logging correlation
+\end{itemize}
+
+\paragraph{Resource Attributes}
+Each span includes standardized resource attributes:
+\begin{itemize}
+    \item \texttt{service.name}: ``cineca-agentic-platform''
+    \item \texttt{service.version}: Current application version
+    \item \texttt{deployment.environment}: Environment identifier (dev, staging, prod)
+    \item \texttt{host.name}: Container/pod hostname
+\end{itemize}
+
+\subsubsection{Security}
+
+Security enforcement spans multiple layers, implementing defense in depth. The complete security architecture is detailed in Chapter~\ref{ch:security}; this subsection provides an overview of integration points.
+
+\paragraph{JWT Validation}
+All authenticated endpoints validate JWT tokens through middleware:
+\begin{enumerate}
+    \item Extract \texttt{Authorization: Bearer <token>} header
+    \item Fetch JWKS from Auth0 (cached in Redis)
+    \item Validate signature, expiration, and issuer
+    \item Extract claims (sub, scopes, tenant\_id, roles)
+    \item Bind user context to request state
+\end{enumerate}
+
+\paragraph{RBAC Enforcement}
+Scope-based access control is enforced at the router level using FastAPI dependencies:
+
+\begin{lstlisting}[language=Python, caption={Scope-based authorization dependency.}]
+from fastapi import Depends, Security
+from src.security.auth import get_current_user, require_scope
+
+@router.post("/admin/tenants")
+async def create_tenant(
+    request: TenantCreate,
+    user: UserInfo = Security(get_current_user, scopes=["admin:all"])
+):
+    # Only accessible with admin:all scope
+    ...
+\end{lstlisting}
+
+\subsubsection{Rate Limiting}
+
+The platform implements a sliding window rate limiter backed by Redis sorted sets. Configuration resides in \texttt{src/middleware/rate\_limit.py}.
+
+\paragraph{Rate Limit Levels}
+\begin{itemize}
+    \item \textbf{User-level}: Limits per authenticated user (e.g., 100 requests/minute)
+    \item \textbf{Tenant-level}: Aggregate limits per tenant (e.g., 1000 requests/minute)
+    \item \textbf{Endpoint-level}: Specific limits for expensive operations (e.g., 10 agent runs/minute)
+\end{itemize}
+
+\paragraph{Implementation}
+\begin{lstlisting}[language=Python, caption={Sliding window rate limit check using Redis ZSET.}]
+async def check_rate_limit(key: str, limit: int, window_seconds: int) -> bool:
+    now = time.time()
+    window_start = now - window_seconds
+    
+    pipe = redis.pipeline()
+    pipe.zremrangebyscore(key, 0, window_start)  # Remove old entries
+    pipe.zadd(key, {str(uuid4()): now})          # Add current request
+    pipe.zcard(key)                               # Count entries
+    pipe.expire(key, window_seconds)
+    results = await pipe.execute()
+    
+    return results[2] <= limit
+\end{lstlisting}
+
+\paragraph{Response Headers}
+Rate-limited responses include informative headers:
+\begin{itemize}
+    \item \texttt{X-RateLimit-Limit}: Maximum requests allowed
+    \item \texttt{X-RateLimit-Remaining}: Requests remaining in window
+    \item \texttt{X-RateLimit-Reset}: Unix timestamp when window resets
+    \item \texttt{Retry-After}: Seconds to wait (on 429 responses)
+\end{itemize}
+
+\subsubsection{PII Scrubbing}
+
+Personal Identifiable Information (PII) is detected and redacted from logs, tool outputs, and audit records to ensure compliance with data protection regulations.
+
+\paragraph{Detection Patterns}
+The scrubber identifies common PII patterns:
+\begin{itemize}
+    \item Email addresses
+    \item Phone numbers (international formats)
+    \item Social Security Numbers
+    \item Credit card numbers (with Luhn validation)
+    \item IP addresses (v4 and v6)
+\end{itemize}
+
+\paragraph{Redaction Strategy}
+Detected PII is replaced with type-tagged placeholders (e.g., \texttt{[EMAIL\_REDACTED]}, \texttt{[PHONE\_REDACTED]}) while preserving context for debugging.
+
+\subsubsection{Error Handling}
+
+The platform implements RFC 7807 ``Problem Details for HTTP APIs'' for consistent, machine-readable error responses. Implementation is in \texttt{src/errors/}.
+
+\paragraph{Problem Detail Structure}
+\begin{lstlisting}[language=Python, caption={RFC 7807 Problem Detail response model.}]
+class ProblemDetail(BaseModel):
+    type: str = "about:blank"           # URI reference for error type
+    title: str                          # Short human-readable summary
+    status: int                         # HTTP status code
+    detail: str | None = None           # Human-readable explanation
+    instance: str | None = None         # URI for specific occurrence
+    errors: list[dict] | None = None    # Validation error details
+\end{lstlisting}
+
+\paragraph{Example Error Response}
+\begin{lstlisting}[language=json, caption={Example 403 Forbidden error response.}]
+{
+    "type": "https://api.cineca.it/problems/forbidden",
+    "title": "Forbidden",
+    "status": 403,
+    "detail": "Scope 'admin:all' required for this operation",
+    "instance": "/v1/admin/tenants"
+}
+\end{lstlisting}
+
+\subsubsection{Pagination}
+
+The platform uses cursor-based pagination for list endpoints, providing consistent performance regardless of offset depth.
+
+\paragraph{Implementation}
+\begin{itemize}
+    \item \textbf{Cursor}: Base64-encoded tuple of (last\_id, last\_created\_at)
+    \item \textbf{Page Size}: Configurable via \texttt{limit} parameter (default: 20, max: 100)
+    \item \textbf{Navigation}: \texttt{next\_cursor} returned when more results exist
+\end{itemize}
+
+\paragraph{Response Schema}
+\begin{lstlisting}[language=Python, caption={Paginated response model.}]
+class PaginatedResponse(BaseModel, Generic[T]):
+    items: list[T]
+    total: int | None = None     # Optional total count
+    next_cursor: str | None      # Cursor for next page
+    has_more: bool               # Whether more results exist
+\end{lstlisting}
+
+\subsubsection{ETags and Conditional Requests}
+
+ETags enable efficient caching and conflict detection for resource updates.
+
+\paragraph{ETag Generation}
+ETags are computed from resource content using weak validation:
+\begin{lstlisting}[language=Python, caption={ETag generation for resources.}]
+def compute_etag(resource: BaseModel) -> str:
+    content = resource.model_dump_json(exclude={"updated_at"})
+    hash_value = hashlib.md5(content.encode()).hexdigest()[:16]
+    return f'W/"{hash_value}"'
+\end{lstlisting}
+
+\paragraph{Conditional Headers}
+\begin{itemize}
+    \item \texttt{If-None-Match}: Returns 304 Not Modified if ETag matches
+    \item \texttt{If-Match}: Returns 412 Precondition Failed if ETag doesn't match (for updates)
+\end{itemize}
+
+\subsubsection{Idempotency}
+
+Idempotency keys enable safe retries for non-idempotent operations, particularly job creation and agent runs.
+
+\paragraph{Implementation}
+\begin{enumerate}
+    \item Client provides \texttt{Idempotency-Key} header with unique value
+    \item Server checks Redis cache for existing result
+    \item If found, returns cached response without re-execution
+    \item If not found, executes operation and caches result
+    \item Keys expire after 24 hours
+\end{enumerate}
+
+\subsubsection{Request ID Correlation}
+
+Every request is assigned a unique identifier for tracing across logs, metrics, and external systems.
+
+\paragraph{Propagation}
+\begin{itemize}
+    \item \texttt{X-Request-ID} header is read (if present) or generated
+    \item ID is bound to structlog context for all log entries
+    \item ID is returned in response \texttt{X-Request-ID} header
+    \item ID is stored with audit log entries
+\end{itemize}
+
+\subsubsection{Circuit Breakers}
+
+Circuit breakers protect the platform from cascading failures when external services (LLM providers, databases) become unavailable.
+
+\paragraph{State Machine}
+\begin{enumerate}
+    \item \textbf{CLOSED}: Normal operation; failures increment counter
+    \item \textbf{OPEN}: Requests fail immediately; entered after threshold failures
+    \item \textbf{HALF-OPEN}: Probe requests allowed; success closes, failure re-opens
+\end{enumerate}
+
+\paragraph{Configuration}
+\begin{itemize}
+    \item Failure threshold: 5 consecutive failures
+    \item Recovery timeout: 30 seconds before HALF-OPEN
+    \item Probe requests: 1 request allowed in HALF-OPEN
+\end{itemize}
+
+\subsubsection{Health Probes}
+
+Kubernetes-compatible health probes enable infrastructure orchestration. Detailed implementation is in Section~\ref{sec:observability}.
+
+\paragraph{Probe Types}
+\begin{itemize}
+    \item \texttt{GET /health/live}: Liveness probe (process alive)
+    \item \texttt{GET /health/ready}: Readiness probe (dependencies healthy)
+    \item \texttt{GET /health/startup}: Startup probe (initialization complete)
+    \item \texttt{GET /health/components}: Component-level health details
+\end{itemize}
+
+\subsection{API Layer Design}
+\label{subsec:api-design}
+
+The API layer exposes 76 RESTful endpoints across 16 categories, following OpenAPI 3.1 specification. Design principles include resource-oriented URLs, consistent HTTP semantics, and comprehensive schema documentation.
+
+\paragraph{Versioning Strategy}
+The platform supports API versioning through URL prefixes:
+\begin{itemize}
+    \item \texttt{/v1/*}: Stable, production API
+    \item \texttt{/v2/*}: Preview features (when applicable)
+    \item Version negotiation via \texttt{Accept} header for future use
+\end{itemize}
+
+\paragraph{Authentication Patterns}
+\begin{itemize}
+    \item \textbf{Bearer Token}: \texttt{Authorization: Bearer <jwt>}
+    \item \textbf{Tenant Context}: \texttt{X-Tenant-ID: <tenant-uuid>}
+    \item \textbf{Idempotency}: \texttt{Idempotency-Key: <client-uuid>}
+\end{itemize}
+
+\subsubsection{Router Modules}
+\label{subsubsec:router-modules}
+
+The platform organizes endpoints into 23 router modules, grouped by domain. Table~\ref{tab:router-modules} provides a complete inventory.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Router modules organized by domain.}
+    \label{tab:router-modules}
+    \small
+    \begin{tabular}{llr}
+        \toprule
+        \textbf{Domain} & \textbf{Module} & \textbf{Endpoints} \\
+        \midrule
+        \multirow{3}{*}{Agent} & \texttt{agents.py} & 6 \\
+        & \texttt{agent\_runs.py} & 8 \\
+        & \texttt{sessions.py} & 5 \\
+        \midrule
+        \multirow{2}{*}{Jobs} & \texttt{jobs.py} & 7 \\
+        & \texttt{job\_events.py} & 2 \\
+        \midrule
+        \multirow{3}{*}{Models} & \texttt{models\_providers.py} & 6 \\
+        & \texttt{models\_instances.py} & 8 \\
+        & \texttt{models\_manifests\_builtins.py} & 3 \\
+        \midrule
+        \multirow{4}{*}{Admin} & \texttt{admin\_tenants.py} & 5 \\
+        & \texttt{admin\_db.py} & 4 \\
+        & \texttt{admin\_ops.py} & 6 \\
+        & \texttt{admin\_processes.py} & 3 \\
+        \midrule
+        Tools & \texttt{tools.py} & 4 \\
+        \midrule
+        \multirow{4}{*}{Infrastructure} & \texttt{health.py} & 5 \\
+        & \texttt{internal.py} & 2 \\
+        & \texttt{auth.py} & 3 \\
+        & \texttt{meta.py} & 2 \\
+        \midrule
+        \multirow{2}{*}{Data} & \texttt{batch.py} & 3 \\
+        & \texttt{export\_import.py} & 2 \\
+        \midrule
+        \multirow{2}{*}{Graph} & \texttt{graph.py} & 3 \\
+        & \texttt{cypher.py} & 2 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Router Registration}
+Routers are registered in \texttt{src/app.py} with appropriate prefixes and tags:
+
+\begin{lstlisting}[language=Python, caption={Router registration pattern.}]
+from src.routers import agents, jobs, tools, health
+
+app.include_router(agents.router, prefix="/v1/agents", tags=["agents"])
+app.include_router(jobs.router, prefix="/v1/jobs", tags=["jobs"])
+app.include_router(tools.router, prefix="/v1/tools", tags=["tools"])
+app.include_router(health.router, prefix="/health", tags=["health"])
+\end{lstlisting}
+
+\subsection{Domain Schemas}
+\label{subsec:schemas}
+
+Pydantic v2 schemas define the contract between API consumers and the backend, providing automatic validation, serialization, and OpenAPI documentation generation.
+
+\paragraph{Schema Organization}
+Schemas are organized in \texttt{src/schemas/} by domain:
+\begin{itemize}
+    \item \texttt{agents.py}: AgentRunCreate, AgentRunResponse, AgentStepResponse
+    \item \texttt{jobs.py}: JobCreate, JobResponse, JobEventResponse
+    \item \texttt{models.py}: ProviderCreate, ModelInstanceCreate, ModelInstanceResponse
+    \item \texttt{tools.py}: ToolInvokeRequest, ToolInvokeResponse, ToolMetadata
+    \item \texttt{tenants.py}: TenantCreate, TenantResponse
+    \item \texttt{auth.py}: TokenResponse, UserInfo
+\end{itemize}
+
+\paragraph{Schema Patterns}
+\begin{lstlisting}[language=Python, caption={Example request and response schemas.}]
+from pydantic import BaseModel, Field
+from uuid import UUID
+from datetime import datetime
+
+class AgentRunCreate(BaseModel):
+    """Request schema for creating an agent run."""
+    prompt: str = Field(..., min_length=1, max_length=10000)
+    model_instance_id: UUID | None = None
+    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    max_steps: int = Field(default=10, ge=1, le=50)
+    session_id: UUID | None = None
+
+class AgentRunResponse(BaseModel):
+    """Response schema for agent run details."""
+    id: UUID
+    status: str
+    prompt: str
+    final_answer: str | None
+    created_at: datetime
+    finished_at: datetime | None
+    total_tokens: int | None
+    llm_cost_usd: float | None
+    
+    model_config = {"from_attributes": True}
+\end{lstlisting}
+
+\subsection{Error Handling}
+\label{subsec:error-handling}
+
+Error handling follows the RFC 7807 ``Problem Details'' specification, providing consistent, machine-readable error responses across all endpoints.
+
+\paragraph{Exception Hierarchy}
+The platform defines a custom exception hierarchy in \texttt{src/errors/exceptions.py}:
+
+\begin{lstlisting}[language=Python, caption={Custom exception hierarchy.}]
+class PlatformError(Exception):
+    """Base exception for platform errors."""
+    status_code: int = 500
+    error_type: str = "internal_error"
+    
+class NotFoundError(PlatformError):
+    status_code = 404
+    error_type = "not_found"
+
+class ForbiddenError(PlatformError):
+    status_code = 403
+    error_type = "forbidden"
+
+class RateLimitError(PlatformError):
+    status_code = 429
+    error_type = "rate_limit_exceeded"
+
+class ValidationError(PlatformError):
+    status_code = 422
+    error_type = "validation_error"
+\end{lstlisting}
+
+\paragraph{Global Exception Handler}
+A global exception handler converts exceptions to Problem Detail responses:
+
+\begin{lstlisting}[language=Python, caption={Global exception handler.}]
+@app.exception_handler(PlatformError)
+async def platform_error_handler(request: Request, exc: PlatformError):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ProblemDetail(
+            type=f"https://api.cineca.it/problems/{exc.error_type}",
+            title=exc.error_type.replace("_", " ").title(),
+            status=exc.status_code,
+            detail=str(exc),
+            instance=str(request.url.path),
+        ).model_dump(),
+        headers={"Content-Type": "application/problem+json"},
+    )
+\end{lstlisting}
+
+\subsection{Service Layer}
+\label{subsec:service-layer}
+
+The service layer encapsulates business logic, coordinating between routers, repositories, and external adapters. Key services include:
+
+\paragraph{Orchestrator Service}
+The orchestrator (\texttt{src/services/orchestrator.py}, 8,263 lines) is the platform's core, managing agent execution from prompt to final answer. Responsibilities include:
+\begin{itemize}
+    \item Intent classification (determining execution mode)
+    \item TODO planning (breaking prompts into actionable tasks)
+    \item Step execution (tool invocation, LLM calls)
+    \item Safety checks (content filtering, token limits)
+    \item Cost tracking and metrics recording
+\end{itemize}
+
+\paragraph{Jobs Service}
+The jobs service manages asynchronous work execution:
+\begin{itemize}
+    \item Job creation with idempotency support
+    \item Status transitions with validation
+    \item Event emission for SSE streaming
+    \item Cancellation handling
+\end{itemize}
+
+\paragraph{Session Service}
+The session service manages agent conversation context:
+\begin{itemize}
+    \item Session creation and expiration
+    \item Context persistence across runs
+    \item Message history management
+\end{itemize}
+
+\paragraph{Default Model Resolver (DMR)}
+The DMR service resolves which model instance to use for a given request:
+\begin{enumerate}
+    \item Check explicit model\_instance\_id in request
+    \item Check user-level default (stored in user preferences)
+    \item Check tenant-level default (stored in tenant config)
+    \item Fall back to global default
+\end{enumerate}
+
+\subsection{Orchestrator Responsibilities and Design Trade-offs}
+\label{subsec:orchestrator-design}
+
+The orchestrator service represents the largest and most complex component of the platform. This subsection discusses its responsibilities and the design trade-offs involved.
+
+\paragraph{Core Responsibilities}
+\begin{enumerate}
+    \item \textbf{Intent Classification}: Analyzing prompts to determine execution mode (chat, graph query, tool invocation, information retrieval)
+    \item \textbf{Planning}: Decomposing complex prompts into TODO lists
+    \item \textbf{Step Execution}: Iteratively processing steps until completion or limit
+    \item \textbf{Tool Routing}: Selecting and invoking appropriate MCP tools
+    \item \textbf{Safety Enforcement}: Content filtering, PII detection, output validation
+    \item \textbf{Cost Management}: Token tracking, budget enforcement, cost estimation
+    \item \textbf{Observability}: Metrics emission, step logging, trace propagation
+\end{enumerate}
+
+\paragraph{Design Trade-offs}
+
+\begin{description}
+    \item[Centralization vs. Modularity] The orchestrator consolidates all agent logic into a single module, simplifying reasoning about execution flow but creating a large, complex file. Alternative designs (e.g., separate planner, executor, and monitor components) would improve modularity but add coordination complexity.
+    
+    \item[Flexibility vs. Type Safety] The orchestrator uses JSONB for step metadata and TODO storage, enabling schema evolution without migrations but sacrificing compile-time type checking.
+    
+    \item[Synchronous vs. Asynchronous] Agent runs execute synchronously within a request context for simplicity, with background jobs handling truly long-running work. This limits single-run duration but simplifies error handling and state management.
+\end{description}
+
+\subsection{Adapter Layer}
+\label{subsec:adapter-layer}
+
+The adapter layer provides consistent interfaces to external systems, enabling implementation swapping without affecting business logic.
+
+\paragraph{LLM Adapter}
+The LLM adapter (\texttt{src/adapters/llm.py}) supports multiple providers through a unified interface:
+
+\begin{lstlisting}[language=Python, caption={LLM adapter interface.}]
+def complete(
+    prompt: str,
+    model: str | None = None,
+    temperature: float = 0.7,
+    max_tokens: int = 1024,
+    **kwargs
+) -> dict:
+    """Generate completion using configured provider."""
+    provider = _get_provider()
+    
+    if provider == "openai":
+        return _openai_complete(prompt, model, temperature, max_tokens, **kwargs)
+    elif provider == "ollama":
+        return _ollama_complete(prompt, model, temperature, max_tokens, **kwargs)
+    elif provider == "azure":
+        return _azure_complete(prompt, model, temperature, max_tokens, **kwargs)
+    else:
+        return _demo_complete(prompt, model, **kwargs)
+\end{lstlisting}
+
+\paragraph{Provider-Specific Implementations}
+\begin{itemize}
+    \item \textbf{OpenAI}: Uses \texttt{openai} Python SDK with retry logic
+    \item \textbf{Ollama}: HTTP client to local Ollama server
+    \item \textbf{Azure OpenAI}: Azure SDK with managed identity support
+    \item \textbf{Demo}: Returns mock responses for testing
+\end{itemize}
+
+\paragraph{Memgraph Adapter}
+The Memgraph adapter (\texttt{src/adapters/memgraph.py}) provides Cypher query execution with connection pooling:
+
+\begin{lstlisting}[language=Python, caption={Memgraph adapter interface.}]
+class MemgraphAdapter:
+    def __init__(self, host: str, port: int):
+        self.driver = GraphDatabase.driver(f"bolt://{host}:{port}")
+    
+    def execute(self, query: str, params: dict = None) -> list[dict]:
+        with self.driver.session() as session:
+            result = session.run(query, params or {})
+            return [record.data() for record in result]
+    
+    def close(self):
+        self.driver.close()
+\end{lstlisting}
+
+\paragraph{Redis Adapter}
+Redis connectivity is managed through the \texttt{redis-py} async client with connection pooling:
+
+\begin{lstlisting}[language=Python, caption={Async Redis client initialization.}]
+from redis.asyncio import Redis, ConnectionPool
+
+_pool: ConnectionPool | None = None
+
+async def get_async_redis() -> Redis:
+    global _pool
+    if _pool is None:
+        _pool = ConnectionPool.from_url(
+            settings.REDIS_URL,
+            max_connections=20,
+            decode_responses=True,
+        )
+    return Redis(connection_pool=_pool)
+\end{lstlisting}

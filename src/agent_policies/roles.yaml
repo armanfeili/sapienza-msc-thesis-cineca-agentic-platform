@@ -1,0 +1,358 @@
+# Cineca Agentic Platform — Agent Roles & Capabilities
+# -----------------------------------------------------------------------------
+# This file defines role-based capabilities for agent runs and MCP tool usage.
+# Each role controls:
+#   - which tools can be invoked (allow/deny patterns)
+#   - which API scopes are granted
+#   - default model & generation parameters
+#   - safety / privacy enforcement levels
+#   - per-role rate limits
+# -----------------------------------------------------------------------------
+
+_meta:
+  version: "1.0.0"
+  updated: "2025-08-09"
+  description: "Role-based policy for agents and MCP tools."
+
+defaults:
+  model:
+    id: "gpt-4o-mini"
+    temperature: 0.2
+    top_p: 1.0
+    presence_penalty: 0.0
+    frequency_penalty: 0.0
+    max_output_tokens: 2048
+  tools:
+    allow:
+      - "catalog.*"
+      - "output.*"
+      - "viz.render"
+    deny: []
+  scopes:
+    - "models:list"
+    - "models:infer"
+    - "tools:invoke"
+  safety:
+    output_guard: "standard"    # one of: off|standard|strict
+    intent_filter: "standard"   # one of: off|standard|strict
+    pii_scrubber: "redact"      # one of: off|mask|redact
+    block_categories:
+      - "malware"
+      - "illicit_behaviors"
+      - "extremism"
+      - "sexual_content"
+      - "self_harm"
+  provenance:
+    enabled: true
+    hash_only: true        # record SHA-256 hashes of input/output, not raw content
+    include_meta: true
+  limits:
+    rpm: 60                # requests per minute
+    tpm: 40000             # tokens per minute (sum of input + output)
+    burst: 20
+    concurrent_jobs: 3
+    tool_rpm_overrides: {} # e.g., {"graph.bulk": 5}
+
+roles:
+
+  admin:
+    description: "Full administrative access, cross-tenant operations, and system controls."
+    model:
+      id: "gpt-4o"
+      temperature: 0.2
+      max_output_tokens: 4096
+    tools:
+      allow:
+        - "*"
+      deny: []
+    scopes:
+      - "admin:*"
+      - "models:*"
+      - "tools:*"
+      - "db:*"
+      - "graph:*"
+      - "mcp:*"
+      - "tenants:*"
+      - "security:*"
+      - "sessions:*"
+      - "system:*"
+      - "ratelimit:*"
+      - "privacy:*"
+    safety:
+      output_guard: "standard"
+      intent_filter: "standard"
+      pii_scrubber: "redact"
+    provenance:
+      enabled: true
+      hash_only: true
+      include_meta: true
+    limits:
+      rpm: 240
+      tpm: 160000
+      burst: 100
+      concurrent_jobs: 20
+
+  researcher:
+    description: "Scientists exploring the graph, running models, producing summaries and visualizations."
+    model:
+      id: "gpt-4o-mini"
+      temperature: 0.2
+      max_output_tokens: 2048
+    tools:
+      allow:
+        - "graph.query"
+        - "graph.search"
+        - "graph.schema"
+        - "catalog.discover"
+        - "output.format"
+        - "output.summarize"
+        - "viz.render"
+        - "model.test"      # synthetic or safe evaluations only
+        - "privacy.consent"
+      deny:
+        - "graph.crud"
+        - "graph.bulk"
+        - "db.switch"
+        - "system.*"
+        - "security.*"
+        - "ratelimit.manage"
+        - "tenancy.manage"
+    scopes:
+      - "models:list"
+      - "models:infer"
+      - "tools:invoke"
+      - "db:query:read"
+      - "db:schema:read"
+      - "sessions:*"
+      - "privacy:consent:manage"
+      - "ratelimit:read"
+    safety:
+      output_guard: "standard"
+      intent_filter: "strict"
+      pii_scrubber: "redact"
+    provenance:
+      enabled: true
+      hash_only: true
+    limits:
+      rpm: 60
+      tpm: 40000
+      burst: 20
+      concurrent_jobs: 5
+      tool_rpm_overrides:
+        graph.query: 30
+        graph.search: 30
+
+  curator:
+    description: "Data stewards who can edit graph content, run quality checks, and manage archives."
+    model:
+      id: "gpt-4o-mini"
+      temperature: 0.2
+      max_output_tokens: 2048
+    tools:
+      allow:
+        - "graph.crud"
+        - "graph.bulk"
+        - "graph.schema"
+        - "graph.query"
+        - "data.quality"
+        - "data.archive"
+        - "output.format"
+        - "output.summarize"
+        - "catalog.discover"
+      deny:
+        - "system.*"
+        - "security.*"
+        - "ratelimit.manage"
+        - "tenancy.manage"
+    scopes:
+      - "models:list"
+      - "models:infer"
+      - "tools:invoke"
+      - "db:write"
+      - "db:query:read"
+      - "db:schema:read"
+      - "graph:crud"
+      - "archive:write"
+      - "data:quality"
+    safety:
+      output_guard: "standard"
+      intent_filter: "standard"
+      pii_scrubber: "redact"
+    provenance:
+      enabled: true
+      hash_only: true
+    limits:
+      rpm: 90
+      tpm: 60000
+      burst: 30
+      concurrent_jobs: 8
+      tool_rpm_overrides:
+        graph.bulk: 10
+
+  data_engineer:
+    description: "ETL and infrastructure-focused users with bulk operations and system backup rights."
+    model:
+      id: "gpt-4o-mini"
+      temperature: 0.1
+      max_output_tokens: 2048
+    tools:
+      allow:
+        - "graph.bulk"
+        - "graph.crud"
+        - "graph.schema"
+        - "graph.query"
+        - "system.backup"
+        - "system.metrics"
+        - "system.status"
+        - "data.archive"
+        - "data.quality"
+        - "db.switch"
+      deny:
+        - "security.*"
+        - "tenancy.manage"
+    scopes:
+      - "models:list"
+      - "models:infer"
+      - "tools:invoke"
+      - "etl:*"
+      - "db:write"
+      - "db:query:read"
+      - "db:schema:read"
+      - "system:backup"
+      - "system:metrics"
+      - "system:status"
+    safety:
+      output_guard: "standard"
+      intent_filter: "standard"
+      pii_scrubber: "redact"
+    provenance:
+      enabled: true
+      hash_only: true
+    limits:
+      rpm: 120
+      tpm: 80000
+      burst: 50
+      concurrent_jobs: 10
+      tool_rpm_overrides:
+        graph.bulk: 20
+        system.backup: 2
+
+  operator:
+    description: "SRE / operations role for monitoring and runtime controls; no data mutation."
+    model:
+      id: "gpt-4o-mini"
+      temperature: 0.2
+      max_output_tokens: 1024
+    tools:
+      allow:
+        - "system.health"
+        - "system.metrics"
+        - "system.status"
+        - "ratelimit.manage"
+        - "security.check"
+        - "catalog.discover"
+        - "output.format"
+      deny:
+        - "graph.crud"
+        - "graph.bulk"
+        - "data.archive"
+        - "db.switch"
+    scopes:
+      - "system:health"
+      - "system:metrics"
+      - "system:status"
+      - "ratelimit:manage"
+      - "security:check"
+      - "models:list"
+      - "tools:invoke"
+    safety:
+      output_guard: "standard"
+      intent_filter: "standard"
+      pii_scrubber: "redact"
+    provenance:
+      enabled: true
+      hash_only: true
+    limits:
+      rpm: 180
+      tpm: 60000
+      burst: 60
+      concurrent_jobs: 10
+
+  auditor:
+    description: "Read-only oversight for security and compliance. No model generation required."
+    model:
+      id: "gpt-4o-mini"
+      temperature: 0.0
+      max_output_tokens: 512
+    tools:
+      allow:
+        - "security.audit"
+        - "security.check"
+        - "privacy.consent"
+        - "system.metrics"
+        - "system.status"
+        - "catalog.discover"
+        - "output.format"
+      deny:
+        - "graph.crud"
+        - "graph.bulk"
+        - "graph.query"     # auditors avoid direct data access by default
+        - "models.*"
+    scopes:
+      - "security:audit:read"
+      - "security:check"
+      - "privacy:read"
+      - "system:metrics"
+      - "system:status"
+      - "tools:invoke"
+    safety:
+      output_guard: "strict"
+      intent_filter: "strict"
+      pii_scrubber: "redact"
+    provenance:
+      enabled: true
+      hash_only: true
+    limits:
+      rpm: 30
+      tpm: 10000
+      burst: 10
+      concurrent_jobs: 2
+
+  guest:
+    description: "Trial or external users with minimal capabilities and stricter safety."
+    model:
+      id: "gpt-4o-mini"
+      temperature: 0.4
+      max_output_tokens: 1024
+    tools:
+      allow:
+        - "catalog.discover"
+        - "graph.schema"
+        - "output.summarize"
+        - "output.format"
+      deny:
+        - "graph.query"
+        - "graph.crud"
+        - "graph.bulk"
+        - "system.*"
+        - "security.*"
+        - "ratelimit.manage"
+        - "tenancy.manage"
+        - "db.switch"
+    scopes:
+      - "models:list"
+      - "models:infer"
+      - "tools:invoke"
+      - "db:schema:read"
+    safety:
+      output_guard: "strict"
+      intent_filter: "strict"
+      pii_scrubber: "redact"
+    provenance:
+      enabled: true
+      hash_only: true
+    limits:
+      rpm: 20
+      tpm: 8000
+      burst: 5
+      concurrent_jobs: 1

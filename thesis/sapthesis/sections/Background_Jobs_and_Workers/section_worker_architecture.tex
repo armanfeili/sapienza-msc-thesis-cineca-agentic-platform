@@ -1,0 +1,499 @@
+% TODO checklist:
+% - [x] Inspected src/workers/jobs_worker.py (483 lines - complete worker implementation)
+% - [x] Inspected db/redis_cache/jobs_cache.py (queue operations)
+% - [x] Inspected src/services/jobs_service.py (service layer)
+% - [x] Inspected Q&A.md Q39 for worker implementation details
+% - [x] Analyzed signal handling and graceful shutdown patterns
+
+\section{Worker Architecture}
+\label{sec:worker-arch}
+
+The worker architecture implements a separate process model for job execution, decoupling the FastAPI web application from long-running computations. This design enables horizontal scaling of worker capacity independently from API throughput, prevents job execution from blocking HTTP request handling, and provides isolation for resource-intensive operations.
+
+This section details the worker process design, queue polling mechanisms, heartbeat monitoring, and graceful shutdown procedures.
+
+\subsection{Process Separation Model}
+
+The Cineca Agentic Platform employs a process-per-role architecture where the web application and job workers run as separate OS processes:
+
+\begin{itemize}
+    \item \textbf{Web Application Process}: Handles HTTP requests via FastAPI/Uvicorn, manages job creation, and serves SSE event streams. Started via \texttt{uvicorn src.app:app}.
+    
+    \item \textbf{Worker Process}: Polls Redis queues for pending jobs, executes job logic, and updates PostgreSQL with results. Started via \texttt{python -m src.workers.jobs\_worker}.
+\end{itemize}
+
+This separation provides several benefits:
+
+\begin{enumerate}
+    \item \textbf{Resource Isolation}: CPU-intensive job execution cannot starve HTTP request processing.
+    
+    \item \textbf{Independent Scaling}: Worker replicas can be added without affecting API capacity.
+    
+    \item \textbf{Fault Isolation}: A worker crash does not bring down the API server.
+    
+    \item \textbf{Deployment Flexibility}: Workers can run on different node types (e.g., GPU-enabled nodes for ML workloads).
+\end{enumerate}
+
+\subsection{Worker Implementation Details}
+\label{subsec:worker-impl-details}
+
+The \texttt{JobsWorker} class in \texttt{src/workers/jobs\_worker.py} implements the complete worker lifecycle:
+
+\begin{lstlisting}[language=Python, caption={JobsWorker class initialization.}]
+class JobsWorker:
+    """Background worker for processing jobs with PostgreSQL persistence."""
+
+    def __init__(
+        self,
+        poll_interval: float = 1.0,
+        heartbeat_interval: float = 5.0,
+        max_iterations: int | None = None,
+    ):
+        self.poll_interval = poll_interval
+        self.heartbeat_interval = heartbeat_interval
+        self.max_iterations = max_iterations  # For testing
+        self.running = False
+        self.current_job_id: str | None = None
+
+        # Setup signal handlers for graceful shutdown
+        signal.signal(signal.SIGTERM, self._signal_handler)
+        signal.signal(signal.SIGINT, self._signal_handler)
+
+    def _signal_handler(self, signum, frame):
+        """Handle shutdown signals gracefully."""
+        logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+        self.running = False
+\end{lstlisting}
+
+\subsection{Queue Polling Mechanism}
+
+Workers poll Redis queues using the blocking \texttt{BRPOP} operation, which efficiently waits for new jobs without busy-waiting:
+
+\begin{lstlisting}[language=Python, caption={Main worker loop with queue polling.}]
+async def start(self):
+    """Main worker loop."""
+    logger.info("Jobs worker starting...")
+    self.running = True
+    iteration = 0
+
+    while self.running:
+        # Check max iterations (for testing)
+        if self.max_iterations and iteration >= self.max_iterations:
+            logger.info(f"Reached max iterations ({self.max_iterations})")
+            break
+
+        iteration += 1
+
+        try:
+            processed = await self._process_next_job()
+            if not processed:
+                # No jobs available, sleep before next poll
+                await asyncio.sleep(self.poll_interval)
+
+        except Exception as e:
+            logger.error(f"Error in worker loop: {e}", exc_info=True)
+            await asyncio.sleep(self.poll_interval)
+
+    logger.info("Jobs worker stopped")
+\end{lstlisting}
+
+The queue polling iterates through allowed job types in round-robin fashion:
+
+\begin{lstlisting}[language=Python, caption={Round-robin queue polling across job types.}]
+async def _process_next_job(self) -> bool:
+    """Process one job from the queue."""
+    allowed_types_str = getattr(settings, "ALLOWED_JOB_TYPES", "demo,test,long-running")
+    allowed_types = [t.strip() for t in allowed_types_str.split(",")]
+
+    # Try to pop from each queue
+    for job_type in allowed_types:
+        job_id = await asyncio.to_thread(
+            jobs_cache.queue_pop_job, job_type, timeout=0
+        )
+
+        if job_id:
+            logger.info(f"Popped job {job_id} from queue '{job_type}'")
+            self.current_job_id = job_id
+
+            try:
+                db_generator = get_db()
+                db = next(db_generator)
+                try:
+                    await self._execute_job(job_id, db)
+                finally:
+                    with contextlib.suppress(StopIteration):
+                        next(db_generator)
+                    self.current_job_id = None
+
+            except Exception as e:
+                logger.error(f"Failed to execute job {job_id}: {e}")
+
+            return True
+
+    return False  # All queues empty
+\end{lstlisting}
+
+\subsection{Job Execution Flow}
+
+When a job is dequeued, the worker executes a well-defined sequence of operations:
+
+\begin{enumerate}
+    \item \textbf{Load Job}: Retrieve the full job document from PostgreSQL.
+    
+    \item \textbf{Check Cancellation}: Verify the Redis cancel flag before starting execution.
+    
+    \item \textbf{Transition to RUNNING}: Atomically update status and log the transition event.
+    
+    \item \textbf{Execute with Heartbeat}: Run job logic while maintaining periodic heartbeat updates.
+    
+    \item \textbf{Check Cancellation}: Verify cancel flag after execution completes.
+    
+    \item \textbf{Transition to Terminal}: Update status to FINISHED, FAILED, or CANCELLED based on outcome.
+\end{enumerate}
+
+\begin{lstlisting}[language=Python, caption={Complete job execution flow.}]
+async def _execute_job(self, job_id: str, db: Session):
+    """Execute a single job with full lifecycle management."""
+    job_uuid = UUID(job_id)
+    jobs_service = JobsService(db)
+
+    try:
+        # Load job from PostgreSQL
+        job = jobs_service.repo.get_job(job_uuid)
+        if not job:
+            logger.error(f"Job {job_id} not found in database")
+            return
+
+        # Check if already cancelled
+        if await asyncio.to_thread(jobs_cache.check_cancel_flag, job_id):
+            logger.info(f"Job {job_id} was cancelled before execution")
+            await self._mark_cancelled(job_uuid, jobs_service)
+            return
+
+        # Transition to RUNNING
+        job = jobs_service.transition_status(
+            job_uuid, from_status="queued", to_status="running"
+        )
+
+        # Log event for SSE streaming
+        jobs_service.append_event(
+            job_uuid,
+            event_type="status",
+            event_data={
+                "to": "running", "from": "queued",
+                "timestamp": datetime.utcnow().isoformat()
+            },
+        )
+
+        # Execute job with heartbeat monitoring
+        result = await self._run_job_with_heartbeat(
+            job_id, job.type, job.payload_json or {}, jobs_service
+        )
+
+        # Check if cancelled during execution
+        if await asyncio.to_thread(jobs_cache.check_cancel_flag, job_id):
+            await self._mark_cancelled(job_uuid, jobs_service)
+            return
+
+        # Transition to FINISHED
+        job = jobs_service.repo.update_job_result(job_uuid, result)
+        job = jobs_service.transition_status(
+            job_uuid, from_status="running", to_status="finished"
+        )
+
+        jobs_service.append_event(
+            job_uuid, event_type="status",
+            event_data={"to": "finished", "from": "running", ...}
+        )
+
+    except Exception as e:
+        logger.error(f"Job {job_id} failed: {e}", exc_info=True)
+        # Transition to FAILED
+        jobs_service.repo.update_job_error(job_uuid, str(e))
+        jobs_service.transition_status(
+            job_uuid, from_status="running", to_status="failed"
+        )
+\end{lstlisting}
+
+\subsection{Heartbeat Mechanism}
+
+The heartbeat mechanism serves two purposes: indicating worker liveness and enabling detection of stale jobs from crashed workers. A concurrent asyncio task updates the job's \texttt{updated\_at} timestamp periodically:
+
+\begin{lstlisting}[language=Python, caption={Heartbeat loop for worker liveness indication.}]
+async def _run_job_with_heartbeat(
+    self, job_id: str, job_type: str,
+    payload: dict, jobs_service: JobsService
+) -> dict:
+    """Execute job logic with periodic heartbeat updates."""
+    job_uuid = UUID(job_id)
+
+    # Start heartbeat task
+    heartbeat_task = asyncio.create_task(
+        self._heartbeat_loop(job_uuid, jobs_service)
+    )
+
+    try:
+        result = await self._execute_job_type(job_id, job_type, payload)
+        return result
+    finally:
+        # Stop heartbeat
+        heartbeat_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await heartbeat_task
+
+async def _heartbeat_loop(self, job_uuid: UUID, jobs_service: JobsService):
+    """Periodically update job timestamp."""
+    while True:
+        await asyncio.sleep(self.heartbeat_interval)
+        try:
+            jobs_service.repo.touch_job(job_uuid)
+            logger.debug(f"Heartbeat for job {job_uuid}")
+        except Exception as e:
+            logger.warning(f"Heartbeat failed for job {job_uuid}: {e}")
+\end{lstlisting}
+
+The heartbeat interval is configurable via \texttt{JOB\_WORKER\_HEARTBEAT\_INTERVAL} (default: 5 seconds). Jobs with stale heartbeats (no update for multiple intervals) can be detected and recovered by monitoring systems.
+
+\subsection{Job Type Dispatching}
+
+The worker dispatches execution to type-specific handlers based on the \texttt{job.type} field:
+
+\begin{lstlisting}[language=Python, caption={Job type dispatch logic.}]
+async def _execute_job_type(
+    self, job_id: str, job_type: str, payload: dict
+) -> dict:
+    """Execute job logic based on job type."""
+    if job_type == "demo":
+        return await self._execute_demo_job(job_id, payload)
+    elif job_type == "test":
+        return await self._execute_test_job(job_id, payload)
+    elif job_type == "long-running":
+        return await self._execute_long_running_job(job_id, payload)
+    elif job_type == "agent.run":
+        return await self._execute_agent_run_job(job_id, payload)
+    else:
+        raise ValueError(f"Unknown job type: {job_type}")
+\end{lstlisting}
+
+\subsubsection{Demo Job Implementation}
+
+The demo job simulates work with configurable duration while checking for cancellation:
+
+\begin{lstlisting}[language=Python, caption={Demo job with cancellation checking.}]
+async def _execute_demo_job(self, job_id: str, payload: dict) -> dict:
+    """Execute demo job (sleep simulation)."""
+    duration_ms = payload.get("duration_ms", 1000)
+    duration_sec = duration_ms / 1000.0
+
+    # Simulate work with cancellation checks every 0.5s
+    start = time.time()
+    sleep_chunks = int(duration_sec / 0.5) + 1
+
+    for _ in range(sleep_chunks):
+        if await asyncio.to_thread(jobs_cache.check_cancel_flag, job_id):
+            raise asyncio.CancelledError("Job cancelled")
+        await asyncio.sleep(min(0.5, duration_sec))
+
+    elapsed = time.time() - start
+
+    return {
+        "status": "completed",
+        "requested_duration_ms": duration_ms,
+        "actual_duration_ms": int(elapsed * 1000),
+        "message": "Demo job completed successfully",
+    }
+\end{lstlisting}
+
+\subsubsection{Long-Running Job Implementation}
+
+Long-running jobs execute multiple steps with progress updates:
+
+\begin{lstlisting}[language=Python, caption={Long-running job with step-based progress.}]
+async def _execute_long_running_job(self, job_id: str, payload: dict) -> dict:
+    """Execute long-running job with progress updates."""
+    steps = payload.get("steps", 10)
+    step_duration = 3.0  # 3 seconds per step
+
+    for step in range(1, steps + 1):
+        if await asyncio.to_thread(jobs_cache.check_cancel_flag, job_id):
+            raise asyncio.CancelledError("Job cancelled")
+
+        logger.info(f"Job {job_id}: step {step}/{steps}")
+        await asyncio.sleep(step_duration)
+
+    return {
+        "status": "completed",
+        "steps_completed": steps,
+        "total_duration_ms": int(steps * step_duration * 1000),
+        "message": f"Completed {steps} steps",
+    }
+\end{lstlisting}
+
+\subsubsection{Agent.Run Job Implementation (Workflow B)}
+\label{subsubsec:agent-run-job}
+
+The \texttt{agent.run} job type represents the most complex handler, providing full orchestrator integration within the job system. This handler enables Workflow B execution (see Section~\ref{subsubsec:workflow-b}), bridging the asynchronous job infrastructure with the synchronous orchestration engine.
+
+\paragraph{Implementation Overview}
+
+The \texttt{\_execute\_agent\_run\_job()} method implements a comprehensive execution flow:
+
+\begin{enumerate}
+    \item \textbf{AgentRun Record Management}: Load or create the linked \texttt{AgentRun} PostgreSQL record.
+    \item \textbf{Orchestrator Initialization}: Instantiate the orchestrator via \texttt{Orchestrator.from\_env()} with full configuration.
+    \item \textbf{Parameter Construction}: Build orchestration parameters including temperature, max steps, and principal context.
+    \item \textbf{Progress Events}: Emit SSE events at key stages (\texttt{agent\_run\_started}, \texttt{orchestrator\_init}, \texttt{orchestration\_start}).
+    \item \textbf{Orchestration Execution}: Execute \texttt{orchestrator.run()} with timeout and cancellation checks.
+    \item \textbf{Security Processing}: Apply PII scrubbing and output guard validation.
+    \item \textbf{Metrics Emission}: Record agent-specific Prometheus metrics.
+    \item \textbf{State Synchronization}: Update both \texttt{Job} and \texttt{AgentRun} records to terminal states.
+\end{enumerate}
+
+\paragraph{Payload Schema}
+
+The \texttt{AgentRunJobPayload} Pydantic model validates job payloads:
+
+\begin{lstlisting}[language=Python, caption={AgentRunJobPayload schema for agent.run jobs.}]
+class AgentRunJobPayload(BaseModel):
+    """Payload schema for agent.run job type."""
+    # Required fields
+    prompt: str = Field(..., description="The user's prompt/goal")
+    user_id: str = Field(..., description="User ID from JWT")
+    tenant_id: str = Field(..., description="Tenant identifier")
+    
+    # Optional fields
+    session_id: str | None = None
+    run_id: str | None = None
+    model: str | None = None
+    temperature: float = Field(default=0.2, ge=0.0, le=2.0)
+    max_steps: int = Field(default=8, ge=1, le=50)
+    metadata: dict[str, Any] | None = None
+    principal: dict[str, Any] | None = None
+\end{lstlisting}
+
+\paragraph{Progress Events}
+
+The handler emits progress events enabling real-time client updates:
+
+\begin{itemize}
+    \item \texttt{agent\_run\_started}: Initial acknowledgment with run ID
+    \item \texttt{orchestrator\_init}: Orchestrator ready for execution
+    \item \texttt{orchestration\_start}: Beginning orchestration pipeline
+    \item \texttt{orchestration\_step}: Per-step progress (from orchestrator callbacks)
+    \item \texttt{orchestration\_complete}: Final result with output and metrics
+\end{itemize}
+
+\paragraph{Security Integration}
+
+The handler applies two security processing stages to the orchestration output:
+
+\begin{itemize}
+    \item \textbf{PII Scrubbing}: Sanitizes personal information from output text and structured data using the \texttt{PIIScrubber} service.
+    \item \textbf{Output Guard}: Validates output content against safety policies, filtering or rejecting prohibited content.
+\end{itemize}
+
+\paragraph{Bidirectional State Synchronization}
+
+The handler maintains consistency between \texttt{Job} and \texttt{AgentRun} records:
+
+\begin{lstlisting}[language=Python, caption={AgentRun state synchronization.}]
+# Update AgentRun with final state
+agent_run.status = (
+    "succeeded" if result.success else "failed"
+)
+agent_run.result = result.to_dict()
+agent_run.steps_json = [s.to_dict() for s in result.steps]
+agent_run.todos_json = result.todos
+agent_run.finished_at = datetime.utcnow()
+db.commit()
+
+# Emit final progress event
+await self._emit_progress_event(
+    job_id, "orchestration_complete",
+    {"run_id": str(run_id), "success": result.success}
+)
+\end{lstlisting}
+
+\subsection{Graceful Shutdown}
+
+The worker implements graceful shutdown to ensure clean process termination without leaving jobs in inconsistent states:
+
+\begin{enumerate}
+    \item \textbf{Signal Reception}: SIGTERM or SIGINT triggers the signal handler, setting \texttt{self.running = False}.
+    
+    \item \textbf{Current Job Completion}: The worker completes any in-progress job before exiting the main loop.
+    
+    \item \textbf{Resource Cleanup}: Database sessions are properly closed via context management.
+    
+    \item \textbf{Worker Deregistration}: The worker removes itself from the active worker pool (if implemented).
+\end{enumerate}
+
+\begin{lstlisting}[language=Python, caption={Signal handler for graceful shutdown.}]
+def _signal_handler(self, signum, frame):
+    """Handle shutdown signals gracefully."""
+    logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+    self.running = False
+    # The main loop will exit after completing the current job
+\end{lstlisting}
+
+The configurable shutdown timeout (via \texttt{JOB\_WORKER\_SHUTDOWN\_TIMEOUT}) allows operators to balance between quick restarts and job completion guarantees.
+
+\subsection{Worker Entry Point}
+
+The worker module provides a standalone entry point for process startup:
+
+\begin{lstlisting}[language=Python, caption={Worker main entry point.}]
+async def main():
+    """Main entry point for worker process."""
+    poll_interval = float(getattr(settings, "JOB_WORKER_POLL_INTERVAL", 1.0))
+    heartbeat_interval = float(getattr(settings, "JOB_WORKER_HEARTBEAT_INTERVAL", 5.0))
+
+    # Verify PostgreSQL backend is enabled
+    use_postgres = str(getattr(settings, "USE_POSTGRES_JOBS", False)).lower()
+    if use_postgres not in ("true", "1", "yes"):
+        logger.error("Worker requires USE_POSTGRES_JOBS=true")
+        sys.exit(1)
+
+    logger.info("Starting PostgreSQL-backed jobs worker")
+    
+    worker = JobsWorker(
+        poll_interval=poll_interval,
+        heartbeat_interval=heartbeat_interval
+    )
+
+    try:
+        await worker.start()
+    except KeyboardInterrupt:
+        logger.info("Worker interrupted by user")
+    except Exception as e:
+        logger.error(f"Worker failed: {e}", exc_info=True)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    asyncio.run(main())
+\end{lstlisting}
+
+\subsection{Worker Configuration Parameters}
+
+Table~\ref{tab:worker-config} summarizes the configurable parameters for worker processes.
+
+\begin{table}[ht]
+\centering
+\caption{Worker configuration parameters.}
+\label{tab:worker-config}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Parameter} & \textbf{Default} & \textbf{Description} \\
+\hline
+\texttt{JOB\_WORKER\_POLL\_INTERVAL} & 1.0 & Queue polling interval (seconds) \\
+\texttt{JOB\_WORKER\_HEARTBEAT\_INTERVAL} & 5.0 & Heartbeat update interval (seconds) \\
+\texttt{USE\_POSTGRES\_JOBS} & false & Enable PostgreSQL job persistence \\
+\texttt{ALLOWED\_JOB\_TYPES} & demo,test,long-running,agent.run & Permitted job types \\
+\texttt{DATABASE\_URL} & - & PostgreSQL connection string \\
+\texttt{REDIS\_URL} & - & Redis connection string \\
+\hline
+\end{tabular}
+\end{table}
+

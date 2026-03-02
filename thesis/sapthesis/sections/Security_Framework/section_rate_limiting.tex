@@ -1,0 +1,380 @@
+% TODO checklist:
+% - [x] Inspected src/security/rate_limit.py (Rate limiting implementation)
+% - [x] Inspected src/middleware/rate_limit.py (Middleware integration)
+% - [x] Reviewed src/config.py (Rate limit configuration settings)
+% - [x] Reviewed Q&A.md (Rate limiting patterns)
+% - [x] Reviewed README.md (Rate limiting features)
+
+\section{Rate Limiting}
+\label{sec:rate-limiting}
+
+The Cineca Agentic Platform implements a comprehensive rate limiting system to protect against abuse, ensure fair resource allocation among tenants, and maintain service stability under high load conditions. The rate limiting subsystem is designed with both performance and reliability in mind, featuring multiple backend options and graceful degradation.
+
+\subsection{Rate Limiting Strategy}
+\label{subsec:rate-limit-strategy}
+
+The platform employs a \textit{fixed-window counter} algorithm for rate limiting. This approach is chosen for its simplicity, predictability, and low computational overhead:
+
+\begin{itemize}
+    \item \textbf{Simplicity}: Easy to understand, implement, and debug.
+    \item \textbf{Predictability}: Users can easily reason about their quota usage.
+    \item \textbf{Efficiency}: Minimal storage and computation per check.
+    \item \textbf{Atomicity}: Single increment operation in Redis.
+\end{itemize}
+
+\paragraph{Alternative: Sliding Window}
+While the Q\&A documentation mentions sliding window algorithms using Redis ZSETs, the production implementation uses fixed windows for most endpoints. Sliding windows are available as an advanced option for scenarios requiring smoother rate limit enforcement.
+
+\subsection{Backend Architecture}
+\label{subsec:rate-limit-backends}
+
+The rate limiting system supports two backends with automatic fallback:
+
+\subsubsection{Redis Backend (Production)}
+
+The primary backend uses Redis for distributed rate limiting:
+
+\begin{lstlisting}[language=Python,caption={Redis-based rate limiting}]
+def _redis_check(
+    key: str, 
+    limit: int, 
+    window: int, 
+    *, 
+    cost: int
+) -> RateLimitResult:
+    n = int(time.time())
+    start = _window_start(n, window)
+    k = _redis_key(key, start)  # e.g., "rl:user123:1703001600"
+    
+    # Atomic increment with TTL
+    count = int(_redis_incr_with_ttl(k, window))
+    
+    if cost > 1:
+        count += cost - 1  # Pessimistic multi-cost handling
+    
+    allowed = count <= limit
+    reset = start + window - n
+    remaining = max(0, limit - count)
+    
+    return RateLimitResult(
+        key=key,
+        limit=limit,
+        window=window,
+        count=count,
+        remaining=remaining,
+        reset_seconds=reset,
+        allowed=allowed,
+        backend="redis"
+    )
+\end{lstlisting}
+
+Key advantages of the Redis backend:
+\begin{itemize}
+    \item \textbf{Distributed}: Consistent limits across multiple API replicas.
+    \item \textbf{Atomic Operations}: INCR with TTL prevents race conditions.
+    \item \textbf{Automatic Expiration}: Keys expire after the window closes.
+    \item \textbf{High Performance}: Sub-millisecond response times.
+\end{itemize}
+
+\subsubsection{In-Memory Backend (Fallback)}
+
+When Redis is unavailable, the system gracefully degrades to an in-memory backend:
+
+\begin{lstlisting}[language=Python,caption={In-memory rate limiting fallback}]
+_mem_lock = threading.Lock()
+_mem_counters: dict[str, dict[str, int]] = {}
+
+def _mem_check(
+    key: str, 
+    limit: int, 
+    window: int, 
+    *, 
+    cost: int
+) -> RateLimitResult:
+    n = int(time.time())
+    start = _window_start(n, window)
+    reset = start + window - n
+    
+    with _mem_lock:
+        if key not in _mem_counters or \
+           _mem_counters[key].get("start") != start:
+            _mem_counters[key] = {"start": start, "count": 0}
+        
+        rec = _mem_counters[key]
+        new_count = rec["count"] + cost
+        allowed = new_count <= limit
+        
+        if allowed:
+            rec["count"] = new_count
+        
+        remaining = max(0, limit - new_count)
+    
+    return RateLimitResult(
+        key=key,
+        limit=limit,
+        window=window,
+        count=new_count,
+        remaining=remaining,
+        reset_seconds=reset,
+        allowed=allowed,
+        backend="memory"
+    )
+\end{lstlisting}
+
+\textbf{Important Limitation}: The in-memory backend is per-process and not distributed. In multi-replica deployments, each instance maintains independent counters, potentially allowing users to exceed limits by distributing requests across replicas.
+
+\subsubsection{Automatic Backend Selection}
+
+The system automatically selects the appropriate backend:
+
+\begin{lstlisting}[language=Python,caption={Backend selection with fallback}]
+_backend_forced: str | None = None
+_logged_degrade_once: bool = False
+
+def get_backend() -> str:
+    """Return the effective backend ('redis' or 'memory')."""
+    global _backend_forced, _logged_degrade_once
+    
+    if _backend_forced:
+        return _backend_forced
+    
+    preferred = _cfg_backend()
+    if preferred == "redis":
+        if _redis_available():
+            _backend_forced = "redis"
+            return "redis"
+        # Graceful degradation
+        _backend_forced = "memory"
+        if not _logged_degrade_once:
+            _logged_degrade_once = True
+            logger.warning(
+                "rate_limit: redis unavailable; using in-memory fallback"
+            )
+        return "memory"
+    
+    _backend_forced = "memory"
+    return "memory"
+\end{lstlisting}
+
+\subsection{Configuration}
+\label{subsec:rate-limit-config}
+
+Rate limiting behavior is controlled through environment variables:
+
+\begin{table}[ht]
+\centering
+\caption{Rate Limiting Configuration Settings}
+\label{tab:rate-limit-config}
+\begin{tabular}{lll}
+\hline
+\textbf{Setting} & \textbf{Default} & \textbf{Description} \\
+\hline
+\texttt{RATE\_LIMIT\_ENABLED} & \texttt{True} & Enable/disable rate limiting \\
+\texttt{RATE\_LIMIT\_BACKEND} & \texttt{redis} & Backend: ``redis'' or ``memory'' \\
+\texttt{RATE\_LIMIT\_DEFAULT\_LIMIT} & \texttt{60} & Requests per window \\
+\texttt{RATE\_LIMIT\_DEFAULT\_WINDOW} & \texttt{60} & Window size in seconds \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Key Generation}
+\label{subsec:rate-limit-keys}
+
+Rate limit keys combine tenant, user identity, and resource path for granular control:
+
+\begin{lstlisting}[language=Python,caption={Rate limit key derivation}]
+def _default_key_func(request: Request, user: Any) -> str:
+    """Default key derivation: subject + tenant + path."""
+    ident = None
+    
+    # Prefer subject identifier from token
+    if user is not None:
+        if hasattr(user, "sub") and user.sub:
+            ident = user.sub
+        elif isinstance(user, dict) and user.get("sub"):
+            ident = user.get("sub")
+    
+    # Fallback to client IP for unauthenticated requests
+    if not ident:
+        ident = request.client.host if request.client else "anon"
+    
+    tenant = getattr(request.state, "tenant_id", "global")
+    path = request.url.path
+    
+    return f"rl:{tenant}:{ident}:{path}"
+\end{lstlisting}
+
+This key structure enables:
+\begin{itemize}
+    \item \textbf{Per-User Limits}: Each user has independent quota per endpoint.
+    \item \textbf{Per-Tenant Isolation}: Tenants cannot exhaust each other's quotas.
+    \item \textbf{Per-Endpoint Granularity}: Different endpoints can have different limits.
+\end{itemize}
+
+\subsection{FastAPI Integration}
+\label{subsec:rate-limit-fastapi}
+
+Rate limiting is integrated as a FastAPI dependency:
+
+\begin{lstlisting}[language=Python,caption={Rate limiter dependency usage}]
+def rate_limiter(
+    *,
+    limit: int | None = None,
+    window: int | None = None,
+    key: str | None = None,
+    key_func: Callable | None = None,
+    cost: int = 1,
+):
+    """Build a FastAPI dependency that enforces rate limits."""
+    async def _dep(request: Request, user=Depends(get_current_user)):
+        k = key or (key_func(request, user) if key_func 
+                    else _default_key_func(request, user))
+        res = rate_limit_check(k, limit=limit, window=window, cost=cost)
+        
+        if not res.allowed:
+            headers = {
+                "Retry-After": str(max(1, res.reset_seconds)),
+                "X-RateLimit-Limit": str(res.limit),
+                "X-RateLimit-Remaining": str(res.remaining),
+                "X-RateLimit-Reset": str(res.reset_seconds),
+            }
+            raise HTTPException(
+                status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={"message": "Rate limit exceeded", "key": res.key},
+                headers=headers
+            )
+        return True
+    
+    return CallableDepends(_dep)
+
+# Usage in routers
+@router.get("/expensive", 
+            dependencies=[Depends(rate_limiter(limit=10, window=60))])
+async def expensive_operation():
+    return {"ok": True}
+\end{lstlisting}
+
+\subsection{Response Headers}
+\label{subsec:rate-limit-headers}
+
+When rate limits are exceeded, the response includes standard headers to help clients manage their request rate:
+
+\begin{itemize}
+    \item \texttt{Retry-After}: Seconds until the client should retry.
+    \item \texttt{X-RateLimit-Limit}: Maximum requests allowed in the window.
+    \item \texttt{X-RateLimit-Remaining}: Requests remaining in current window.
+    \item \texttt{X-RateLimit-Reset}: Seconds until the window resets.
+\end{itemize}
+
+\subsection{Cost-Based Rate Limiting}
+\label{subsec:rate-limit-cost}
+
+Some operations consume more resources than others. The platform supports cost-based rate limiting where expensive operations deduct multiple units from the quota:
+
+\begin{lstlisting}[language=Python,caption={Cost-based rate limiting example}]
+# Standard request costs 1 unit
+@router.get("/simple", 
+            dependencies=[Depends(rate_limiter(limit=100, cost=1))])
+
+# Expensive operation costs 10 units
+@router.post("/bulk-import", 
+             dependencies=[Depends(rate_limiter(limit=100, cost=10))])
+\end{lstlisting}
+
+\subsection{Per-Role Rate Limits}
+\label{subsec:rate-limit-roles}
+
+The \texttt{roles.yaml} policy file defines per-role rate limits:
+
+\begin{lstlisting}[language=yaml,caption={Role-based rate limit configuration}]
+roles:
+  admin:
+    limits:
+      rpm: 240           # Requests per minute
+      tpm: 160000        # Tokens per minute
+      burst: 100         # Burst capacity
+      concurrent_jobs: 20
+  
+  researcher:
+    limits:
+      rpm: 60
+      tpm: 40000
+      burst: 20
+      concurrent_jobs: 5
+      tool_rpm_overrides:
+        graph.query: 30  # Stricter limit for graph queries
+        graph.search: 30
+  
+  guest:
+    limits:
+      rpm: 20
+      tpm: 8000
+      burst: 5
+      concurrent_jobs: 1
+\end{lstlisting}
+
+\subsection{Metrics and Monitoring}
+\label{subsec:rate-limit-metrics}
+
+Rate limiting decisions are tracked via Prometheus metrics:
+
+\begin{lstlisting}[language=Python,caption={Rate limit metrics}]
+RL_CHECKS = Counter(
+    "rate_limit_checks_total",
+    "Number of rate limit checks",
+    labelnames=("backend", "allowed"),
+)
+
+# Increment on each check
+if RL_CHECKS is not None:
+    RL_CHECKS.labels(
+        backend=result.backend, 
+        allowed=str(result.allowed).lower()
+    ).inc()
+\end{lstlisting}
+
+\subsection{Audit Integration}
+\label{subsec:rate-limit-audit}
+
+Every rate limit check generates an audit event:
+
+\begin{lstlisting}[language=Python,caption={Rate limit audit logging}]
+audit_rate_limit(
+    principal=user.sub if user else None,
+    key=result.key,
+    allowed=result.allowed,
+    limit=result.limit,
+    window_seconds=result.window,
+    count=result.count,
+    tenant_id=tenant_id
+)
+\end{lstlisting}
+
+This enables:
+\begin{itemize}
+    \item Detection of abuse patterns
+    \item Capacity planning based on usage trends
+    \item Compliance reporting for SLA adherence
+\end{itemize}
+
+\subsection{Graceful Degradation}
+\label{subsec:rate-limit-degradation}
+
+When rate limiting is disabled or the backend fails, the system degrades gracefully:
+
+\begin{lstlisting}[language=Python,caption={Disabled rate limiting bypass}]
+if not _enabled():
+    return RateLimitResult(
+        key=key,
+        limit=limit or _default_limit(),
+        window=window or _default_window(),
+        count=0,
+        remaining=999_999_999,
+        reset_seconds=_default_window(),
+        allowed=True,
+        backend="disabled"
+    )
+\end{lstlisting}
+
+This ensures that service availability is prioritized over strict rate enforcement when infrastructure issues occur.
+

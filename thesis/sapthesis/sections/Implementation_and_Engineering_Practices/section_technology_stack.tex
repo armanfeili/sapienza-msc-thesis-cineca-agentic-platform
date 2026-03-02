@@ -1,0 +1,360 @@
+% TODO checklist:
+% - [x] Inspected pyproject.toml for Python version and package config
+% - [x] Inspected requirements.txt for all runtime dependencies
+% - [x] Inspected docker-compose.yml for service definitions
+% - [x] Inspected ui_agent/package.json for frontend stack
+% - [x] Inspected ui_control_panel/ for Streamlit dependencies
+% - [x] Inspected src/config.py for LLM provider configuration
+% - [x] Referenced README.md and Q&A.md for architectural overview
+
+\section{Technology Stack}
+\label{sec:tech-stack}
+
+The Cineca Agentic Platform is built on a modern, production-ready technology stack carefully selected to balance performance, maintainability, and enterprise requirements. This section provides a comprehensive overview of the technologies employed across all platform layers.
+
+\subsection{Backend Core Technologies}
+
+The platform's backend is implemented primarily in Python, leveraging the asynchronous capabilities of modern Python frameworks for high-throughput API handling.
+
+\subsubsection{Python Runtime and Framework}
+
+\begin{table}[ht]
+\centering
+\caption{Core backend technologies and versions.}
+\label{tab:backend-stack}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Technology} & \textbf{Version} & \textbf{Purpose} \\
+\hline
+Python & $\geq$ 3.10 & Runtime environment \\
+FastAPI & $\geq$ 0.111.0 & Web framework and API layer \\
+Uvicorn & $\geq$ 0.30.0 & ASGI server with standard extras \\
+Pydantic & $\geq$ 2.2.1 & Data validation and settings management \\
+SQLAlchemy & $\geq$ 2.0.30 & ORM for PostgreSQL \\
+Alembic & $\geq$ 1.13.0 & Database migrations \\
+\hline
+\end{tabular}
+\end{table}
+
+FastAPI was selected as the primary web framework due to its native support for asynchronous request handling, automatic OpenAPI documentation generation, and Pydantic-based request/response validation. The framework's dependency injection system enables clean separation of concerns and facilitates testing.
+
+\begin{lstlisting}[language=Python, caption={FastAPI application factory pattern from \texttt{src/app.py}.}]
+def create_app() -> FastAPI:
+    """Create the FastAPI application with all middleware and routers."""
+    # Initialize structured logging
+    from src.logging_setup import setup_logging
+    setup_logging(level=settings.LOG_LEVEL)
+    
+    # Install sensitive data masking for logs
+    from src.security.secrets import install_log_masking
+    install_log_masking()
+    
+    # Create FastAPI instance
+    app = FastAPI(
+        title="Cineca Agentic Platform",
+        version="0.1.0",
+        docs_url=None,  # Custom versioned docs
+        redoc_url=None,
+        openapi_url="/openapi.json",
+    )
+    return app
+\end{lstlisting}
+
+\subsubsection{HTTP Client and Resilience}
+
+For outbound HTTP communication with LLM providers and external services, the platform employs:
+
+\begin{itemize}
+    \item \textbf{httpx} ($\geq$ 0.27.0): Modern async-capable HTTP client with connection pooling
+    \item \textbf{tenacity} ($\geq$ 8.2.3): Retry library for implementing exponential backoff and circuit breaker patterns
+\end{itemize}
+
+\subsection{Data Persistence Layer}
+
+The platform employs a polyglot persistence strategy with three complementary database systems, each optimized for specific workload characteristics.
+
+\subsubsection{PostgreSQL Control Plane}
+
+PostgreSQL serves as the authoritative control plane database, storing all configuration, audit logs, and transactional data.
+
+\begin{table}[ht]
+\centering
+\caption{PostgreSQL stack components.}
+\label{tab:postgres-stack}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Component} & \textbf{Version} & \textbf{Purpose} \\
+\hline
+PostgreSQL & 16-alpine & Relational database engine \\
+psycopg2-binary & $\geq$ 2.9.9 & PostgreSQL adapter for Python \\
+SQLAlchemy & $\geq$ 2.0.30 & ORM and connection pooling \\
+Alembic & $\geq$ 1.13.0 & Schema migration management \\
+\hline
+\end{tabular}
+\end{table}
+
+The database configuration supports enterprise deployment requirements through configurable connection pooling:
+
+\begin{lstlisting}[language=Python, caption={PostgreSQL configuration from \texttt{src/config.py}.}]
+# PostgreSQL connection settings
+DB_HOST: str = Field(default="postgres")
+DB_PORT: int = Field(default=5432)
+DB_NAME: str = Field(default="cineca_platform")
+DB_POOL_SIZE: int = Field(default=10)
+DB_POOL_TIMEOUT: int = Field(default=30)
+DB_POOL_RECYCLE: int = Field(default=3600)
+DB_POOL_PRE_PING: bool = Field(default=True)
+\end{lstlisting}
+
+\subsubsection{Redis Data Plane}
+
+Redis provides the low-latency data plane for caching, queuing, and ephemeral state management:
+
+\begin{table}[ht]
+\centering
+\caption{Redis usage categories in the platform.}
+\label{tab:redis-usage}
+\small
+\begin{tabular}{ll}
+\hline
+\textbf{Usage Category} & \textbf{Key Pattern} \\
+\hline
+Job queues & \texttt{jobs:queue:*} \\
+Idempotency cache & \texttt{jobs:idempotency:*} \\
+Rate limiting & \texttt{ratelimit:*} \\
+Session state & \texttt{sessions:*} \\
+Default model cache (DMR) & \texttt{dmr:*} \\
+JWKS key cache & \texttt{jwks:*} \\
+Cancel flags & \texttt{jobs:cancel:*} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Memgraph Graph Database}
+
+Memgraph serves as the knowledge graph backend, storing domain entities and relationships for natural language querying:
+
+\begin{itemize}
+    \item \textbf{Memgraph Platform}: Latest version with Lab visualization interface
+    \item \textbf{gqlalchemy} ($\geq$ 1.8.0): Python client and ORM for Memgraph
+    \item \textbf{Cypher}: Query language for graph traversal and manipulation
+\end{itemize}
+
+\subsection{Security and Authentication}
+
+The security stack implements industry-standard authentication and authorization protocols:
+
+\begin{table}[ht]
+\centering
+\caption{Security technologies and standards.}
+\label{tab:security-stack}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Technology} & \textbf{Version} & \textbf{Purpose} \\
+\hline
+python-jose & $\geq$ 3.3.0 & JWT encoding/decoding with cryptography \\
+passlib & $\geq$ 1.7.4 & Password hashing with bcrypt \\
+email-validator & $\geq$ 2.1.1 & Email format validation \\
+\hline
+\end{tabular}
+\end{table}
+
+The platform supports OIDC/JWT-based authentication through configurable identity providers:
+
+\begin{lstlisting}[language=Python, caption={OIDC configuration settings.}]
+# OIDC Resource Server Settings
+OIDC_ISSUER: str | None = Field(default=None)
+OIDC_AUDIENCE: str | None = Field(default=None)
+OIDC_JWKS_URL: str | None = Field(default=None)
+OIDC_TIMEOUT_S: int = Field(default=5)
+\end{lstlisting}
+
+\subsection{Observability Stack}
+
+The platform implements comprehensive observability through three pillars: metrics, logging, and tracing.
+
+\begin{table}[ht]
+\centering
+\caption{Observability technologies.}
+\label{tab:observability-stack}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Technology} & \textbf{Version} & \textbf{Purpose} \\
+\hline
+Prometheus Client & $\geq$ 0.20.0 & Metrics collection and exposition \\
+structlog & $\geq$ 24.1.0 & Structured JSON logging \\
+OpenTelemetry API & $\geq$ 1.26.0 & Distributed tracing \\
+OpenTelemetry SDK & $\geq$ 1.26.0 & Trace sampling and export \\
+OTLP Exporter & $\geq$ 1.26.0 & Trace export to collectors \\
+Grafana & 11.0.0 & Metrics visualization and dashboards \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{LLM Provider Integration}
+
+The platform supports multiple LLM providers through a unified adapter layer:
+
+\begin{table}[ht]
+\centering
+\caption{Supported LLM providers and configurations.}
+\label{tab:llm-providers}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Provider} & \textbf{Protocol} & \textbf{Use Case} \\
+\hline
+Ollama & OpenAI-compatible API & Local/self-hosted models \\
+OpenAI & OpenAI API & Cloud-hosted GPT models \\
+Azure OpenAI & Azure API & Enterprise cloud deployment \\
+Custom & Configurable & Organization-specific endpoints \\
+\hline
+\end{tabular}
+\end{table}
+
+Ollama is the primary provider for local deployment, with extensive configuration options:
+
+\begin{lstlisting}[language=Python, caption={Ollama integration settings.}]
+OLLAMA_BASE_URL: str | None = Field(default=None)
+OLLAMA_TIMEOUT_SECS: int = Field(default=180)
+LLM_WARMUP_TIMEOUT: int = Field(default=300)
+DEFAULT_MODEL_NAME: str = Field(default="phi3:mini")
+LLM_DEVICE: str = Field(default="cpu")
+LLM_MAX_TOKENS: int = Field(default=2048)
+LLM_MAX_STEPS: int = Field(default=10)
+\end{lstlisting}
+
+\subsection{Presentation Layer Technologies}
+
+The platform provides two distinct user interfaces optimized for different personas.
+
+\subsubsection{Agent Chat UI (Next.js)}
+
+The conversational interface for end-users is built with modern React technologies:
+
+\begin{table}[ht]
+\centering
+\caption{Agent Chat UI technology stack.}
+\label{tab:ui-agent-stack}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Technology} & \textbf{Version} & \textbf{Purpose} \\
+\hline
+Next.js & 14.2.15 & React framework with App Router \\
+React & 18.3.1 & UI component library \\
+TypeScript & 5.6.3 & Type-safe JavaScript \\
+Zustand & 4.5.5 & Lightweight state management \\
+Tailwind CSS & 3.4.14 & Utility-first styling \\
+Radix UI & Latest & Accessible UI primitives \\
+Lucide React & 0.451.0 & Icon library \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Control Panel UI (Streamlit)}
+
+The administrative interface leverages Python-native web application development:
+
+\begin{table}[ht]
+\centering
+\caption{Control Panel UI technology stack.}
+\label{tab:ui-control-stack}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Technology} & \textbf{Version} & \textbf{Purpose} \\
+\hline
+Streamlit & $\geq$ 1.30.0 & Python web application framework \\
+Pandas & $\geq$ 2.2.0 & Data manipulation and display \\
+httpx & $\geq$ 0.27.0 & HTTP client for API communication \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Background Processing}
+
+Asynchronous job processing is implemented through:
+
+\begin{itemize}
+    \item \textbf{APScheduler} ($\geq$ 3.10.4): Background task scheduling with cron-style triggers
+    \item \textbf{Redis queues}: BRPOP-based job queue with priority support
+    \item \textbf{Custom worker process}: Dedicated container for job execution
+\end{itemize}
+
+\subsection{Container Orchestration}
+
+The platform is containerized using Docker with orchestration through Docker Compose:
+
+\begin{table}[ht]
+\centering
+\caption{Docker Compose service definitions.}
+\label{tab:docker-services}
+\small
+\begin{tabular}{llp{6cm}}
+\hline
+\textbf{Service} & \textbf{Image} & \textbf{Purpose} \\
+\hline
+app & Custom (Dockerfile) & FastAPI backend application \\
+worker & Custom (Dockerfile) & Background job processor \\
+postgres & postgres:16-alpine & Control plane database \\
+redis & redis:7-alpine & Cache and queue storage \\
+memgraph & memgraph-platform:latest & Graph database \\
+ollama & ollama/ollama:latest & Local LLM inference \\
+prometheus & prom/prometheus:latest & Metrics collection \\
+grafana & grafana/grafana:11.0.0 & Metrics visualization \\
+ui\_control\_panel & Custom (Dockerfile) & Streamlit admin interface \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Development and Quality Tools}
+
+The development toolchain ensures code quality and consistency:
+
+\begin{table}[ht]
+\centering
+\caption{Development and quality assurance tools.}
+\label{tab:dev-tools}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Tool} & \textbf{Version} & \textbf{Purpose} \\
+\hline
+Ruff & $\geq$ 0.5.0 & Linting and import sorting \\
+Black & $\geq$ 24.4.2 & Code formatting \\
+mypy & $\geq$ 1.10.0 & Static type checking \\
+Bandit & $\geq$ 1.7.9 & Security vulnerability scanning \\
+pytest & $\geq$ 8.2.0 & Test framework \\
+coverage & $\geq$ 7.5.0 & Code coverage measurement \\
+\hline
+\end{tabular}
+\end{table}
+
+The \texttt{pyproject.toml} configuration centralizes all tool settings, enabling consistent enforcement across development environments:
+
+\begin{lstlisting}[language=Python, caption={Code quality configuration excerpt from \texttt{pyproject.toml}.}]
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",   # Core style checks
+    "I",             # isort import ordering
+    "B",             # bugbear security patterns
+    "SIM",           # simplification suggestions
+    "RUF",           # ruff-specific rules
+]
+
+[tool.mypy]
+python_version = "3.11"
+plugins = ["pydantic.mypy"]
+check_untyped_defs = true
+disallow_untyped_defs = true
+\end{lstlisting}
+

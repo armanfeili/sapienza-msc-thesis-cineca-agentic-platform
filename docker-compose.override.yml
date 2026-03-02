@@ -1,0 +1,32 @@
+services:
+  app:
+    volumes:
+      - ./:/app:delegated
+      # Mount host models directory so the app (or adapters) can access artifacts
+      # - /opt/models:/opt/models:ro  # Commented out - path not available on this host
+    command: uvicorn src.app:app --reload --host 0.0.0.0 --port 8000
+    environment:
+      PYTHONUNBUFFERED: '1'
+      ENABLE_DOCS: '1'
+      APP_ENV: 'dev'
+      DEMO_MODE: 'true'
+      SEED_DEMO_PROVIDER: 'false'  # Disable automatic demo-openai provider creation
+      RATE_LIMIT_MODE: 'test'
+      INTERNAL_TOKEN_MAX_TTL_SECONDS: '86400'  # Allow 24h tokens for Phase 2 testing
+      AUTH0_CLIENT_ID: 'kwkf1bGn2NmdKWzioZYkvtYM022dzb5C'
+      AUTH0_CLIENT_SECRET: 'z8Qf1DeYl-6fDKlGn5tpOuAshkjhiJmNrYkPibfBoR5vA5VC_7qznoavBN0rSZEB'
+      # Optional: enable auto-start in dev (opt-in)
+      # BUILTIN_AUTO_START: '1'
+      # BUILTIN_AUTO_START_MAX_CONCURRENT: '2'
+      # BUILTIN_AUTO_START_ALLOW_UI_OVERRIDE: '1'  # allow UI to request short-lived override
+      # BUILTIN_AUTO_START_OVERRIDE_TTL: '60'      # TTL seconds for UI override key in Redis
+      # BUILTIN_AUTO_START_MIN_FREE_GB: '2.0'
+
+    # Tip: copy .env.example to .env and edit values for local development.
+    # The app uses pydantic-settings to load these from the environment.
+
+# Note: we've added `psutil` to requirements.txt to enable strict memory checks for auto-start.
+# If you're using the dev compose override, rebuild the app image or reinstall deps in the container:
+#   docker compose build app
+# or shell into the container and run:
+#   pip install -r requirements.txt

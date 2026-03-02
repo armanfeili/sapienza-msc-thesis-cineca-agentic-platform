@@ -1,0 +1,218 @@
+<mxfile host="app.diagrams.net" modified="2025-08-09T20:07:00Z" agent="5.0 (Macintosh)" etag="system-context-v1" version="20.6.3" type="device">
+  <diagram id="system-context" name="System Context">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1080" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Bounded zones -->
+        <mxCell id="zone_public" value="Public Internet" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=28;horizontalStack=0;resizeParent=0;resizeParentMax=0;resizeLast=0;fillColor=#e1f0ff;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="450" height="340" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="zone_cluster" value="Private Cluster / K8s Namespace" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=28;horizontalStack=0;resizeParent=0;resizeParentMax=0;resizeLast=0;fillColor=#eef7e9;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="520" y="40" width="840" height="780" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="zone_obs" value="Observability Stack" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=28;horizontalStack=0;resizeParent=0;resizeParentMax=0;resizeLast=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="40" width="440" height="380" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="zone_ext" value="External Managed Services" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=28;horizontalStack=0;resizeParent=0;resizeParentMax=0;resizeLast=0;fillColor=#fde9f2;strokeColor=#b85496;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="440" width="440" height="380" as="geometry"/>
+        </mxCell>
+
+        <!-- Public Internet actors -->
+        <mxCell id="user" value="End User&#10;• Browser / cURL / Client SDK" style="shape=person;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="zone_public">
+          <mxGeometry x="30" y="40" width="160" height="180" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="devops" value="Platform Engineer&#10;• Grafana / Alerting" style="shape=person;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="zone_public">
+          <mxGeometry x="220" y="40" width="160" height="180" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="client_examples" value="Example Clients&#10;• HTTP files / Python SDK / MCP clients" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="zone_public">
+          <mxGeometry x="30" y="240" width="350" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Private Cluster core components -->
+        <mxCell id="ingress" value="Ingress / API Gateway&#10;• TLS&#10;• Rate limit (basic)" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#fff;strokeColor=#82b366;" vertex="1" parent="zone_cluster">
+          <mxGeometry x="30" y="40" width="200" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="api" value="FastAPI App&#10;/api/* endpoints&#10;• AuthN/Z&#10;• PII scrubber&#10;• MCP tool router" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#f8faff;strokeColor=#6c8ebf;" vertex="1" parent="zone_cluster">
+          <mxGeometry x="270" y="40" width="240" height="150" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="orchestrator" value="Agent Orchestrator&#10;• Planning&#10;• Tool execution&#10;• Safety loop" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#e8f5e9;strokeColor=#82b366;" vertex="1" parent="zone_cluster">
+          <mxGeometry x="550" y="40" width="240" height="150" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="security" value="Security Pipeline&#10;• Intent filter&#10;• Output guard&#10;• Authorization (RBAC)&#10;• Audit" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#fdebd0;strokeColor=#d79b00;" vertex="1" parent="zone_cluster">
+          <mxGeometry x="820" y="40" width="240" height="150" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="mcp_tools" value="MCP Tools&#10;• graph.query / schema&#10;• system.health / status&#10;• data.archive" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#e9f7ef;strokeColor=#27ae60;" vertex="1" parent="zone_cluster">
+          <mxGeometry x="550" y="220" width="240" height="140" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="services" value="Core Services&#10;• HealthService&#10;• StatusService&#10;• ServiceMetrics" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#f5eef8;strokeColor=#8e44ad;" vertex="1" parent="zone_cluster">
+          <mxGeometry x="270" y="220" width="240" height="140" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="session" value="Session Service&#10;• In-memory / Redis&#10;• Chat history&#10;• TTLs" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#fef9e7;strokeColor=#b7950b;" vertex="1" parent="zone_cluster">
+          <mxGeometry x="820" y="220" width="240" height="140" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="etl" value="ETL Service&#10;• CSV/JSONL import&#10;• Snapshot export" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#ebf5fb;strokeColor=#2980b9;" vertex="1" parent="zone_cluster">
+          <mxGeometry x="270" y="390" width="240" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="archive" value="Archive Service&#10;• Snapshots (JSON/.gz)&#10;• Rotation&#10;• Restore" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#ebf5fb;strokeColor=#2980b9;" vertex="1" parent="zone_cluster">
+          <mxGeometry x="550" y="390" width="240" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="background" value="Background Workers&#10;• scheduler.py&#10;• backups / health checks / cleanup" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#fdebd0;strokeColor=#d79b00;" vertex="1" parent="zone_cluster">
+          <mxGeometry x="820" y="390" width="240" height="120" as="geometry"/>
+        </mxCell>
+
+        <!-- Data layer in cluster -->
+        <mxCell id="db" value="Memgraph&#10;• Graph database&#10;• Cypher" style="shape=cylinder;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="zone_cluster">
+          <mxGeometry x="270" y="550" width="180" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="redis" value="Redis&#10;• Cache / Sessions" style="shape=cylinder;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#fdebd0;strokeColor=#d79b00;" vertex="1" parent="zone_cluster">
+          <mxGeometry x="490" y="550" width="160" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="storage" value="Backup Storage&#10;• /backups (PVC)&#10;• tar.gz / json.gz" style="shape=cylinder;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#e8f8f5;strokeColor=#17a589;" vertex="1" parent="zone_cluster">
+          <mxGeometry x="680" y="550" width="180" height="120" as="geometry"/>
+        </mxCell>
+
+        <!-- Observability stack -->
+        <mxCell id="prom" value="Prometheus&#10;• Scrape /metrics&#10;• Alerts" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#fff;strokeColor=#d6b656;" vertex="1" parent="zone_obs">
+          <mxGeometry x="30" y="40" width="170" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="grafana" value="Grafana&#10;• Dashboards&#10;• Alert rules (optional)" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#fff;strokeColor=#d6b656;" vertex="1" parent="zone_obs">
+          <mxGeometry x="230" y="40" width="170" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="loki" value="(Optional) Logs / Traces&#10;• OTLP exporters" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#fff;strokeColor=#d6b656;dashed=1;" vertex="1" parent="zone_obs">
+          <mxGeometry x="30" y="180" width="170" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="alertmgr" value="Alertmanager&#10;• Pager / Email / ChatOps" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#fff;strokeColor=#d6b656;" vertex="1" parent="zone_obs">
+          <mxGeometry x="230" y="180" width="170" height="110" as="geometry"/>
+        </mxCell>
+
+        <!-- External managed services -->
+        <mxCell id="llm" value="LLM Provider&#10;• OpenAI/Azure/etc.&#10;• text+JSON, tool-calls" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#fde9f2;strokeColor=#b85496;" vertex="1" parent="zone_ext">
+          <mxGeometry x="30" y="40" width="200" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="mcp_registry" value="MCP-Compatible Tools (3rd party)&#10;• discovery via manifest" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#fde9f2;strokeColor=#b85496;dashed=1;" vertex="1" parent="zone_ext">
+          <mxGeometry x="260" y="40" width="200" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="idp" value="Identity Provider (OIDC)&#10;• Auth0/Okta/Azure AD" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#fde9f2;strokeColor=#b85496;" vertex="1" parent="zone_ext">
+          <mxGeometry x="30" y="180" width="200" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="smtp" value="Email / Notifications&#10;• SMTP / Webhook" style="shape=rectangle;whiteSpace=wrap;html=1;rounded=1;fillColor=#fde9f2;strokeColor=#b85496;dashed=1;" vertex="1" parent="zone_ext">
+          <mxGeometry x="260" y="180" width="200" height="110" as="geometry"/>
+        </mxCell>
+
+        <!-- Connections — Public → Cluster -->
+        <mxCell id="edge_user_ingress" value="HTTPS" style="endArrow=block;html=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="user" target="ingress">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge_client_api" value="REST / Web&#10;/api/*" style="endArrow=block;html=1;strokeColor=#6c8ebf;dashed=1;" edge="1" parent="1" source="client_examples" target="api">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Intra-cluster connections -->
+        <mxCell id="edge_ingress_api" value="" style="endArrow=block;html=1;strokeColor=#82b366;" edge="1" parent="1" source="ingress" target="api">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge_api_orch" value="agent.run" style="endArrow=block;html=1;strokeColor=#82b366;" edge="1" parent="1" source="api" target="orchestrator">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge_orch_sec" value="intent / output policies" style="endArrow=block;html=1;strokeColor=#d79b00;" edge="1" parent="1" source="orchestrator" target="security">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge_orch_mcp" value="tool calls (graph, system, data)" style="endArrow=block;html=1;strokeColor=#27ae60;" edge="1" parent="1" source="orchestrator" target="mcp_tools">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge_mcp_db" value="Cypher" style="endArrow=block;html=1;strokeColor=#27ae60;" edge="1" parent="1" source="mcp_tools" target="db">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge_api_services" value="/health /status /metrics" style="endArrow=block;html=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="api" target="services">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge_session_redis" value="sessions / cache" style="endArrow=block;html=1;strokeColor=#b7950b;" edge="1" parent="1" source="session" target="redis">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge_etl_db" value="import/export" style="endArrow=block;html=1;strokeColor=#2980b9;" edge="1" parent="1" source="etl" target="db">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge_archive_storage" value="tar.gz / json.gz" style="endArrow=block;html=1;strokeColor=#2980b9;" edge="1" parent="1" source="archive" target="storage">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge_bg_archive" value="schedule backups" style="endArrow=block;html=1;strokeColor=#d79b00;dashed=1;" edge="1" parent="1" source="background" target="archive">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge_bg_health" value="probe deps" style="endArrow=block;html=1;strokeColor=#d79b00;dashed=1;" edge="1" parent="1" source="background" target="services">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Cluster → Observability -->
+        <mxCell id="edge_metrics_prom" value="scrape /metrics" style="endArrow=block;html=1;strokeColor=#d6b656;" edge="1" parent="1" source="services" target="prom">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_api_prom" value="api_request_*" style="endArrow=block;html=1;strokeColor=#d6b656;dashed=1;" edge="1" parent="1" source="api" target="prom">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_grafana_prom" value="data source" style="endArrow=block;html=1;strokeColor=#d6b656;" edge="1" parent="1" source="grafana" target="prom">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_alertmgr_prom" value="alerts" style="endArrow=block;html=1;strokeColor=#d6b656;" edge="1" parent="1" source="prom" target="alertmgr">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_devops_grafana" value="Dashboards" style="endArrow=block;html=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="devops" target="grafana">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- External services connections -->
+        <mxCell id="edge_orch_llm" value="completion / tool-calls" style="endArrow=block;html=1;strokeColor=#b85496;" edge="1" parent="1" source="orchestrator" target="llm">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge_api_idp" value="OIDC / JWT introspection" style="endArrow=block;html=1;strokeColor=#b85496;" edge="1" parent="1" source="api" target="idp">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge_alertmgr_smtp" value="notify on-call" style="endArrow=block;html=1;strokeColor=#b85496;" edge="1" parent="1" source="alertmgr" target="smtp">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Legends -->
+        <mxCell id="legend" value="Legend&#10;Blue: API/Edge&#10;Green: Orchestration/Tools&#10;Gold: Data/Infra&#10;Purple: Core/Services&#10;Pink: External" style="shape=note;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="40" y="400" width="420" height="120" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

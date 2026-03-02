@@ -1,0 +1,404 @@
+% TODO checklist:
+% - [x] Inspected ops/prometheus/alerts.yml (runbook annotations)
+% - [x] Inspected ops/prometheus/rules/health-alerts.yml (additional alerts)
+% - [x] Inspected src/health/components.py (failure modes and recovery)
+% - [x] Reviewed Q&A.md sections on operational procedures
+% - [x] Reviewed README.md for troubleshooting guidance
+% - [x] Examined ops/backup/ for recovery procedures
+
+\section{Operational Playbooks and Runbooks}
+\label{sec:runbooks}
+
+Effective incident response requires pre-defined procedures that operators can follow during outages and degraded states. This section presents operational playbooks for common scenarios encountered when operating the Cineca Agentic Platform, derived from the alert annotations and system design patterns embedded in the platform.
+
+\subsection{Runbook Structure}
+
+Each runbook follows a consistent structure designed for rapid incident response:
+
+\begin{enumerate}
+    \item \textbf{Symptom}: Observable indicators that trigger the runbook
+    \item \textbf{Impact}: User-facing and system-wide effects
+    \item \textbf{Diagnosis}: Steps to identify root cause
+    \item \textbf{Resolution}: Actions to restore service
+    \item \textbf{Prevention}: Long-term mitigation strategies
+\end{enumerate}
+
+\subsection{Database Unavailability}
+
+\subsubsection{PostgreSQL Down}
+
+\textbf{Symptom}: \texttt{AppInstanceDown} or \texttt{health.postgres} showing ERROR status; API requests returning 503 errors.
+
+\textbf{Impact}: Complete service unavailability---no agent runs, jobs, or administrative operations possible.
+
+\textbf{Diagnosis}:
+\begin{lstlisting}[language=bash, caption={PostgreSQL diagnostic commands}]
+# Check container status
+docker compose ps postgres
+
+# View recent logs
+docker compose logs -f --tail=100 postgres
+
+# Test connectivity from app container
+docker compose exec app python -c "
+from db.postgres_control.database import check_db_health
+print(check_db_health())
+"
+
+# Check PostgreSQL connection count
+docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB \
+    -c "SELECT count(*) FROM pg_stat_activity;"
+\end{lstlisting}
+
+\textbf{Resolution}:
+\begin{enumerate}
+    \item If container stopped: \texttt{docker compose up -d postgres}
+    \item If connection exhaustion: Restart app containers to release connections
+    \item If disk full: Expand volume or clean up old data
+    \item If corrupted: Restore from backup (see Section~\ref{subsec:backup-restore})
+\end{enumerate}
+
+\textbf{Prevention}:
+\begin{itemize}
+    \item Configure connection pooling (PgBouncer)
+    \item Set up automated backups with retention policies
+    \item Monitor disk usage with alerts at 80\% threshold
+\end{itemize}
+
+\subsubsection{Redis Down}
+
+\textbf{Symptom}: \texttt{health.redis} showing ERROR or DEGRADED status; rate limiting, caching, and job queues non-functional.
+
+\textbf{Impact}: 
+\begin{itemize}
+    \item Rate limiting disabled (potential abuse)
+    \item Job processing halted
+    \item Session state lost
+    \item LLM response caching unavailable
+\end{itemize}
+
+\textbf{Diagnosis}:
+\begin{lstlisting}[language=bash, caption={Redis diagnostic commands}]
+# Check container status
+docker compose ps redis
+
+# Test Redis connectivity
+docker compose exec redis redis-cli PING
+
+# Check memory usage
+docker compose exec redis redis-cli INFO memory | grep used_memory
+
+# Check queue depths
+docker compose exec redis redis-cli LLEN jobs:queue:demo
+\end{lstlisting}
+
+\textbf{Resolution}:
+\begin{enumerate}
+    \item If container stopped: \texttt{docker compose up -d redis}
+    \item If OOM killed: Increase memory limits or eviction policy
+    \item If persistence issues: Check AOF/RDB configuration
+    \item Verify \texttt{REDIS\_URL} configuration in app environment
+\end{enumerate}
+
+\textbf{Prevention}:
+\begin{itemize}
+    \item Configure appropriate \texttt{maxmemory} and eviction policies
+    \item Enable Redis persistence (RDB snapshots + AOF)
+    \item Consider Redis Sentinel or Cluster for HA deployments
+\end{itemize}
+
+\subsubsection{Memgraph Issues}
+
+\textbf{Symptom}: \texttt{health.memgraph} showing DEGRADED or ERROR; NL-to-Cypher queries failing or timing out.
+
+\textbf{Impact}: Graph-based Q\&A features unavailable; core API functionality unaffected (Memgraph is informational-only in readiness checks).
+
+\textbf{Diagnosis}:
+\begin{lstlisting}[language=bash, caption={Memgraph diagnostic commands}]
+# Check container status
+docker compose ps memgraph
+
+# Test basic query
+docker compose exec memgraph mgconsole \
+    --host localhost --port 7687 \
+    -c "RETURN 1 AS ok;"
+
+# Check memory usage
+docker compose logs memgraph | grep -i memory
+
+# Verify schema exists
+docker compose exec memgraph mgconsole \
+    -c "CALL schema.node_type_properties() YIELD nodeType, propertyName;"
+\end{lstlisting}
+
+\textbf{Resolution}:
+\begin{enumerate}
+    \item If container stopped: \texttt{docker compose up -d memgraph}
+    \item If query timeout: Check for expensive traversals or missing indexes
+    \item If memory exhaustion: Increase container memory or optimize graph
+    \item Reload graph data if corrupted
+\end{enumerate}
+
+\subsection{LLM Provider Outages}
+
+\textbf{Symptom}: \texttt{health.providers} showing unhealthy providers; \texttt{circuit\_breaker\_state} gauge showing OPEN (1) for affected providers.
+
+\textbf{Impact}: Agent runs using affected provider will fail or fall back to alternative providers.
+
+\textbf{Diagnosis}:
+\begin{lstlisting}[language=bash, caption={Provider health diagnostic commands}]
+# Check provider health via API
+curl -s http://localhost:8000/v1/health/components/providers | jq
+
+# Check circuit breaker state
+curl -s http://localhost:8000/metrics | grep circuit_breaker
+
+# Test provider directly
+curl -s http://localhost:11434/api/tags  # Ollama
+\end{lstlisting}
+
+\textbf{Resolution}:
+\begin{enumerate}
+    \item For Ollama: Check container status and loaded models
+    \item For external providers (OpenAI, Azure): Check provider status pages
+    \item If circuit breaker open: Wait for recovery timeout or manually reset
+    \item Update provider configuration if API keys expired
+\end{enumerate}
+
+\textbf{Prevention}:
+\begin{itemize}
+    \item Configure fallback providers in provider chain
+    \item Monitor provider latency trends for early warning
+    \item Implement budget alerts to avoid quota exhaustion
+\end{itemize}
+
+\subsection{Job Queue Backlog}
+
+\textbf{Symptom}: \texttt{agent\_queue\_depth} or \texttt{job\_queue\_length} gauges elevated; jobs taking longer than expected to start.
+
+\textbf{Impact}: User-facing latency for background operations; potential timeout for long-waiting jobs.
+
+\textbf{Diagnosis}:
+\begin{lstlisting}[language=bash, caption={Job queue diagnostic commands}]
+# Check queue depths
+curl -s http://localhost:8000/v1/health/components/workers | jq
+
+# Check worker status
+docker compose ps jobs-worker
+
+# View worker logs for errors
+docker compose logs -f --tail=100 jobs-worker
+
+# Check job processing rate
+curl -s http://localhost:8000/metrics | grep job_
+\end{lstlisting}
+
+\textbf{Resolution}:
+\begin{enumerate}
+    \item Scale up worker instances: \texttt{docker compose up -d --scale jobs-worker=3}
+    \item Check for stuck jobs consuming worker slots
+    \item Verify Redis connectivity from worker containers
+    \item Cancel stale jobs if appropriate
+\end{enumerate}
+
+\textbf{Prevention}:
+\begin{itemize}
+    \item Configure horizontal pod autoscaler based on queue depth
+    \item Set appropriate job timeouts to prevent worker starvation
+    \item Monitor job completion rate vs. submission rate
+\end{itemize}
+
+\subsection{High Error Rates}
+
+\textbf{Symptom}: \texttt{AppHigh5xxErrorRate} alert firing; HTTP 5xx responses exceeding 5\% threshold.
+
+\textbf{Impact}: User-facing errors; potential cascading failures if clients retry aggressively.
+
+\textbf{Diagnosis}:
+\begin{lstlisting}[language=bash, caption={Error rate diagnostic commands}]
+# Check recent error logs
+docker compose logs -f app 2>&1 | grep -i error
+
+# Query Prometheus for error breakdown
+# (via Grafana or Prometheus UI)
+sum by (path, status) (
+    rate(http_requests_total{status=~"5.."}[5m])
+)
+
+# Check for resource constraints
+docker stats app
+\end{lstlisting}
+
+\textbf{Resolution}:
+\begin{enumerate}
+    \item Identify error pattern from logs (specific endpoint, error type)
+    \item Check recent deployments for regression
+    \item Verify all dependencies are healthy
+    \item Consider rollback if recent deploy caused regression
+    \item Enable degraded mode if partial functionality acceptable
+\end{enumerate}
+
+\subsection{High Latency}
+
+\textbf{Symptom}: \texttt{AppHighLatencyP95} alert firing; P95 latency exceeding 750ms threshold.
+
+\textbf{Impact}: Poor user experience; potential client timeouts; increased resource consumption.
+
+\textbf{Diagnosis}:
+\begin{lstlisting}[language=bash, caption={Latency diagnostic commands}]
+# Check latency breakdown by path
+histogram_quantile(0.95, sum by (path, le) (
+    rate(http_request_duration_seconds_bucket[5m])
+))
+
+# Check LLM call latency
+histogram_quantile(0.95, sum by (provider, le) (
+    rate(llm_call_duration_seconds_bucket[5m])
+))
+
+# Check database latency
+curl -s http://localhost:8000/v1/health/components | \
+    jq '.checks | to_entries[] | select(.value.latency_ms > 100)'
+\end{lstlisting}
+
+\textbf{Resolution}:
+\begin{enumerate}
+    \item Identify slow endpoint or component from metrics
+    \item For LLM latency: Check provider health, consider fallback
+    \item For database latency: Check connection pool, query optimization
+    \item For graph queries: Add indexes, simplify traversals
+    \item Scale resources if load-related
+\end{enumerate}
+
+\subsection{SSE Streaming Issues}
+
+\textbf{Symptom}: \texttt{SSETooManyGaps} alert firing; clients experiencing disconnections or missing events.
+
+\textbf{Impact}: Real-time job progress updates unreliable; clients may show stale status.
+
+\textbf{Diagnosis}:
+\begin{lstlisting}[language=bash, caption={SSE diagnostic commands}]
+# Check active connections
+curl -s http://localhost:8000/metrics | grep sse_connections
+
+# Check gap event rate
+curl -s http://localhost:8000/metrics | grep sse_gap
+
+# Monitor event flow
+docker compose logs -f app | grep -i sse
+\end{lstlisting}
+
+\textbf{Resolution}:
+\begin{enumerate}
+    \item Increase \texttt{SSE\_RING\_SIZE} environment variable
+    \item Check for jobs generating excessive events
+    \item Verify network stability between clients and server
+    \item Consider implementing client-side reconnection with last event ID
+\end{enumerate}
+
+\subsection{Backup and Restore Procedures}
+\label{subsec:backup-restore}
+
+\subsubsection{Memgraph Backup}
+
+\begin{lstlisting}[language=bash, caption={Memgraph backup procedure}]
+# Create graph snapshot
+./ops/backup/backup.sh memgraph
+
+# Verify backup integrity
+./ops/backup/backup.sh verify
+
+# List available backups
+ls -la /backups/memgraph/
+\end{lstlisting}
+
+\subsubsection{Redis Backup}
+
+\begin{lstlisting}[language=bash, caption={Redis backup procedure}]
+# Trigger RDB snapshot
+docker compose exec redis redis-cli BGSAVE
+
+# Copy RDB file
+docker cp $(docker compose ps -q redis):/data/dump.rdb \
+    /backups/redis/dump-$(date +%Y%m%d).rdb
+\end{lstlisting}
+
+\subsubsection{PostgreSQL Backup}
+
+\begin{lstlisting}[language=bash, caption={PostgreSQL backup procedure}]
+# Create logical dump
+docker compose exec postgres pg_dump -U $POSTGRES_USER \
+    -d $POSTGRES_DB -F c -f /backups/pg-$(date +%Y%m%d).dump
+
+# For point-in-time recovery, ensure WAL archiving is configured
+\end{lstlisting}
+
+\subsection{Using Metrics, Logs, and Traces for Triage}
+
+Effective incident triage combines all three observability pillars:
+
+\begin{enumerate}
+    \item \textbf{Start with Metrics}: Use Grafana dashboards to identify anomalies in request rate, error rate, or latency. Metrics provide the ``what'' and ``when.''
+    
+    \item \textbf{Correlate with Logs}: Use the \texttt{request\_id} from metrics or user reports to search structured logs. Logs provide the ``why.''
+    
+    \item \textbf{Trace Deep Dives}: For complex issues spanning multiple components, use the \texttt{trace\_id} to visualize the full request path in Jaeger/Tempo. Traces show the ``where.''
+\end{enumerate}
+
+\begin{lstlisting}[language=bash, caption={Cross-pillar correlation example}]
+# Find request ID from user report or metrics spike
+REQUEST_ID="a1b2c3d4"
+
+# Search logs for this request
+docker compose logs app | grep $REQUEST_ID
+
+# Find trace ID from log entry
+TRACE_ID="00000000000000001234567890abcdef"
+
+# Open trace in Jaeger
+open "http://jaeger:16686/trace/$TRACE_ID"
+\end{lstlisting}
+
+\subsection{Incident Communication Template}
+
+For significant incidents, use a structured communication template:
+
+\begin{lstlisting}[language=text, caption={Incident communication template}]
+INCIDENT: [Brief Description]
+STATUS: Investigating | Identified | Monitoring | Resolved
+SEVERITY: Critical | High | Medium | Low
+IMPACT: [User-facing effects]
+START TIME: [ISO timestamp]
+CURRENT STATUS: [What we know now]
+NEXT UPDATE: [Expected time]
+ACTIONS TAKEN:
+  - [Action 1]
+  - [Action 2]
+ROOT CAUSE: [When known]
+PREVENTION: [Post-incident actions planned]
+\end{lstlisting}
+
+\subsection{Operational Health Checks}
+
+Regular operational health checks help prevent incidents:
+
+\begin{table}[ht]
+\centering
+\caption{Recommended operational health check schedule.}
+\label{tab:health-checks}
+\begin{tabular}{llp{6cm}}
+\hline
+\textbf{Check} & \textbf{Frequency} & \textbf{Action} \\
+\hline
+Dashboard review & Daily & Review key metrics for anomalies \\
+Backup verification & Weekly & Test restore procedures \\
+Certificate expiry & Monthly & Renew certificates before expiry \\
+Dependency updates & Monthly & Review and apply security patches \\
+Capacity planning & Quarterly & Review resource utilization trends \\
+DR drill & Quarterly & Test disaster recovery procedures \\
+\hline
+\end{tabular}
+\end{table}
+
+The \texttt{ops/backup/dr-drill.sh} script provides an automated disaster recovery drill that validates backup integrity and restore procedures without impacting production data.
+

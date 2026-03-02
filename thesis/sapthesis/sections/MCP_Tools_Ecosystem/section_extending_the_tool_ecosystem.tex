@@ -1,0 +1,615 @@
+% TODO checklist:
+% - [x] Inspected src/mcp/tools/__init__.py for discovery mechanism
+% - [x] Inspected src/mcp/runtime.py for @mcp_tool decorator
+% - [x] Inspected Q&A.md Q45 for extensibility guide with difficulty ratings
+% - [x] Inspected existing tool implementations for patterns
+% - [x] Inspected tests/mcp/tools/ for tool testing patterns
+% - [x] Cross-referenced with sapthesis-doc.tex subsection on Extensibility Guide
+
+\section{Extending the Tool Ecosystem}
+\label{sec:tool-extension}
+
+One of the key design goals of the MCP tools ecosystem is extensibility. The platform provides a well-defined pattern for adding new tools, integrating additional LLM providers, and extending functionality at various layers. This section documents the extension mechanisms and provides practical guidance for developers.
+
+\subsection{The \texttt{@mcp\_tool} Decorator}
+\label{subsec:mcp-tool-decorator-usage}
+
+The \texttt{@mcp\_tool} decorator is the primary mechanism for creating new tools. It wraps tool implementations with the runtime scaffolding described in Section~\ref{sec:mcp-runtime}, including authorization, audit logging, telemetry, and error handling.
+
+\subsubsection{Decorator Parameters}
+
+The decorator accepts the following parameters:
+
+\begin{table}[htbp]
+    \centering
+    \caption{Parameters of the @mcp\_tool decorator}
+    \label{tab:mcp-tool-params}
+    \begin{tabularx}{\textwidth}{llX}
+        \toprule
+        \textbf{Parameter} & \textbf{Type} & \textbf{Description} \\
+        \midrule
+        \texttt{tool\_name} & \texttt{str} & MCP tool name (e.g., ``graph.query''). Must match the module path. \\
+        \texttt{required\_scope} & \texttt{str | None} & Required authorization scope. If \texttt{None}, tool is public. \\
+        \texttt{rate\_limit} & \texttt{int | None} & Maximum invocations per rate window. If \texttt{None}, no limit. \\
+        \texttt{rate\_window} & \texttt{int} & Rate limit window in seconds (default: 60). \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\subsubsection{Basic Usage}
+
+\begin{lstlisting}[language=Python, caption={Basic @mcp\_tool decorator usage}, label={lst:mcp-tool-basic}]
+from src.mcp.runtime import ToolContext, mcp_tool
+
+@mcp_tool(
+    tool_name="custom.my_tool",
+    required_scope="tools:basic",
+    rate_limit=100,
+    rate_window=60,
+)
+async def invoke(
+    ctx: ToolContext,
+    payload: dict,
+    **kwargs
+) -> dict[str, Any]:
+    """Tool implementation."""
+    action = payload.get("action", "default")
+    
+    if action == "do_something":
+        result = await _do_something(payload)
+        return {"ok": True, "action": action, "result": result}
+    
+    raise ValueError(f"Unknown action: {action}")
+\end{lstlisting}
+
+\subsection{Adding New Tools}
+\label{subsec:adding-new-tools}
+
+Adding a new tool to the ecosystem is straightforward and requires minimal boilerplate.
+
+\subsubsection{Step-by-Step Guide}
+
+\paragraph{Step 1: Create the Tool Module.}
+Create a new Python file at the appropriate location under \texttt{src/mcp/tools/}. The module path determines the tool name:
+
+\begin{lstlisting}[language=bash, caption={Tool module location determines tool name}, label={lst:tool-location}]
+# For tool name "custom.my_tool":
+src/mcp/tools/custom/my_tool.py
+
+# For tool name "graph.new_feature":
+src/mcp/tools/graph/new_feature.py
+\end{lstlisting}
+
+\paragraph{Step 2: Define the Payload Schema.}
+Create a Pydantic model for input validation:
+
+\begin{lstlisting}[language=Python, caption={Tool payload schema definition}, label={lst:tool-schema}]
+from pydantic import BaseModel, Field
+from typing import Any, Literal
+
+class MyToolPayload(BaseModel):
+    """Input schema for custom.my_tool."""
+    action: Literal["process", "analyze", "export"] = "process"
+    data: dict[str, Any] = Field(default_factory=dict)
+    options: dict[str, Any] | None = None
+    limit: int = Field(default=100, ge=1, le=10000)
+    timeout_ms: int | None = Field(default=None, ge=100, le=300000)
+\end{lstlisting}
+
+\paragraph{Step 3: Implement the Tool.}
+Implement the tool following the standard patterns:
+
+\begin{lstlisting}[language=Python, caption={Complete tool implementation}, label={lst:tool-implementation}]
+"""
+MCP Tool: custom.my_tool
+
+Description of what this tool does and when to use it.
+
+Actions:
+- process: Process input data
+- analyze: Analyze data patterns
+- export: Export results in various formats
+"""
+
+from __future__ import annotations
+
+from contextlib import suppress
+from typing import Any
+
+from pydantic import BaseModel, Field
+
+# Import MCP runtime
+from src.mcp.runtime import ToolContext, mcp_tool, validate_payload
+
+# Import logging
+with suppress(Exception):
+    from src.logging_setup import get_logger
+    logger = get_logger(__name__)
+if "logger" not in globals():
+    import logging
+    logger = logging.getLogger(__name__)
+
+
+# --- Payload Schema ---
+class MyToolPayload(BaseModel):
+    action: str = "process"
+    data: dict[str, Any] = Field(default_factory=dict)
+    limit: int = Field(default=100, ge=1, le=10000)
+
+
+# --- Action Implementations ---
+def _act_process(payload: MyToolPayload, ctx: ToolContext) -> dict[str, Any]:
+    """Process action implementation."""
+    # Check timeout periodically for long operations
+    ctx.check_timeout()
+    
+    result = {"processed": len(payload.data), "items": []}
+    # ... processing logic ...
+    
+    return {
+        "ok": True,
+        "action": "process",
+        "result": result,
+        "item_count": len(result["items"]),
+    }
+
+
+def _act_analyze(payload: MyToolPayload, ctx: ToolContext) -> dict[str, Any]:
+    """Analyze action implementation."""
+    ctx.check_timeout()
+    
+    analysis = {"patterns": [], "statistics": {}}
+    # ... analysis logic ...
+    
+    return {
+        "ok": True,
+        "action": "analyze",
+        "analysis": analysis,
+    }
+
+
+def _act_export(payload: MyToolPayload, ctx: ToolContext) -> dict[str, Any]:
+    """Export action implementation."""
+    return {
+        "ok": True,
+        "action": "export",
+        "format": "json",
+        "data": payload.data,
+    }
+
+
+# --- Tool Entry Point ---
+@mcp_tool(
+    tool_name="custom.my_tool",
+    required_scope="tools:basic",
+    rate_limit=60,
+)
+def invoke(payload: dict[str, Any] | None = None, **kwargs) -> dict[str, Any]:
+    """
+    Entry point for custom.my_tool.
+    
+    Routes to action-specific implementations based on payload.action.
+    """
+    # Extract context
+    ctx = kwargs.get("ctx") or ToolContext(tool="custom.my_tool", action="unknown")
+    
+    # Validate payload
+    validated = validate_payload(payload, MyToolPayload)
+    ctx.action = validated.action
+    
+    # Route to action handler
+    action_handlers = {
+        "process": _act_process,
+        "analyze": _act_analyze,
+        "export": _act_export,
+    }
+    
+    handler = action_handlers.get(validated.action)
+    if not handler:
+        raise ValueError(f"Unknown action: {validated.action}")
+    
+    return handler(validated, ctx)
+\end{lstlisting}
+
+\paragraph{Step 4: Add Unit Tests.}
+Create tests in \texttt{tests/mcp/tools/}:
+
+\begin{lstlisting}[language=Python, caption={Tool test implementation}, label={lst:tool-tests}]
+# tests/mcp/tools/test_custom_my_tool.py
+
+import pytest
+from src.mcp.tools.custom.my_tool import invoke, MyToolPayload
+from src.mcp.runtime import ToolContext
+
+
+@pytest.mark.unit
+def test_process_action():
+    """Test the process action."""
+    result = invoke(
+        {"action": "process", "data": {"key": "value"}},
+        ctx=ToolContext(tool="custom.my_tool", action="process")
+    )
+    assert result["ok"] is True
+    assert result["action"] == "process"
+
+
+@pytest.mark.unit
+def test_unknown_action_raises():
+    """Unknown action should raise ValueError."""
+    with pytest.raises(ValueError, match="Unknown action"):
+        invoke({"action": "invalid"})
+
+
+@pytest.mark.unit
+def test_payload_validation():
+    """Invalid payload should raise ValidationError."""
+    with pytest.raises(Exception):  # ValidationError_
+        invoke({"limit": -1})  # limit must be >= 1
+\end{lstlisting}
+
+\paragraph{Step 5: Verify Auto-Registration.}
+The tool is automatically discovered and registered. Verify with:
+
+\begin{lstlisting}[language=Python, caption={Verifying tool auto-registration}, label={lst:verify-registration}]
+from src.mcp.tools import list_tools, discover
+
+# Check tool appears in list
+tools = list_tools()
+assert "custom.my_tool" in tools
+
+# Check discovery returns full spec
+specs = discover()
+my_spec = next(s for s in specs if s.name == "custom.my_tool")
+assert my_spec.callable_name == "invoke"
+\end{lstlisting}
+
+\subsection{Extensibility Guide with Difficulty Ratings}
+\label{subsec:extensibility-guide}
+
+Table~\ref{tab:extensibility-difficulty} summarizes the difficulty and effort required for common extension tasks.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Extensibility difficulty ratings for common tasks}
+    \label{tab:extensibility-difficulty}
+    \begin{tabularx}{\textwidth}{lccX}
+        \toprule
+        \textbf{Extension Type} & \textbf{Difficulty} & \textbf{Files} & \textbf{Key Steps} \\
+        \midrule
+        Add new MCP tool & Low & 1--2 & Create module, add tests, auto-registers \\
+        Add new LLM provider & Medium & 2--3 & Add adapter, circuit breaker config, health probe \\
+        Add new API endpoint & Medium & 2--3 & Create router, schemas, register in app.py \\
+        Add new background job & Medium-High & 3--4 & Job handler, worker logic, SSE events \\
+        Full feature extension & High & 5+ & Multiple layers, possibly migrations \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\subsubsection{Adding a New LLM Provider}
+
+Difficulty: \textbf{Medium}
+
+\paragraph{Step 1: Add Provider Type.}
+Add the provider to the Provider model:
+
+\begin{lstlisting}[language=Python, caption={Adding provider type to model}, label={lst:add-provider}]
+# db/postgres_control/models/provider.py
+class ProviderType(str, Enum):
+    OPENAI = "openai"
+    OLLAMA = "ollama"
+    AZURE = "azure"
+    ANTHROPIC = "anthropic"  # New provider
+\end{lstlisting}
+
+\paragraph{Step 2: Implement Adapter.}
+Create adapter in \texttt{src/adapters/}:
+
+\begin{lstlisting}[language=Python, caption={LLM provider adapter implementation}, label={lst:provider-adapter}]
+# src/adapters/llm_anthropic.py
+
+import anthropic
+from src.config import settings
+from src.resilience.circuit import CircuitBreaker
+
+_circuit = CircuitBreaker(name="anthropic", failure_threshold=3)
+
+def complete(
+    prompt: str,
+    model: str = "claude-3-opus-20240229",
+    temperature: float = 0.7,
+    max_tokens: int = 1000,
+    **kwargs
+) -> dict:
+    """Anthropic completion via Claude API."""
+    with _circuit:
+        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        response = client.messages.create(
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return {
+            "ok": True,
+            "content": response.content[0].text,
+            "model": model,
+            "tokens": response.usage.output_tokens,
+        }
+\end{lstlisting}
+
+\paragraph{Step 3: Add Health Probe.}
+Register health probe for the provider:
+
+\begin{lstlisting}[language=Python, caption={Provider health probe}, label={lst:provider-health}]
+# src/health/components.py
+
+async def probe_anthropic() -> ComponentCheck:
+    """Check Anthropic API connectivity."""
+    try:
+        from src.adapters.llm_anthropic import complete
+        result = complete("test", max_tokens=5)
+        return ComponentCheck(ok=True, status=ComponentStatus.OK)
+    except Exception as e:
+        return ComponentCheck(ok=False, status=ComponentStatus.ERROR, details={"error": str(e)})
+\end{lstlisting}
+
+\subsubsection{Adding a New API Endpoint}
+
+Difficulty: \textbf{Medium}
+
+\paragraph{Step 1: Create Schemas.}
+
+\begin{lstlisting}[language=Python, caption={API endpoint schemas}, label={lst:endpoint-schemas}]
+# src/schemas/custom.py
+
+from pydantic import BaseModel, Field
+
+class CustomRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    value: int = Field(..., ge=0)
+
+class CustomResponse(BaseModel):
+    id: str
+    name: str
+    value: int
+    created_at: str
+\end{lstlisting}
+
+\paragraph{Step 2: Create Router.}
+
+\begin{lstlisting}[language=Python, caption={API router implementation}, label={lst:endpoint-router}]
+# src/routers/custom.py
+
+from fastapi import APIRouter, Depends, HTTPException
+from src.schemas.custom import CustomRequest, CustomResponse
+from src.security.deps import get_current_user
+
+router = APIRouter(prefix="/v1/custom", tags=["custom"])
+
+@router.post("/", response_model=CustomResponse, status_code=201)
+async def create_custom(
+    request: CustomRequest,
+    user = Depends(get_current_user),
+):
+    """Create a new custom resource."""
+    # Implementation...
+    return CustomResponse(
+        id="custom_123",
+        name=request.name,
+        value=request.value,
+        created_at="2025-01-15T10:00:00Z"
+    )
+\end{lstlisting}
+
+\paragraph{Step 3: Register Router.}
+
+\begin{lstlisting}[language=Python, caption={Registering router in app.py}, label={lst:register-router}]
+# src/app.py
+
+from src.routers import custom
+
+def create_app() -> FastAPI:
+    app = FastAPI(...)
+    # ... other routers ...
+    app.include_router(custom.router)
+    return app
+\end{lstlisting}
+
+\subsubsection{Adding a New Background Job Type}
+
+Difficulty: \textbf{Medium-High}
+
+\paragraph{Step 1: Define Job Handler.}
+
+\begin{lstlisting}[language=Python, caption={Background job handler}, label={lst:job-handler}]
+# src/jobs/handlers/custom_job.py
+
+async def handle_custom_job(
+    job_id: str,
+    payload: dict,
+    emit_event: Callable,
+) -> dict:
+    """Handler for custom job type."""
+    total_steps = payload.get("steps", 10)
+    
+    for i in range(total_steps):
+        # Check cancellation
+        if await is_cancelled(job_id):
+            raise asyncio.CancelledError("Job cancelled")
+        
+        # Do work
+        await process_step(i, payload)
+        
+        # Emit progress event
+        emit_event("progress", {
+            "step": i + 1,
+            "total": total_steps,
+            "percent": ((i + 1) / total_steps) * 100
+        })
+    
+    return {"status": "completed", "steps_processed": total_steps}
+\end{lstlisting}
+
+\paragraph{Step 2: Register Handler.}
+
+\begin{lstlisting}[language=Python, caption={Registering job handler}, label={lst:register-handler}]
+# src/workers/jobs_worker.py
+
+JOB_HANDLERS = {
+    "demo": handle_demo_job,
+    "test": handle_test_job,
+    "custom": handle_custom_job,  # New handler
+}
+\end{lstlisting}
+
+\subsection{Testing Tools}
+\label{subsec:testing-tools}
+
+Tools should be tested at multiple levels: unit tests, integration tests, and security tests.
+
+\subsubsection{Unit Tests}
+
+Unit tests verify individual action implementations in isolation:
+
+\begin{lstlisting}[language=Python, caption={Unit test structure for tools}, label={lst:unit-test-structure}]
+@pytest.mark.unit
+class TestMyToolActions:
+    """Unit tests for my_tool action implementations."""
+    
+    def test_process_empty_data(self):
+        """Process with empty data returns empty result."""
+        result = _act_process(
+            MyToolPayload(action="process", data={}),
+            ToolContext(tool="custom.my_tool", action="process")
+        )
+        assert result["ok"]
+        assert result["item_count"] == 0
+    
+    def test_process_with_data(self):
+        """Process with data returns processed items."""
+        result = _act_process(
+            MyToolPayload(action="process", data={"items": [1, 2, 3]}),
+            ToolContext(tool="custom.my_tool", action="process")
+        )
+        assert result["ok"]
+        assert result["item_count"] == 3
+\end{lstlisting}
+
+\subsubsection{Integration Tests}
+
+Integration tests verify tool behavior with real or simulated dependencies:
+
+\begin{lstlisting}[language=Python, caption={Integration test for tool with database}, label={lst:integration-test}]
+@pytest.mark.integration
+class TestMyToolIntegration:
+    """Integration tests for my_tool with database."""
+    
+    @pytest.fixture
+    def db_session(self):
+        """Provide isolated database session."""
+        # Setup...
+        yield session
+        session.rollback()
+    
+    def test_export_to_database(self, db_session):
+        """Export action persists data correctly."""
+        result = invoke(
+            {"action": "export", "data": {"key": "value"}},
+            ctx=ToolContext(tool="custom.my_tool", action="export"),
+            db=db_session,
+        )
+        assert result["ok"]
+        # Verify persistence...
+\end{lstlisting}
+
+\subsubsection{Security Tests}
+
+Security tests verify authorization and tenant isolation:
+
+\begin{lstlisting}[language=Python, caption={Security tests for tool authorization}, label={lst:security-tests}]
+@pytest.mark.security
+class TestMyToolSecurity:
+    """Security tests for my_tool authorization."""
+    
+    def test_requires_scope(self):
+        """Tool requires tools:basic scope."""
+        # Principal without required scope
+        ctx = ToolContext(
+            tool="custom.my_tool",
+            action="process",
+            principal={"sub": "user_1", "scopes": []}
+        )
+        with pytest.raises(PermissionError_):
+            invoke({"action": "process"}, ctx=ctx)
+    
+    def test_tenant_isolation(self):
+        """Tool respects tenant boundaries."""
+        # Principal from different tenant
+        ctx = ToolContext(
+            tool="custom.my_tool",
+            action="process",
+            principal={"sub": "user_1", "scopes": ["tools:basic"], "tenant_id": "tenant_a"},
+            tenant="tenant_b"
+        )
+        with pytest.raises(PermissionError_, match="Tenant mismatch"):
+            invoke({"action": "process"}, ctx=ctx)
+\end{lstlisting}
+
+\subsection{Best Practices}
+\label{subsec:tool-best-practices}
+
+When extending the tool ecosystem, follow these best practices:
+
+\paragraph{Naming Conventions.}
+\begin{itemize}
+    \item Use lowercase with underscores for module names: \texttt{my\_tool.py}
+    \item Use dot notation for tool names: \texttt{category.tool\_name}
+    \item Match module path to tool name exactly
+\end{itemize}
+
+\paragraph{Action Design.}
+\begin{itemize}
+    \item Use verbs for action names: \texttt{create}, \texttt{read}, \texttt{process}
+    \item Provide a sensible default action
+    \item Keep actions focused on single responsibilities
+\end{itemize}
+
+\paragraph{Error Handling.}
+\begin{itemize}
+    \item Raise \texttt{ValidationError\_} for input errors
+    \item Raise \texttt{ToolError} for operational errors
+    \item Never expose internal details in error messages
+    \item Always include error codes for machine parsing
+\end{itemize}
+
+\paragraph{Performance.}
+\begin{itemize}
+    \item Check timeouts periodically in long operations
+    \item Implement pagination for large result sets
+    \item Use streaming for very large responses
+    \item Cache expensive computations appropriately
+\end{itemize}
+
+\paragraph{Testing.}
+\begin{itemize}
+    \item Write unit tests for each action
+    \item Include security tests for authorization
+    \item Test edge cases and error conditions
+    \item Use fixtures for test isolation
+\end{itemize}
+
+\subsection{Summary}
+\label{subsec:extension-summary}
+
+The MCP tools ecosystem is designed for extensibility:
+
+\begin{itemize}
+    \item \textbf{Low-friction tool creation}: Single-file tools with decorator-based registration.
+    \item \textbf{Consistent patterns}: All tools follow the same structure and conventions.
+    \item \textbf{Automatic discovery}: No manual registration required---tools are discovered by convention.
+    \item \textbf{Comprehensive testing}: Unit, integration, and security test patterns are established.
+    \item \textbf{Clear difficulty levels}: Extensions range from low (new tool) to high (full feature).
+    \item \textbf{Best practices}: Documented conventions ensure maintainability.
+\end{itemize}
+
+This extensibility enables the platform to evolve with new requirements while maintaining the governance and observability guarantees of the core framework.

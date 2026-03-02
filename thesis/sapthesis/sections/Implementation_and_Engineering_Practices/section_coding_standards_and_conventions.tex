@@ -1,0 +1,500 @@
+% TODO checklist:
+% - [x] Inspected pyproject.toml for ruff, black, mypy configurations
+% - [x] Inspected src/logging_setup.py for logging conventions
+% - [x] Inspected src/errors/ for error handling patterns
+% - [x] Reviewed src/routers/ for API error response patterns
+% - [x] Referenced Q&A.md Q46 for technical debt and coding issues
+% - [x] Inspected src/utils/ for utility patterns
+% - [x] Reviewed README.md for project conventions
+
+\section{Coding Standards and Conventions}
+\label{sec:coding-standards}
+
+The Cineca Agentic Platform enforces consistent coding standards across the codebase through automated tooling and established conventions. This section documents the naming conventions, error handling patterns, logging standards, and typing conventions employed throughout the project.
+
+\subsection{Code Formatting and Style}
+
+The project uses automated formatting tools configured in \texttt{pyproject.toml} to ensure consistent code style.
+
+\subsubsection{Black Code Formatter}
+
+Black is configured as the primary code formatter with the following settings:
+
+\begin{lstlisting}[language=Python, caption={Black configuration from \texttt{pyproject.toml}.}]
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311"]
+include = "\\.pyi?$"
+extend-exclude = """
+/(
+  docs|examples|ops|db/original-dataset|db/populated
+)/
+"""
+\end{lstlisting}
+
+\subsubsection{Ruff Linting}
+
+Ruff serves as the unified linter and import sorter, replacing flake8, isort, and pylint:
+
+\begin{lstlisting}[language=Python, caption={Ruff lint rules configuration.}]
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # warnings
+    "I",   # isort import ordering
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "A",   # flake8-builtins
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "PTH", # flake8-use-pathlib
+    "RUF", # ruff-specific rules
+    "PL",  # pylint-like checks
+]
+ignore = ["E501"]  # Line length handled by black
+\end{lstlisting}
+
+\subsection{Naming Conventions}
+
+The codebase follows Python PEP 8 naming conventions with domain-specific extensions.
+
+\subsubsection{Module and Package Naming}
+
+\begin{table}[ht]
+\centering
+\caption{Module naming conventions by type.}
+\label{tab:module-naming}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Module Type} & \textbf{Convention} & \textbf{Example} \\
+\hline
+Router modules & \texttt{snake\_case.py} & \texttt{agent\_runs.py}, \texttt{admin\_db.py} \\
+Service modules & \texttt{<domain>\_service.py} or \texttt{<domain>.py} & \texttt{jobs\_service.py} \\
+Repository modules & \texttt{<domain>\_repo.py} & \texttt{provider\_repo.py} \\
+Model modules & \texttt{snake\_case.py} & \texttt{agent\_run.py} \\
+Test modules & \texttt{test\_<module>.py} & \texttt{test\_agents.py} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Class and Function Naming}
+
+\begin{table}[ht]
+\centering
+\caption{Class and function naming conventions.}
+\label{tab:class-naming}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Element} & \textbf{Convention} & \textbf{Example} \\
+\hline
+Classes & \texttt{PascalCase} & \texttt{AgentRunRepository} \\
+Functions & \texttt{snake\_case} & \texttt{create\_agent\_run()} \\
+Private functions & \texttt{\_snake\_case} & \texttt{\_validate\_input()} \\
+Constants & \texttt{UPPER\_SNAKE\_CASE} & \texttt{MAX\_STEPS} \\
+Type aliases & \texttt{PascalCase} & \texttt{RunResult} \\
+FastAPI dependencies & \texttt{get\_<resource>} & \texttt{get\_current\_user()} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{MCP Tool Naming}
+
+MCP tools follow a hierarchical naming convention:
+
+\begin{lstlisting}[language=Python, caption={MCP tool naming pattern.}]
+# Tool names: <category>.<action>
+# Examples:
+#   graph.query      - Execute graph queries
+#   graph.schema     - Retrieve graph schema
+#   security.check   - Validate security constraints
+#   system.health    - Component health status
+
+# File location: src/mcp/tools/<category>/<action>.py
+# Example: src/mcp/tools/graph/query.py
+\end{lstlisting}
+
+\subsection{Error Handling Patterns}
+
+The platform implements structured error handling following the RFC 7807 Problem Details specification.
+
+\subsubsection{Problem Details Response Format}
+
+All API error responses follow the RFC 7807 standard:
+
+\begin{lstlisting}[language=Python, caption={RFC 7807 Problem Details implementation.}]
+from pydantic import BaseModel
+
+class ProblemDetail(BaseModel):
+    """RFC 7807 Problem Details response."""
+    type: str = "about:blank"  # URI reference
+    title: str                  # Human-readable summary
+    status: int                 # HTTP status code
+    detail: str | None = None   # Human-readable explanation
+    instance: str | None = None # URI reference to specific occurrence
+    
+    # Extension fields
+    error_code: str | None = None  # Internal error code
+    trace_id: str | None = None    # Request trace identifier
+
+# Example error response:
+{
+    "type": "https://api.cineca.it/errors/validation",
+    "title": "Validation Error",
+    "status": 422,
+    "detail": "Field 'prompt' is required",
+    "instance": "/v1/agent-runs",
+    "error_code": "VALIDATION_ERROR",
+    "trace_id": "abc123..."
+}
+\end{lstlisting}
+
+\subsubsection{HTTP Exception Handling}
+
+Standard HTTP exceptions are raised and handled consistently:
+
+\begin{lstlisting}[language=Python, caption={HTTP exception raising patterns.}]
+from fastapi import HTTPException, status
+
+# Authentication error
+raise HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Invalid or expired token",
+    headers={"WWW-Authenticate": "Bearer"}
+)
+
+# Authorization error
+raise HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail=f"Scope '{required_scope}' required"
+)
+
+# Not found
+raise HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail=f"Resource '{resource_id}' not found"
+)
+
+# Conflict (idempotency)
+raise HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail="Request with this idempotency key already processed"
+)
+\end{lstlisting}
+
+\subsubsection{Result Pattern for Service Methods}
+
+Service methods often use a Result pattern for explicit error handling:
+
+\begin{lstlisting}[language=Python, caption={Result pattern for service methods.}]
+from dataclasses import dataclass
+from typing import Generic, TypeVar
+
+T = TypeVar("T")
+
+@dataclass
+class Result(Generic[T]):
+    """Result container for service operations."""
+    ok: bool
+    data: T | None = None
+    error: str | None = None
+    error_code: str | None = None
+    
+    @classmethod
+    def success(cls, data: T) -> "Result[T]":
+        return cls(ok=True, data=data)
+    
+    @classmethod
+    def failure(cls, error: str, error_code: str | None = None) -> "Result[T]":
+        return cls(ok=False, error=error, error_code=error_code)
+
+# Usage in services:
+async def execute_query(self, cypher: str) -> Result[list[dict]]:
+    try:
+        results = await self._adapter.execute(cypher)
+        return Result.success(results)
+    except ValidationError as e:
+        return Result.failure(str(e), "VALIDATION_ERROR")
+    except TimeoutError:
+        return Result.failure("Query timeout", "TIMEOUT")
+\end{lstlisting}
+
+\subsection{Logging Conventions}
+
+The platform uses structlog for structured JSON logging with consistent patterns.
+
+\subsubsection{Logger Configuration}
+
+\begin{lstlisting}[language=Python, caption={Structlog configuration from \texttt{src/logging\_setup.py}.}]
+import structlog
+
+def setup_logging(level: str = "INFO") -> None:
+    """Initialize structlog with JSON output for production."""
+    
+    structlog.configure(
+        processors=[
+            structlog.stdlib.filter_by_level,
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.add_logger_name,
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        cache_logger_on_first_use=True,
+        wrapper_class=structlog.stdlib.BoundLogger,
+    )
+\end{lstlisting}
+
+\subsubsection{Log Event Naming}
+
+Log events follow a hierarchical dot-notation naming convention:
+
+\begin{lstlisting}[language=Python, caption={Log event naming conventions.}]
+import structlog
+
+log = structlog.get_logger(__name__)
+
+# Event naming: <component>.<action>.<outcome>
+log.info("agent.run.started", run_id=run_id, prompt_length=len(prompt))
+log.info("agent.run.completed", run_id=run_id, steps=step_count)
+log.warning("agent.run.timeout", run_id=run_id, elapsed_ms=elapsed)
+log.error("agent.run.failed", run_id=run_id, error=str(e))
+
+# Component prefixes:
+# - agent.*     : Agent orchestration events
+# - job.*       : Background job events
+# - tool.*      : MCP tool invocation events
+# - security.*  : Authentication/authorization events
+# - health.*    : Health probe events
+# - provider.*  : LLM provider events
+\end{lstlisting}
+
+\subsubsection{Context Binding}
+
+Request context is bound to logs for correlation:
+
+\begin{lstlisting}[language=Python, caption={Log context binding pattern.}]
+from structlog.contextvars import bind_contextvars, unbind_contextvars
+
+# In middleware:
+async def dispatch(self, request: Request, call_next):
+    request_id = request.headers.get("x-request-id") or uuid.uuid4().hex
+    
+    # Bind context for all logs in this request
+    bind_contextvars(
+        request_id=request_id,
+        method=request.method,
+        path=request.url.path,
+        tenant_id=request.headers.get("x-tenant-id"),
+    )
+    
+    try:
+        response = await call_next(request)
+        return response
+    finally:
+        unbind_contextvars("request_id", "method", "path", "tenant_id")
+\end{lstlisting}
+
+\subsection{Type Annotations and Mypy}
+
+The codebase uses comprehensive type annotations enforced by mypy:
+
+\begin{lstlisting}[language=Python, caption={Mypy configuration from \texttt{pyproject.toml}.}]
+[tool.mypy]
+python_version = "3.11"
+plugins = ["pydantic.mypy"]
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+strict_equality = true
+ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+warn_required_dynamic_aliases = true
+init_typed = true
+\end{lstlisting}
+
+\subsubsection{Type Annotation Patterns}
+
+\begin{lstlisting}[language=Python, caption={Type annotation examples from the codebase.}]
+from typing import Any, TypeVar, Generic
+from collections.abc import Callable, Awaitable
+from pydantic import BaseModel
+
+# Function signatures with full annotations
+async def create_run(
+    prompt: str,
+    session_id: str | None = None,
+    model_id: str | None = None,
+    temperature: float = 0.7,
+    max_steps: int = 10,
+) -> AgentRunResult:
+    """Create and execute an agent run."""
+    ...
+
+# Generic type variables
+T = TypeVar("T", bound=BaseModel)
+
+class Repository(Generic[T]):
+    """Generic repository base class."""
+    
+    def get(self, id: str) -> T | None: ...
+    def list(self, filters: dict[str, Any]) -> list[T]: ...
+    def create(self, data: T) -> T: ...
+
+# Callback types
+ToolHandler = Callable[[dict[str, Any], "ToolContext"], Awaitable[dict[str, Any]]]
+\end{lstlisting}
+
+\subsection{API Response Conventions}
+
+API responses follow consistent patterns for pagination, filtering, and metadata.
+
+\subsubsection{List Response Pattern}
+
+\begin{lstlisting}[language=Python, caption={Paginated list response pattern.}]
+from pydantic import BaseModel, Field
+
+class PagedResponse(BaseModel, Generic[T]):
+    """Standard paginated response wrapper."""
+    items: list[T]
+    next_page_token: str | None = None
+    total_count: int | None = None
+
+# Endpoint example:
+@router.get("/agent-runs", response_model=PagedResponse[AgentRunSummary])
+async def list_runs(
+    page_size: int = Query(default=50, ge=1, le=100),
+    page_token: str | None = Query(default=None),
+    status: str | None = Query(default=None),
+) -> PagedResponse[AgentRunSummary]:
+    """List agent runs with pagination."""
+    ...
+\end{lstlisting}
+
+\subsubsection{Single Resource Response}
+
+\begin{lstlisting}[language=Python, caption={Single resource response with metadata.}]
+class ResourceResponse(BaseModel, Generic[T]):
+    """Single resource with operational metadata."""
+    data: T
+    _links: dict[str, str] | None = Field(default=None, alias="links")
+    _meta: dict[str, Any] | None = Field(default=None, alias="meta")
+
+# Response headers include:
+# - ETag: "abc123" for caching
+# - X-Request-ID: correlation identifier
+# - X-Trace-Id: distributed trace ID
+\end{lstlisting}
+
+\subsection{Configuration Conventions}
+
+Configuration follows the Twelve-Factor App methodology with environment variables:
+
+\begin{lstlisting}[language=Python, caption={Configuration conventions from \texttt{src/config.py}.}]
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
+
+class Settings(BaseSettings):
+    """Application configuration from environment variables."""
+    
+    # Naming: UPPER_SNAKE_CASE matching env vars
+    APP_ENV: str = Field(default="dev")
+    APP_HOST: str = Field(default="0.0.0.0")
+    APP_PORT: int = Field(default=8000)
+    
+    # Grouped by concern with prefixes:
+    # DB_* for database settings
+    DB_HOST: str = Field(default="postgres")
+    DB_PORT: int = Field(default=5432)
+    
+    # REDIS_* for cache settings
+    REDIS_URL: str = Field(default="redis://redis:6379/0")
+    
+    # OIDC_* for authentication
+    OIDC_ISSUER: str | None = Field(default=None)
+    
+    # Settings configuration
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="allow",
+    )
+\end{lstlisting}
+
+\subsection{Documentation Conventions}
+
+Code documentation follows Google-style docstrings:
+
+\begin{lstlisting}[language=Python, caption={Docstring conventions.}]
+async def execute_run(
+    self,
+    prompt: str,
+    options: RunOptions | None = None,
+) -> AgentRunResult:
+    """Execute an agent run with the given prompt.
+    
+    This method orchestrates the complete agent execution lifecycle,
+    including intent classification, step planning, and execution.
+    
+    Args:
+        prompt: The user's natural language input.
+        options: Optional configuration for the run.
+    
+    Returns:
+        AgentRunResult containing the final output and execution metrics.
+    
+    Raises:
+        ValidationError: If the prompt is empty or invalid.
+        TimeoutError: If execution exceeds the configured timeout.
+        AuthorizationError: If the user lacks required permissions.
+    
+    Example:
+        >>> result = await orchestrator.execute_run(
+        ...     "What users work at CINECA?",
+        ...     RunOptions(max_steps=5)
+        ... )
+        >>> print(result.output)
+    """
+\end{lstlisting}
+
+\subsection{Security Code Conventions}
+
+Security-sensitive code follows additional conventions:
+
+\begin{lstlisting}[language=Python, caption={Security coding conventions.}]
+# 1. Never log sensitive data
+log.info("auth.token.validated", user_id=user_id)  # OK
+log.info("auth.token", token=token)  # BAD - logs token
+
+# 2. Use constant-time comparisons for secrets
+import hmac
+def verify_signature(expected: bytes, actual: bytes) -> bool:
+    return hmac.compare_digest(expected, actual)
+
+# 3. Sanitize user input before logging
+def safe_log_input(user_input: str) -> str:
+    return user_input[:100].replace("\n", " ")
+
+# 4. Use parameterized queries (never string interpolation)
+# Good:
+query = "MATCH (u:User {id: $user_id}) RETURN u"
+params = {"user_id": user_id}
+
+# Bad:
+query = f"MATCH (u:User {{id: '{user_id}'}}) RETURN u"
+\end{lstlisting}
+

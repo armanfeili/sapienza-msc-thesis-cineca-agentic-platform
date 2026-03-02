@@ -1,0 +1,123 @@
+# ops/prometheus/recording_rules.yml
+# Recording rules for Cineca Agentic Platform
+# - Precomputes common ratios and quantiles to reduce dashboard/query cost.
+# - Namespaced with simple, readable series names.
+# - Safe defaults that work with Prometheus Python client + typical FastAPI instrumentation.
+
+groups:
+  # ---------------- HTTP traffic, errors, latency ----------------
+  - name: http.recordings
+    rules:
+      # Request rate (RPS)
+      - record: job:http_requests:rps1m
+        expr: sum by (job) (rate(http_requests_total{job="app"}[1m]))
+      - record: job:http_requests:rps5m
+        expr: sum by (job) (rate(http_requests_total{job="app"}[5m]))
+
+      # Error rate ratios
+      - record: job:http_requests:error_rate_5xx:ratio5m
+        expr: |
+          sum(rate(http_requests_total{job="app",status=~"5.."}[5m]))
+          /
+          clamp_min(sum(rate(http_requests_total{job="app"}[5m])), 1e-9)
+      - record: job:http_requests:error_rate_4xx:ratio5m
+        expr: |
+          sum(rate(http_requests_total{job="app",status=~"4.."}[5m]))
+          /
+          clamp_min(sum(rate(http_requests_total{job="app"}[5m])), 1e-9)
+
+      # Average (mean) latency over 5m
+      - record: job:http_request_duration_seconds:avg5m
+        expr: |
+          sum(rate(http_request_duration_seconds_sum{job="app"}[5m]))
+          /
+          clamp_min(sum(rate(http_request_duration_seconds_count{job="app"}[5m])), 1e-9)
+
+      # Latency quantiles via histogram
+      - record: job:http_request_duration_seconds:p50
+        expr: |
+          histogram_quantile(
+            0.50,
+            sum by (le) (rate(http_request_duration_seconds_bucket{job="app"}[5m]))
+          )
+      - record: job:http_request_duration_seconds:p90
+        expr: |
+          histogram_quantile(
+            0.90,
+            sum by (le) (rate(http_request_duration_seconds_bucket{job="app"}[5m]))
+          )
+      - record: job:http_request_duration_seconds:p95
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(http_request_duration_seconds_bucket{job="app"}[5m]))
+          )
+      - record: job:http_request_duration_seconds:p99
+        expr: |
+          histogram_quantile(
+            0.99,
+            sum by (le) (rate(http_request_duration_seconds_bucket{job="app"}[5m]))
+          )
+
+  # ---------------- Process / Runtime health ----------------
+  - name: process.recordings
+    rules:
+      # CPU utilization (seconds per second ~= fraction of one core)
+      - record: job:process_cpu_seconds_total:rate5m
+        expr: sum by (job) (rate(process_cpu_seconds_total{job="app"}[5m]))
+
+      # Memory usage (resident)
+      - record: job:process_resident_memory_bytes:sum
+        expr: sum by (job) (process_resident_memory_bytes{job="app"})
+
+      # Open file descriptors (if exposed by client)
+      - record: job:process_open_fds:sum
+        expr: sum by (job) (process_open_fds{job="app"})
+
+      # Uptime in seconds
+      - record: job:process_uptime_seconds:current
+        expr: time() - min by (job) (process_start_time_seconds{job="app"})
+
+  # ---------------- Prometheus self-observation ----------------
+  - name: prometheus.recordings
+    rules:
+      # Samples scraped per job (5m rate)
+      - record: job:scrape_samples_scraped:rate5m
+        expr: sum by (job) (rate(scrape_samples_scraped[5m]))
+
+      # Average scrape duration per job (5m)
+      - record: job:scrape_duration_seconds:avg5m
+        expr: |
+          avg by (job) (
+            rate(scrape_duration_seconds_sum[5m])
+            /
+            clamp_min(rate(scrape_duration_seconds_count[5m]), 1e-9)
+          )
+
+      # Number of scrape targets by job
+      - record: job:targets:count
+        expr: count by (job) (up)
+
+  # ---------------- Optional: Cache / Rate-limit rollups ----------------
+  # Uncomment if your app exports such counters (e.g., via custom metrics).
+  # - name: ratelimit.recordings
+  #   rules:
+  #     - record: job:ratelimit_requests:rate1m
+  #       expr: sum by (job) (rate(ratelimit_requests_total{job="app"}[1m]))
+  #     - record: job:ratelimit_blocked:rate1m
+  #       expr: sum by (job) (rate(ratelimit_blocked_total{job="app"}[1m]))
+  #     - record: job:ratelimit_blocked:ratio5m
+  #       expr: |
+  #         sum(rate(ratelimit_blocked_total{job="app"}[5m]))
+  #         /
+  #         clamp_min(sum(rate(ratelimit_requests_total{job="app"}[5m])), 1e-9)
+
+  # ---------------- Optional: DB / External deps ----------------
+  # Add rules for Memgraph, Redis, LLM provider latency if/when you export their metrics.
+  # - name: db.recordings
+  #   rules:
+  #     - record: job:db_query_duration_seconds:avg5m
+  #       expr: |
+  #         sum(rate(db_query_duration_seconds_sum{job="app"}[5m]))
+  #         /
+  #         clamp_min(sum(rate(db_query_duration_seconds_count{job="app"}[5m])), 1e-9)

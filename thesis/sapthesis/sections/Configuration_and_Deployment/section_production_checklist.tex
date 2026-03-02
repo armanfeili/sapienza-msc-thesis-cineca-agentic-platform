@@ -1,0 +1,254 @@
+% TODO checklist:
+% - Inspected: scripts/deployment/production_checklist.sh
+% - Inspected: src/config.py (production settings)
+% - Inspected: ops/prometheus/prometheus.yml
+% - Inspected: ops/prometheus/alerts.yml
+% - Inspected: README.md production notes
+% - Inspected: Q&A.md deployment assumptions
+
+\section{Production Checklist}
+\label{sec:production-checklist}
+
+This section provides a comprehensive checklist for deploying the Cineca Agentic Platform to production environments. The checklist covers security configuration, database setup, observability integration, and scaling considerations.
+
+\subsection{Security Checklist}
+
+\begin{table}[ht]
+\centering
+\caption{Security configuration checklist for production deployment.}
+\label{tab:security-checklist}
+\small
+\begin{tabularx}{\textwidth}{lXl}
+\hline
+\textbf{Item} & \textbf{Action} & \textbf{Status} \\
+\hline
+\multicolumn{3}{l}{\textbf{Credentials}} \\
+DB\_PASSWORD & Change from default (\texttt{change\_me\_now}) to strong random value & [ ] \\
+JWT\_SECRET & Replace \texttt{REPLACE\_ME} with cryptographically secure random string & [ ] \\
+Redis AUTH & Enable Redis password authentication in production & [ ] \\
+\hline
+\multicolumn{3}{l}{\textbf{Authentication}} \\
+OIDC\_ISSUER & Configure production OIDC provider URL & [ ] \\
+OIDC\_AUDIENCE & Set correct API audience identifier & [ ] \\
+OIDC\_JWKS\_URL & Configure JWKS endpoint for token validation & [ ] \\
+\hline
+\multicolumn{3}{l}{\textbf{Transport Security}} \\
+TLS Certificates & Install valid TLS certificates for domain & [ ] \\
+ENABLE\_HSTS & Set to \texttt{true} (default) & [ ] \\
+SECURE\_COOKIES & Set to \texttt{true} for HTTPS-only cookies & [ ] \\
+\hline
+\multicolumn{3}{l}{\textbf{Application Security}} \\
+APP\_ENV & Set to \texttt{prod} or \texttt{production} & [ ] \\
+ENABLE\_DOCS & Set to \texttt{false} or restrict access & [ ] \\
+RATE\_LIMIT\_ENABLED & Verify enabled (\texttt{true}) & [ ] \\
+PII\_SCRUBBING\_ENABLED & Verify enabled (\texttt{true}) & [ ] \\
+OUTPUT\_GUARD\_ENABLED & Verify enabled (\texttt{true}) & [ ] \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Database Checklist}
+
+\begin{table}[ht]
+\centering
+\caption{Database configuration checklist.}
+\label{tab:database-checklist}
+\small
+\begin{tabularx}{\textwidth}{lXl}
+\hline
+\textbf{Item} & \textbf{Action} & \textbf{Status} \\
+\hline
+\multicolumn{3}{l}{\textbf{PostgreSQL}} \\
+Connection Security & Enable SSL/TLS connections (\texttt{DB\_SSLMODE=require}) & [ ] \\
+Connection Pooling & Configure appropriate pool size (\texttt{DB\_POOL\_SIZE}) & [ ] \\
+Migrations & Run \texttt{alembic upgrade head} before deployment & [ ] \\
+Backups & Configure automated backup schedule & [ ] \\
+Managed Service & Consider RDS, Cloud SQL, or Azure Database & [ ] \\
+\hline
+\multicolumn{3}{l}{\textbf{Redis}} \\
+Persistence & Enable AOF (\texttt{appendonly yes}) for durability & [ ] \\
+Memory Policy & Configure \texttt{maxmemory-policy} for memory limits & [ ] \\
+Clustering & Consider Redis Sentinel or Cluster for HA & [ ] \\
+\hline
+\multicolumn{3}{l}{\textbf{Memgraph}} \\
+Memory Allocation & Allocate sufficient memory (8--32GB) & [ ] \\
+Snapshot Schedule & Configure periodic snapshots & [ ] \\
+Query Timeouts & Set appropriate query timeout limits & [ ] \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Observability Checklist}
+
+\begin{table}[ht]
+\centering
+\caption{Observability configuration checklist.}
+\label{tab:observability-checklist}
+\small
+\begin{tabularx}{\textwidth}{lXl}
+\hline
+\textbf{Item} & \textbf{Action} & \textbf{Status} \\
+\hline
+\multicolumn{3}{l}{\textbf{Metrics}} \\
+PROMETHEUS\_METRICS\_ENABLED & Verify enabled (\texttt{true}) & [ ] \\
+Prometheus Scraping & Configure Prometheus to scrape \texttt{/metrics} & [ ] \\
+Alert Rules & Load \texttt{ops/prometheus/alerts.yml} & [ ] \\
+Recording Rules & Load \texttt{ops/prometheus/recording\_rules.yml} & [ ] \\
+Grafana Dashboards & Import platform dashboards & [ ] \\
+\hline
+\multicolumn{3}{l}{\textbf{Tracing}} \\
+OTEL\_SERVICE\_NAME & Set service name for traces & [ ] \\
+OTEL\_EXPORTER\_OTLP\_ENDPOINT & Configure OTLP collector endpoint & [ ] \\
+Trace Sampling & Configure appropriate sampling rate & [ ] \\
+\hline
+\multicolumn{3}{l}{\textbf{Logging}} \\
+JSON Logging & Verify \texttt{APP\_ENV=prod} enables JSON format & [ ] \\
+Log Aggregation & Configure log shipping (ELK, Splunk, CloudWatch) & [ ] \\
+Log Retention & Configure log retention policy & [ ] \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Scaling Checklist}
+
+\begin{table}[ht]
+\centering
+\caption{Scaling configuration checklist.}
+\label{tab:scaling-checklist}
+\small
+\begin{tabularx}{\textwidth}{lXl}
+\hline
+\textbf{Item} & \textbf{Action} & \textbf{Status} \\
+\hline
+\multicolumn{3}{l}{\textbf{Application}} \\
+Load Balancer & Configure NGINX or cloud load balancer & [ ] \\
+Health Checks & Configure health check endpoints in LB & [ ] \\
+Instance Count & Deploy $\geq 2$ instances for availability & [ ] \\
+\hline
+\multicolumn{3}{l}{\textbf{Workers}} \\
+Worker Count & Scale based on job queue depth & [ ] \\
+Heartbeat Interval & Configure appropriate interval (5--15s) & [ ] \\
+\hline
+\multicolumn{3}{l}{\textbf{Rate Limiting}} \\
+RATE\_LIMIT\_DEFAULT\_LIMIT & Configure per-tenant limits & [ ] \\
+NGINX Rate Limiting & Enable proxy-level rate limiting & [ ] \\
+\hline
+\multicolumn{3}{l}{\textbf{Caching}} \\
+Redis Connection & Verify Redis URL configuration & [ ] \\
+Cache TTLs & Configure appropriate cache TTLs & [ ] \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Pre-Deployment Validation}
+
+Before deploying to production, execute the following validation steps:
+
+\subsubsection{Health Check Verification}
+
+\begin{lstlisting}[language=bash, caption=Verify health endpoints]
+# Liveness check
+curl -fsS http://localhost:8000/v1/health/live
+
+# Readiness check (includes dependency checks)
+curl -fsS http://localhost:8000/v1/health/ready
+
+# Component health details
+curl -fsS http://localhost:8000/v1/health/components | jq
+\end{lstlisting}
+
+\subsubsection{LLM Configuration Validation}
+
+\begin{lstlisting}[language=bash, caption=Verify LLM configuration]
+# Run LLM smoke test
+make llm-smoke-test
+
+# Expected output:
+# Configuration:
+# {
+#   "status": "success",
+#   "config_source": "database",
+#   "instance_name": "phi3-mini",
+#   "provider_model_id": "phi3:mini",
+#   "device": "cpu"
+# }
+\end{lstlisting}
+
+\subsubsection{Database Migration Verification}
+
+\begin{lstlisting}[language=bash, caption=Verify database migrations]
+# Check current migration status
+cd db/postgres_control && alembic current
+
+# Verify no pending migrations
+cd db/postgres_control && alembic heads
+\end{lstlisting}
+
+\subsubsection{Metrics Endpoint Verification}
+
+\begin{lstlisting}[language=bash, caption=Verify Prometheus metrics]
+# Check metrics are exposed
+curl -fsS http://localhost:8000/metrics | head -20
+
+# Verify key metrics exist
+curl -fsS http://localhost:8000/metrics | grep http_requests_total
+curl -fsS http://localhost:8000/metrics | grep agent_runs_total
+\end{lstlisting}
+
+\subsection{Production Checklist Script}
+
+The platform includes an interactive production checklist script that validates key production features:
+
+\begin{lstlisting}[language=bash, caption=Running the production checklist script]
+# Run the interactive checklist
+bash scripts/deployment/production_checklist.sh
+
+# The script validates:
+# 1. Backend Toggle & Rollback (redis <-> memory)
+# 2. Redis Durability (AOF/RDB configuration)
+# 3. TTL Sanity (job expiration, idempotency)
+# 4. Atomic Cancel Under Load
+# 5. ETag Parity Across Backends
+# 6. Index Hygiene (orphan cleanup)
+# 7. SSE Resilience (reconnection handling)
+# 8. Metrics & Alerts
+# 9. Security Enforcement
+# 10. Documentation Discoverability
+\end{lstlisting}
+
+\subsection{Post-Deployment Verification}
+
+After deployment, verify the following:
+
+\begin{enumerate}
+    \item \textbf{HTTPS Access}: Verify TLS certificate is valid and HSTS header is present
+    \item \textbf{Authentication}: Test OIDC login flow with production IdP
+    \item \textbf{Authorization}: Verify RBAC scopes are enforced correctly
+    \item \textbf{Rate Limiting}: Confirm rate limits are applied
+    \item \textbf{Metrics}: Verify Prometheus is scraping and Grafana dashboards display data
+    \item \textbf{Alerts}: Trigger a test alert to verify alerting pipeline
+    \item \textbf{Logging}: Verify logs are being shipped to aggregation system
+    \item \textbf{Backups}: Run and verify backup/restore procedure
+\end{enumerate}
+
+\subsection{Rollback Procedure}
+
+In case of deployment issues, the platform supports rollback:
+
+\begin{lstlisting}[language=bash, caption=Rollback procedure]
+# Stop current deployment
+docker compose down
+
+# Restore previous image
+docker compose pull previous-tag
+docker compose up -d
+
+# Rollback database if needed (CAUTION: may lose data)
+cd db/postgres_control && alembic downgrade -1
+
+# Restore database from backup if necessary
+bash scripts/database/restore_database.sh backups/backup_YYYYMMDD.sql.gz
+\end{lstlisting}
+
+The deployment script (\texttt{scripts/deployment/deploy-production.sh}) includes built-in rollback prompts when verification fails.
+

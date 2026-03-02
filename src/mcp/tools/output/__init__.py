@@ -1,0 +1,58 @@
+"""
+MCP Namespace: output
+
+Utilities for formatting and summarizing model/tool outputs.
+
+Exposed tools
+-------------
+- format    : normalize/pretty-print results into target shapes (json/csv/markdown/plain)
+- summarize : compact summaries (map/reduce, extractive/abstractive stubs)
+
+Each tool module must expose an `invoke(payload: dict | None, **kwargs) -> dict`
+(callables named `run` or `handle` are also accepted for convenience).
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Iterable
+from importlib import import_module
+from typing import Any, Dict
+
+NAMESPACE = "output"
+
+# Map tool name → module path
+TOOLS: dict[str, str] = {
+    "format": "src.mcp.tools.output.format",
+    "summarize": "src.mcp.tools.output.summarize",
+}
+
+
+def list_tools() -> Iterable[str]:
+    """Return available tool names in this namespace."""
+    return TOOLS.keys()
+
+
+def _load_callable(module_path: str) -> Callable[..., Any]:
+    mod = import_module(module_path)
+    func = getattr(mod, "invoke", None) or getattr(mod, "run", None) or getattr(mod, "handle", None)
+    if not callable(func):
+        raise TypeError(f"Module {module_path} does not expose an invoke/run/handle callable")
+    return func
+
+
+def get_tool(name: str) -> Callable[..., Any]:
+    """Resolve a tool callable by name."""
+    try:
+        module_path = TOOLS[name]
+    except KeyError as e:
+        raise KeyError(f"Unknown output tool: {name}") from e
+    return _load_callable(module_path)
+
+
+def invoke(tool: str, payload: dict[str, Any] | None = None, **kwargs) -> dict[str, Any]:
+    """Dispatch to a tool by name with the given payload."""
+    handler = get_tool(tool)
+    return handler(payload or {}, **kwargs)
+
+
+__all__ = ["NAMESPACE", "TOOLS", "get_tool", "invoke", "list_tools"]

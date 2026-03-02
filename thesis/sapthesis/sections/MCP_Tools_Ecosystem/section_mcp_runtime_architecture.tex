@@ -1,0 +1,381 @@
+% TODO checklist:
+% - [x] Inspected src/mcp/tools/__init__.py (tool discovery and loading)
+% - [x] Inspected src/mcp/runtime.py (ToolContext, mcp_tool decorator, RBAC, telemetry)
+% - [x] Inspected src/mcp/tools/README_mcp_tools.md (comprehensive tool reference)
+% - [x] Inspected src/mcp/tools/graph/query.py (example tool implementation)
+% - [x] Inspected src/mcp/tools/system/health.py (example tool implementation)
+% - [x] Referenced Q&A.md Q37 for MCP tool ecosystem architecture
+
+\section{MCP Runtime Architecture}
+\label{sec:mcp-runtime}
+
+The Model Context Protocol (MCP) runtime provides the foundational infrastructure for tool execution within the Cineca Agentic Platform. This runtime layer enforces consistent contracts, security policies, and observability patterns across all 34 tools in the platform. The architecture follows a decorator-based design that separates cross-cutting concerns from tool-specific business logic, enabling rapid tool development while maintaining enterprise-grade governance.
+
+\subsection{Architectural Overview}
+\label{subsec:mcp-runtime-overview}
+
+The MCP runtime implements a layered architecture consisting of four primary components:
+
+\begin{enumerate}
+    \item \textbf{Tool Registry}: A dynamic discovery mechanism that locates and loads tool modules based on naming conventions.
+    \item \textbf{Execution Context}: A structured context object (\texttt{ToolContext}) that carries request metadata, principal information, and tenant isolation boundaries through the invocation lifecycle.
+    \item \textbf{Runtime Wrapper}: A decorator-based wrapper (\texttt{@mcp\_tool}) that enforces contracts, validates inputs, and applies cross-cutting concerns.
+    \item \textbf{Telemetry Layer}: Prometheus metrics and structured logging for comprehensive observability.
+\end{enumerate}
+
+Figure~\ref{fig:mcp-runtime-layers} illustrates the layered architecture and request flow through the MCP runtime.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        node distance=0.8cm,
+        box/.style={rectangle, draw, rounded corners, minimum width=12cm, minimum height=0.8cm, text centered, font=\small},
+        arrow/.style={->, thick}
+    ]
+        % Layers from top to bottom
+        \node[box, fill=blue!10] (api) {REST API Layer: \texttt{POST /v1/tools/\{name\}/invocations}};
+        \node[box, fill=green!10, below=of api] (decorator) {\texttt{@mcp\_tool} Decorator: RBAC, Rate Limiting, Audit, Telemetry};
+        \node[box, fill=yellow!10, below=of decorator] (context) {\texttt{ToolContext}: Principal, Tenant, Trace ID, Timeout};
+        \node[box, fill=orange!10, below=of context] (validation) {Pydantic Schema Validation};
+        \node[box, fill=red!10, below=of context, yshift=-1.6cm] (impl) {Tool Implementation: \texttt{invoke(ctx, payload)}};
+        
+        % Arrows
+        \draw[arrow] (api) -- (decorator);
+        \draw[arrow] (decorator) -- (context);
+        \draw[arrow] (context) -- (validation);
+        \draw[arrow] (validation) -- (impl);
+        
+        % Labels
+        \node[right=0.2cm of decorator, font=\scriptsize] {Cross-cutting};
+        \node[right=0.2cm of impl, font=\scriptsize] {Business Logic};
+    \end{tikzpicture}
+    \caption{MCP runtime layered architecture showing request flow from API to tool implementation.}
+    \label{fig:mcp-runtime-layers}
+\end{figure}
+
+\subsection{Tool Registry and Discovery}
+\label{subsec:tool-registry}
+
+The tool registry implements a convention-over-configuration approach for tool discovery. Tools are organized in a hierarchical module structure under \texttt{src/mcp/tools/}, with each tool residing in a category subdirectory. The registry translates MCP tool names (e.g., \texttt{graph.query}) to Python module paths (e.g., \texttt{src.mcp.tools.graph.query}) using a deterministic mapping function.
+
+\subsubsection{Module Resolution}
+
+The core resolution algorithm is implemented in \texttt{src/mcp/tools/\_\_init\_\_.py}:
+
+\begin{lstlisting}[language=Python, caption={Tool module resolution algorithm}, label={lst:tool-resolution}]
+PACKAGE_ROOT = "src.mcp.tools"
+
+def module_name_for_tool(tool_name: str) -> str:
+    """
+    Translate MCP tool name to Python module path.
+    Example: "graph.query" -> "src.mcp.tools.graph.query"
+    """
+    safe = tool_name.strip().strip(".")
+    return f"{PACKAGE_ROOT}.{safe}"
+
+def load(tool_name: str) -> tuple[ModuleType, Callable | None]:
+    """Import a tool module and return (module, callable_or_none)."""
+    mod = import_module_for_tool(tool_name)
+    _, fn = find_callable_in_module(mod)
+    return mod, fn
+\end{lstlisting}
+
+The callable discovery follows a priority order: \texttt{invoke} $\rightarrow$ \texttt{run} $\rightarrow$ \texttt{handle}. This convention allows tools to expose a single entry point without requiring explicit registration.
+
+\subsubsection{Tool Specification Model}
+
+Each discovered tool is represented by a \texttt{ToolSpec} dataclass:
+
+\begin{lstlisting}[language=Python, caption={ToolSpec dataclass for tool metadata}, label={lst:toolspec}]
+@dataclass(frozen=True)
+class ToolSpec:
+    name: str           # MCP name, e.g., "graph.query"
+    module: str         # Python module path
+    callable_name: str | None  # "invoke" | "run" | "handle"
+\end{lstlisting}
+
+The \texttt{discover()} function walks the package tree and returns a list of all available tools with their resolution status:
+
+\begin{lstlisting}[language=Python, caption={Tool discovery mechanism}, label={lst:tool-discovery}]
+def discover() -> list[ToolSpec]:
+    """Return a list of ToolSpec with callable resolution."""
+    specs: list[ToolSpec] = []
+    for m in list_tool_modules():
+        try:
+            mod = importlib.import_module(m)
+        except Exception:
+            continue  # Skip modules that fail to import
+        cname, _ = find_callable_in_module(mod)
+        specs.append(ToolSpec(
+            name=tool_name_for_module(m),
+            module=m,
+            callable_name=cname
+        ))
+    return specs
+\end{lstlisting}
+
+\subsection{Tool Execution Context}
+\label{subsec:tool-context}
+
+The \texttt{ToolContext} class encapsulates all execution metadata required for a tool invocation. It serves as the single source of truth for request-scoped information and provides utility methods for timeout checking, logging, and audit trail generation.
+
+\begin{lstlisting}[language=Python, caption={ToolContext Pydantic model}, label={lst:tool-context}]
+class ToolContext(BaseModel):
+    """Execution context for a tool invocation."""
+    
+    tool: str                      # Tool name (e.g., "graph.query")
+    action: str                    # Action within tool (e.g., "execute")
+    principal: Any | None = None   # Authenticated user/service
+    tenant: str | None = None      # Tenant isolation boundary
+    trace_id: str | None = None    # Distributed tracing ID
+    timeout_ms: int | None = None  # Per-invocation timeout
+    start_time: float = 0.0        # Invocation start timestamp
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    def elapsed_ms(self) -> float:
+        """Return elapsed time in milliseconds."""
+        return (time.time() - self.start_time) * 1000
+    
+    def check_timeout(self) -> None:
+        """Raise TimeoutError_ if timeout exceeded."""
+        if self.timeout_ms and self.elapsed_ms() > self.timeout_ms:
+            raise TimeoutError_(
+                f"Operation timed out after {self.timeout_ms}ms",
+                details={"elapsed_ms": self.elapsed_ms()}
+            )
+    
+    def log_context(self) -> dict[str, Any]:
+        """Return context dict for structured logging."""
+        return {
+            "tool": self.tool,
+            "action": self.action,
+            "principal": self._extract_principal_id(),
+            "tenant": self.tenant,
+            "trace_id": self.trace_id,
+        }
+\end{lstlisting}
+
+\subsubsection{Context Propagation}
+
+The context is automatically created by the MCP runtime and propagated through the tool invocation chain. Key attributes are extracted from the incoming HTTP request:
+
+\begin{itemize}
+    \item \textbf{Principal}: Extracted from the validated JWT token, containing user identity and granted scopes.
+    \item \textbf{Tenant}: Extracted from the \texttt{X-Tenant-ID} header for multi-tenant isolation.
+    \item \textbf{Trace ID}: Propagated from the \texttt{X-Request-ID} header or generated if absent.
+    \item \textbf{Timeout}: Configurable per-tool with fallback to global defaults.
+\end{itemize}
+
+\subsection{The \texttt{@mcp\_tool} Decorator}
+\label{subsec:mcp-tool-decorator}
+
+The \texttt{@mcp\_tool} decorator is the cornerstone of the MCP runtime, providing a declarative way to apply cross-cutting concerns to tool implementations. The decorator wraps the tool function and intercepts every invocation to enforce policies.
+
+\begin{lstlisting}[language=Python, caption={The @mcp\_tool decorator signature}, label={lst:mcp-tool-decorator}]
+def mcp_tool(
+    tool_name: str,
+    required_scope: str | None = None,
+    rate_limit: int | None = None,
+    rate_window: int = 60,
+) -> Callable[[Callable[..., dict]], Callable[..., dict]]:
+    """
+    Decorator to wrap MCP tool implementations with runtime scaffolding.
+    
+    Provides:
+    - Standard contract enforcement
+    - Audit trail integration
+    - RBAC checks via required_scope
+    - Rate limiting (requests per window)
+    - Prometheus telemetry
+    - Structured logging
+    - Error handling and sanitization
+    """
+\end{lstlisting}
+
+\subsubsection{Invocation Lifecycle}
+
+When a decorated tool is invoked, the wrapper executes the following sequence:
+
+\begin{enumerate}
+    \item \textbf{Context Creation}: Build \texttt{ToolContext} with request metadata.
+    \item \textbf{RBAC Check}: Verify principal has \texttt{required\_scope}.
+    \item \textbf{Rate Limit Check}: Validate against per-principal rate limits.
+    \item \textbf{Input Validation}: Validate payload against Pydantic schema.
+    \item \textbf{Audit Log (Pre)}: Record invocation attempt with sanitized payload.
+    \item \textbf{Tool Execution}: Call the wrapped function with context and payload.
+    \item \textbf{Telemetry}: Record latency histogram and invocation counter.
+    \item \textbf{Audit Log (Post)}: Record result status (success/failure).
+    \item \textbf{Response Sanitization}: Ensure response conforms to standard shape.
+\end{enumerate}
+
+\subsection{Schema Validation}
+\label{subsec:schema-validation}
+
+Input validation is enforced using Pydantic models defined in \texttt{src/mcp/schemas.py}. Each tool can define its own payload schema, and the runtime validates all incoming payloads before execution.
+
+\begin{lstlisting}[language=Python, caption={Payload validation function}, label={lst:payload-validation}]
+def validate_payload(
+    payload: dict[str, Any] | None,
+    schema: type[T],
+) -> T:
+    """
+    Validate payload against Pydantic schema.
+    
+    Raises:
+        ValidationError_: If validation fails with detailed errors
+    """
+    if payload is None:
+        payload = {}
+    
+    try:
+        return schema(**payload)
+    except ValidationError as e:
+        errors = e.errors()
+        raise ValidationError_(
+            "Input validation failed",
+            details={
+                "errors": [
+                    {"loc": ".".join(str(x) for x in err["loc"]),
+                     "msg": err["msg"],
+                     "type": err["type"]}
+                    for err in errors
+                ]
+            }
+        )
+\end{lstlisting}
+
+Example schema for the \texttt{graph.query} tool:
+
+\begin{lstlisting}[language=Python, caption={Example payload schema for graph.query}, label={lst:graph-query-schema}]
+class GraphQueryPayload(BaseModel):
+    cypher: str                        # Required Cypher query
+    params: dict[str, Any] = Field(default_factory=dict)
+    read_only: bool = False            # Block write operations
+    timeout_ms: int | None = None      # Per-query timeout
+    limit: int | None = 1000           # Client-side row cap
+\end{lstlisting}
+
+\subsection{Audit Logging}
+\label{subsec:mcp-audit-logging}
+
+Every tool invocation is recorded in the audit log for compliance and debugging purposes. The audit integration is implemented in \texttt{src/security/audit.py} and captures:
+
+\begin{itemize}
+    \item \textbf{Who}: Principal identity (subject, tenant, scopes)
+    \item \textbf{What}: Tool name, action, sanitized payload
+    \item \textbf{When}: Timestamp with millisecond precision
+    \item \textbf{Where}: Trace ID for distributed correlation
+    \item \textbf{Result}: Success/failure status and error details if applicable
+\end{itemize}
+
+\begin{lstlisting}[language=Python, caption={Audit logging integration in the decorator}, label={lst:audit-integration}]
+# Pre-invocation audit
+audit_access(
+    principal=ctx.principal,
+    resource=f"mcp.tools.{tool_name}",
+    action=action,
+    tenant=ctx.tenant,
+    trace_id=ctx.trace_id,
+    payload_hash=hash_payload(sanitized_payload),
+)
+
+# Post-invocation audit
+audit_access(
+    principal=ctx.principal,
+    resource=f"mcp.tools.{tool_name}",
+    action=f"{action}:result",
+    status="success" if result.get("ok") else "failure",
+    latency_ms=ctx.elapsed_ms(),
+)
+\end{lstlisting}
+
+\subsection{Telemetry and Metrics}
+\label{subsec:mcp-telemetry}
+
+The MCP runtime exposes Prometheus metrics for tool observability. These metrics are automatically collected by the \texttt{@mcp\_tool} decorator and made available on the \texttt{/metrics} endpoint.
+
+\begin{table}[htbp]
+    \centering
+    \caption{MCP tool Prometheus metrics}
+    \label{tab:mcp-metrics}
+    \begin{tabularx}{\textwidth}{llX}
+        \toprule
+        \textbf{Metric Name} & \textbf{Type} & \textbf{Labels and Purpose} \\
+        \midrule
+        \texttt{mcp\_tool\_invocations\_total} & Counter & Labels: \texttt{tool}, \texttt{action}, \texttt{status}. Total invocation count per tool and outcome. \\
+        \texttt{mcp\_tool\_latency\_seconds} & Histogram & Labels: \texttt{tool}, \texttt{action}. Execution latency distribution with buckets from 10ms to 5 minutes. \\
+        \texttt{mcp\_tool\_errors\_total} & Counter & Labels: \texttt{tool}, \texttt{error\_type}. Error counts by category (validation, permission, timeout, internal). \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\begin{lstlisting}[language=Python, caption={Prometheus metrics collection in MCP runtime}, label={lst:mcp-prometheus}]
+from prometheus_client import Counter, Histogram
+
+TOOL_INVOCATIONS = Counter(
+    "mcp_tool_invocations_total",
+    "Total MCP tool invocations",
+    ["tool", "action", "status"],
+)
+
+TOOL_LATENCY = Histogram(
+    "mcp_tool_latency_seconds",
+    "MCP tool invocation latency",
+    ["tool", "action"],
+    buckets=(0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0, 300.0),
+)
+\end{lstlisting}
+
+\subsection{Error Handling}
+\label{subsec:mcp-error-handling}
+
+The MCP runtime defines a hierarchy of typed exceptions for consistent error handling across all tools. Each exception type maps to a specific error code that appears in API responses.
+
+\begin{table}[htbp]
+    \centering
+    \caption{MCP runtime exception hierarchy}
+    \label{tab:mcp-exceptions}
+    \begin{tabularx}{\textwidth}{llX}
+        \toprule
+        \textbf{Exception Class} & \textbf{Error Code} & \textbf{Description} \\
+        \midrule
+        \texttt{ToolError} & \texttt{E\_TOOL\_ERROR} & Base exception for all tool errors \\
+        \texttt{ValidationError\_} & \texttt{E\_VALIDATION} & Input validation failed \\
+        \texttt{PermissionError\_} & \texttt{E\_PERMISSION} & RBAC check failed \\
+        \texttt{TimeoutError\_} & \texttt{E\_TIMEOUT} & Operation timed out \\
+        \texttt{RateLimitError\_} & \texttt{E\_RATE\_LIMIT} & Rate limit exceeded \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+All exceptions provide a \texttt{to\_dict()} method that serializes the error to a standard response shape:
+
+\begin{lstlisting}[language=Python, caption={Standard error response shape}, label={lst:error-response}]
+{
+    "ok": false,
+    "code": "E_PERMISSION",
+    "message": "Missing required permission: graph:write",
+    "details": {
+        "required_scope": "graph:write",
+        "resource": "mcp.tools.graph.crud",
+        "attributes": {}
+    }
+}
+\end{lstlisting}
+
+\subsection{Summary}
+\label{subsec:mcp-runtime-summary}
+
+The MCP runtime architecture provides a robust foundation for tool execution with the following key characteristics:
+
+\begin{itemize}
+    \item \textbf{Convention-based discovery}: Tools are automatically discovered based on module naming conventions, eliminating manual registration.
+    \item \textbf{Decorator-based policies}: Cross-cutting concerns (RBAC, audit, telemetry) are applied declaratively via the \texttt{@mcp\_tool} decorator.
+    \item \textbf{Structured context}: The \texttt{ToolContext} provides a unified interface for accessing request metadata and enforcing timeouts.
+    \item \textbf{Type-safe validation}: Pydantic schemas ensure payloads conform to expected structures before execution.
+    \item \textbf{Comprehensive observability}: Every invocation is logged, metered, and traceable through the observability stack.
+    \item \textbf{Consistent error handling}: A typed exception hierarchy maps to machine-readable error codes for client consumption.
+\end{itemize}
+
+This architecture enables the platform to support 34 tools across 17 categories while maintaining consistent governance and operational characteristics.

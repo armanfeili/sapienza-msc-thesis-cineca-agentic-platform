@@ -1,0 +1,305 @@
+% TODO checklist:
+% - Inspected: src/config.py (APP_ENV handling, security settings)
+% - Inspected: docker-compose.override.yml (development overrides)
+% - Inspected: docker-compose.override.dev.yml (development settings)
+% - Inspected: Q&A.md sections on deployment assumptions
+% - Inspected: src/logging_setup.py (environment-specific logging)
+% - Inspected: Makefile (up-cpu, up-gpu targets)
+
+\section{Environment Profiles (Development, Testing, Production)}
+\label{sec:env-profiles}
+
+The Cineca Agentic Platform supports multiple environment profiles that adapt configuration, security settings, and operational behavior to the deployment context. This section describes the three primary environment profiles---development, testing, and production---and explains how the platform differentiates behavior across these environments.
+
+\subsection{Environment Mode Detection}
+
+The platform determines its operating environment through the \texttt{APP\_ENV} configuration variable, which accepts the following values:
+
+\begin{itemize}
+    \item \texttt{dev} (default): Development mode with relaxed security, full documentation, and debug-friendly logging
+    \item \texttt{test}: Testing mode with mocked providers, reduced timeouts, and deterministic behavior
+    \item \texttt{stage}/\texttt{staging}: Staging environment with production-like settings but relaxed security
+    \item \texttt{prod}/\texttt{production}: Production mode with full security hardening and restricted access
+\end{itemize}
+
+The configuration system normalizes environment values to ensure consistent handling:
+
+\begin{lstlisting}[language=Python, caption=Environment normalization in src/config.py]
+@field_validator("APP_ENV", mode="before")
+@classmethod
+def normalize_env(cls, v: str) -> str:
+    return (v or "dev").lower()
+\end{lstlisting}
+
+\subsection{Development Environment}
+
+The development environment prioritizes developer experience, debugging capability, and rapid iteration. Key characteristics include:
+
+\paragraph{Full API Documentation}
+The Swagger UI and ReDoc documentation interfaces are enabled by default:
+
+\begin{lstlisting}[language=Python, caption=Documentation enablement in development]
+ENABLE_DOCS: bool = Field(
+    default=True, 
+    description="Enable Swagger/Redoc in non-prod"
+)
+\end{lstlisting}
+
+\paragraph{Console Logging}
+Development environments use human-readable console logging rather than JSON-structured logs:
+
+\begin{lstlisting}[language=Python, caption=Environment-specific logging format]
+def _wants_json() -> bool:
+    """Return True if JSON logging should be used."""
+    env = os.getenv("APP_ENV", "dev").strip().lower()
+    return env in {"prod", "production"}  # JSON logs in production only
+\end{lstlisting}
+
+\paragraph{Relaxed Security Settings}
+Development mode uses relaxed security defaults to facilitate local testing:
+
+\begin{lstlisting}[language=bash, caption=Development environment overrides from docker-compose.override.yml]
+services:
+  app:
+    command: uvicorn src.app:app --reload --host 0.0.0.0 --port 8000
+    environment:
+      PYTHONUNBUFFERED: '1'
+      ENABLE_DOCS: '1'
+      APP_ENV: 'dev'
+      DEMO_MODE: 'true'
+      RATE_LIMIT_MODE: 'test'  # Relaxed rate limits
+      INTERNAL_TOKEN_MAX_TTL_SECONDS: '86400'  # Allow 24h tokens
+\end{lstlisting}
+
+\paragraph{Hot Reload}
+The uvicorn server runs with \texttt{--reload} enabled, automatically restarting when source files change.
+
+\paragraph{Demo Mode}
+When \texttt{DEMO\_MODE=true}, the platform provides fallback responses when no LLM providers are registered, enabling UI development without requiring a running LLM.
+
+\subsection{Testing Environment}
+
+The testing environment is optimized for automated testing with predictable behavior and reduced resource requirements:
+
+\paragraph{Reduced Timeouts}
+The compute configuration module provides test-specific timeouts:
+
+\begin{lstlisting}[language=Python, caption=Test mode timeout configuration]
+@property
+def recommended_step_timeout(self) -> int:
+    if self.memgraph_nl_test_mode:
+        return 90   # 90s for simple NL-to-Cypher queries
+    if self.test_mode:
+        return 60   # 60s for general test mode
+    # ... device-specific defaults
+\end{lstlisting}
+
+\paragraph{Mocked Providers}
+Tests can enable \texttt{SEED\_DEMO\_PROVIDER=false} to prevent automatic provider creation, allowing tests to configure their own mock providers.
+
+\paragraph{Deterministic Memgraph Responses}
+The \texttt{MEMGRAPH\_NL\_TEST\_MODE} flag enables deterministic testing of the NL-to-Cypher pipeline by using a JSON mapping file rather than LLM generation:
+
+\begin{lstlisting}[language=bash, caption=Test mode configuration for Memgraph NL]
+# Enable deterministic NL-to-Cypher testing
+MEMGRAPH_NL_TEST_MODE=true
+MEMGRAPH_RESPONSE_MODE=fallback-only
+\end{lstlisting}
+
+\paragraph{In-Memory Job Store}
+Tests default to the in-memory job store to avoid Redis dependencies:
+
+\begin{lstlisting}[language=Python, caption=Job store backend configuration]
+JOB_STORE_BACKEND: str = Field(
+    default="memory",
+    description="'memory' or 'redis'. Use 'redis' for production."
+)
+\end{lstlisting}
+
+Table~\ref{tab:test-env-settings} summarizes key testing environment settings.
+
+\begin{table}[ht]
+\centering
+\caption{Testing environment configuration settings.}
+\label{tab:test-env-settings}
+\begin{tabular}{llp{6cm}}
+\hline
+\textbf{Setting} & \textbf{Value} & \textbf{Purpose} \\
+\hline
+LLM\_TEST\_MODE & true & Enables reduced timeouts and lightweight models \\
+MEMGRAPH\_NL\_TEST\_MODE & true & Uses deterministic NL-to-Cypher mappings \\
+MEMGRAPH\_RESPONSE\_MODE & fallback-only & Skips LLM summarization for speed \\
+JOB\_STORE\_BACKEND & memory & Avoids Redis dependency \\
+RATE\_LIMIT\_MODE & test & Relaxes rate limiting for test concurrency \\
+DEMO\_MODE & true & Provides fallback responses without LLM \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Production Environment}
+
+The production environment enforces strict security measures, optimizes for reliability, and enables comprehensive observability:
+
+\paragraph{Security Headers}
+Production mode enables security headers middleware:
+
+\begin{lstlisting}[language=Python, caption=Production security header settings]
+ENABLE_SECURITY_HEADERS: bool = Field(
+    default=True, 
+    description="Enable security headers middleware"
+)
+ENABLE_HSTS: bool = Field(
+    default=True, 
+    description="Enable Strict-Transport-Security header"
+)
+HSTS_MAX_AGE: int = Field(
+    default=31536000,  # 1 year
+    description="HSTS max-age in seconds"
+)
+\end{lstlisting}
+
+\paragraph{Secure Cookie Configuration}
+Cookies are configured with security attributes:
+
+\begin{lstlisting}[language=Python, caption=Production cookie settings]
+SECURE_COOKIES: bool = Field(
+    default=False,  # Set True in production!
+    description="Enable secure flag on cookies"
+)
+TRUST_PROXY: bool = Field(
+    default=False,  # Set True behind reverse proxy
+    description="Trust X-Forwarded-* headers"
+)
+\end{lstlisting}
+
+\paragraph{JSON-Structured Logging}
+Production environments use JSON-formatted logs for integration with log aggregation systems:
+
+\begin{lstlisting}[language=Python, caption=Production logging configuration]
+# From src/logging_setup.py
+if _wants_json():
+    # Configure structlog for JSON output
+    processors.append(structlog.processors.JSONRenderer())
+else:
+    # Console-friendly output for development
+    processors.append(structlog.dev.ConsoleRenderer())
+\end{lstlisting}
+
+\paragraph{Restricted API Documentation}
+Production deployments can restrict access to API documentation:
+
+\begin{lstlisting}[language=Python, caption=Documentation access control]
+DOCS_AUTH: str = Field(
+    default="internal",
+    description="internal|public - controls Swagger 'Try it out'"
+)
+\end{lstlisting}
+
+\paragraph{Redis Job Store}
+Production deployments use Redis for persistent job storage:
+
+\begin{lstlisting}[language=bash, caption=Production job store configuration]
+JOB_STORE_BACKEND=redis
+USE_POSTGRES_JOBS=true
+\end{lstlisting}
+
+\subsection{Environment Comparison Matrix}
+
+Table~\ref{tab:env-comparison} provides a comprehensive comparison of settings across environment profiles.
+
+\begin{table}[ht]
+\centering
+\caption{Configuration differences across environment profiles.}
+\label{tab:env-comparison}
+\small
+\begin{tabular}{llll}
+\hline
+\textbf{Setting} & \textbf{Development} & \textbf{Testing} & \textbf{Production} \\
+\hline
+APP\_ENV & dev & test & prod \\
+ENABLE\_DOCS & true & true & false/restricted \\
+LOG\_LEVEL & DEBUG & INFO & WARNING \\
+Log Format & Console & Console & JSON \\
+ENABLE\_SECURITY\_HEADERS & false & false & true \\
+ENABLE\_HSTS & false & false & true \\
+SECURE\_COOKIES & false & false & true \\
+TRUST\_PROXY & false & false & true \\
+RATE\_LIMIT\_MODE & test & test & prod \\
+JOB\_STORE\_BACKEND & memory & memory & redis \\
+DEMO\_MODE & true & true & false \\
+Step Timeout & 1200s (CPU) & 60s & Device-specific \\
+Run Timeout & 1800s (CPU) & 120s & Device-specific \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Hardware-Specific Profiles}
+
+Beyond environment modes, the platform supports hardware-specific deployment profiles through Docker Compose override files:
+
+\paragraph{CPU Profile (.env.cpu)}
+Optimized for CPU-only deployments with extended timeouts:
+
+\begin{lstlisting}[language=bash, caption=CPU profile configuration]
+# .env.cpu - CPU-optimized settings
+LLM_DEVICE=cpu
+LLM_STEP_TIMEOUT_SECONDS=1200
+LLM_RUN_TIMEOUT_SECONDS=1800
+LLM_MAX_CONCURRENT_CALLS=1
+MEMGRAPH_BUILDER_LLM_TIMEOUT_MS=180000  # 3 minutes
+\end{lstlisting}
+
+\paragraph{GPU Profile (.env.gpu)}
+Optimized for GPU-accelerated deployments:
+
+\begin{lstlisting}[language=bash, caption=GPU profile configuration]
+# .env.gpu - GPU-optimized settings
+LLM_DEVICE=cuda
+LLM_STEP_TIMEOUT_SECONDS=30
+LLM_RUN_TIMEOUT_SECONDS=120
+LLM_MAX_CONCURRENT_CALLS=4
+MEMGRAPH_BUILDER_LLM_TIMEOUT_MS=10000  # 10 seconds
+\end{lstlisting}
+
+The Makefile provides convenient targets for launching with specific hardware profiles:
+
+\begin{lstlisting}[language=bash, caption=Makefile targets for hardware profiles]
+up-cpu: ## Start services with CPU profile
+    $(DC) --env-file .env.cpu up -d --build
+
+up-gpu: ## Start services with GPU profile
+    $(DC) --env-file .env.gpu \
+        -f docker-compose.yml \
+        -f docker-compose.gpu.yml up -d --build
+\end{lstlisting}
+
+The GPU profile additionally includes Docker Compose GPU resource reservations:
+
+\begin{lstlisting}[language=yaml, caption=GPU resource reservation in docker-compose.gpu.yml]
+services:
+  app:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+\end{lstlisting}
+
+\subsection{Configuration Validation}
+
+The platform validates configuration at startup to catch misconfiguration early:
+
+\begin{enumerate}
+    \item \textbf{Pydantic Validation}: All configuration values are validated against their type definitions
+    \item \textbf{Field Validators}: Custom validators normalize and verify complex values
+    \item \textbf{Computed Properties}: Derived values are calculated consistently
+    \item \textbf{Health Probes}: The startup probe verifies database connectivity and dependency availability
+\end{enumerate}
+
+This multi-layered validation approach ensures that configuration errors are detected before the application accepts traffic, reducing the risk of runtime failures due to misconfiguration.
+

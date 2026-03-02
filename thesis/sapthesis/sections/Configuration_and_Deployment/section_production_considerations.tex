@@ -1,0 +1,335 @@
+% TODO checklist:
+% - Inspected: src/config.py (security settings, HSTS, CSP)
+% - Inspected: ops/nginx/nginx.conf (TLS configuration, security headers)
+% - Inspected: docker-compose.nginx.yml (production proxy setup)
+% - Inspected: docker-compose.gpu.yml (GPU support)
+% - Inspected: README.md production notes section
+% - Inspected: Q&A.md deployment assumptions section
+
+\section{Production Considerations}
+\label{sec:production}
+
+Deploying the Cineca Agentic Platform to production requires careful attention to security, performance, and operational concerns. This section outlines the key considerations for hardening the platform for production use, including security headers, TLS termination, scaling patterns, and GPU support.
+
+\subsection{Security Headers}
+
+The platform implements comprehensive security headers that are enforced in production environments:
+
+\subsubsection{HTTP Strict Transport Security (HSTS)}
+
+HSTS ensures that browsers only communicate with the server over HTTPS:
+
+\begin{lstlisting}[language=Python, caption=HSTS configuration in src/config.py]
+ENABLE_HSTS: bool = Field(
+    default=True, 
+    description="Enable Strict-Transport-Security header"
+)
+HSTS_MAX_AGE: int = Field(
+    default=31536000,  # 1 year
+    description="HSTS max-age in seconds"
+)
+\end{lstlisting}
+
+The NGINX reverse proxy applies this header in production:
+
+\begin{lstlisting}[language=nginx, caption=HSTS header in ops/nginx/nginx.conf]
+add_header Strict-Transport-Security 
+    "max-age=31536000; includeSubDomains" always;
+\end{lstlisting}
+
+\subsubsection{Content Security Policy (CSP)}
+
+CSP prevents XSS attacks by restricting the sources from which content can be loaded:
+
+\begin{lstlisting}[language=Python, caption=CSP configuration]
+CSP_POLICY: str | None = Field(
+    default=None, 
+    description="Content-Security-Policy header value"
+)
+\end{lstlisting}
+
+\subsubsection{Additional Security Headers}
+
+The NGINX configuration applies a comprehensive set of security headers:
+
+\begin{lstlisting}[language=nginx, caption=Security headers in NGINX configuration]
+# Prevent clickjacking attacks
+add_header X-Frame-Options "DENY" always;
+
+# Prevent MIME-type sniffing
+add_header X-Content-Type-Options "nosniff" always;
+
+# XSS protection (legacy browsers)
+add_header X-XSS-Protection "1; mode=block" always;
+
+# Referrer policy for privacy
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+# Permissions policy (restrict browser features)
+add_header Permissions-Policy 
+    "geolocation=(), microphone=(), camera=()" always;
+
+# Hide server version information
+server_tokens off;
+\end{lstlisting}
+
+\subsection{TLS Termination}
+
+Production deployments use NGINX for TLS termination with modern cipher configurations:
+
+\begin{lstlisting}[language=nginx, caption=TLS configuration in ops/nginx/nginx.conf]
+server {
+    listen 443 ssl http2;
+    server_name platform.cineca.it;
+    
+    # Certificate files
+    ssl_certificate /etc/ssl/certs/platform.crt;
+    ssl_certificate_key /etc/ssl/private/platform.key;
+    
+    # Modern TLS protocols only
+    ssl_protocols TLSv1.2 TLSv1.3;
+    
+    # Secure cipher suite
+    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:
+                 ECDHE-RSA-AES128-GCM-SHA256:
+                 ECDHE-ECDSA-AES256-GCM-SHA384:
+                 ECDHE-RSA-AES256-GCM-SHA384:
+                 ECDHE-ECDSA-CHACHA20-POLY1305:
+                 ECDHE-RSA-CHACHA20-POLY1305';
+    ssl_prefer_server_ciphers off;
+    
+    # Session caching for performance
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    
+    # OCSP stapling
+    ssl_stapling on;
+    ssl_stapling_verify on;
+}
+\end{lstlisting}
+
+HTTP requests are automatically redirected to HTTPS:
+
+\begin{lstlisting}[language=nginx, caption=HTTP to HTTPS redirect]
+server {
+    listen 80;
+    server_name platform.cineca.it;
+    
+    # Allow health checks over HTTP
+    location /v1/health/live {
+        proxy_pass http://app_backend;
+    }
+    
+    # Redirect all other traffic to HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+\end{lstlisting}
+
+\subsection{Reverse Proxy Configuration}
+
+The NGINX reverse proxy provides several production-critical features:
+
+\subsubsection{Rate Limiting}
+
+Rate limiting at the proxy level provides an additional defense layer:
+
+\begin{lstlisting}[language=nginx, caption=NGINX rate limiting zones]
+# Define rate limiting zones
+limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=api_burst:10m rate=100r/s;
+
+location /v1/ {
+    limit_req zone=api_limit burst=20 nodelay;
+    limit_req_status 429;
+    proxy_pass http://app_backend;
+}
+
+# Stricter limits for admin endpoints
+location /v1/admin/ {
+    limit_req zone=api_limit burst=10 nodelay;
+    proxy_pass http://app_backend;
+}
+\end{lstlisting}
+
+\subsubsection{Metrics Endpoint Protection}
+
+The Prometheus metrics endpoint is restricted to internal networks:
+
+\begin{lstlisting}[language=nginx, caption=Metrics endpoint access control]
+location /metrics {
+    # Only allow from internal networks
+    allow 10.0.0.0/8;
+    allow 172.16.0.0/12;
+    allow 192.168.0.0/16;
+    deny all;
+    
+    proxy_pass http://app_backend;
+}
+\end{lstlisting}
+
+\subsubsection{WebSocket Support}
+
+The Streamlit UI requires WebSocket support for real-time updates:
+
+\begin{lstlisting}[language=nginx, caption=WebSocket configuration for Streamlit]
+location / {
+    proxy_pass http://ui_frontend;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    
+    # Extended timeouts for WebSocket connections
+    proxy_connect_timeout 60s;
+    proxy_send_timeout 3600s;
+    proxy_read_timeout 3600s;
+    
+    # Disable buffering for real-time updates
+    proxy_buffering off;
+}
+\end{lstlisting}
+
+\subsection{Trusted Proxy Configuration}
+
+When running behind a reverse proxy, the application must be configured to trust forwarded headers:
+
+\begin{lstlisting}[language=Python, caption=Trusted proxy settings]
+TRUST_PROXY: bool = Field(
+    default=False,  # Set True behind reverse proxy
+    description="Trust X-Forwarded-* headers from reverse proxy"
+)
+\end{lstlisting}
+
+This enables correct client IP detection and protocol awareness:
+
+\begin{lstlisting}[language=nginx, caption=Forwarded headers in NGINX]
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header X-Request-ID $request_id;
+\end{lstlisting}
+
+\subsection{GPU Support}
+
+For deployments requiring GPU-accelerated LLM inference, the platform provides GPU support through Docker Compose override files:
+
+\begin{lstlisting}[language=yaml, caption=GPU configuration in docker-compose.gpu.yml]
+services:
+  app:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+\end{lstlisting}
+
+GPU deployment is activated using the combined compose files:
+
+\begin{lstlisting}[language=bash, caption=GPU deployment command]
+docker compose \
+    -f docker-compose.yml \
+    -f docker-compose.gpu.yml \
+    --env-file .env.gpu \
+    up -d --build
+\end{lstlisting}
+
+\subsection{Scaling Considerations}
+
+Production deployments should consider the following scaling patterns:
+
+\paragraph{Horizontal Application Scaling}
+Multiple FastAPI instances can be deployed behind NGINX for increased throughput:
+
+\begin{lstlisting}[language=bash, caption=Scaling application instances]
+docker compose up -d --scale app=3
+\end{lstlisting}
+
+\paragraph{Worker Scaling}
+Background job workers can be scaled independently based on job queue depth:
+
+\begin{lstlisting}[language=bash, caption=Scaling worker processes]
+docker compose up -d --scale worker=5
+\end{lstlisting}
+
+\paragraph{Database Considerations}
+\begin{itemize}
+    \item \textbf{PostgreSQL}: Consider managed solutions (RDS, Cloud SQL) for automatic backups and failover
+    \item \textbf{Redis}: Use Redis Sentinel or managed Redis for high availability
+    \item \textbf{Memgraph}: Allocate sufficient memory for graph operations (8--32GB recommended for production)
+\end{itemize}
+
+\subsection{Secure Cookie Configuration}
+
+Production environments should enable secure cookie flags:
+
+\begin{lstlisting}[language=Python, caption=Secure cookie configuration]
+SECURE_COOKIES: bool = Field(
+    default=False,  # CHANGE TO TRUE IN PRODUCTION
+    description="Enable secure flag on cookies"
+)
+\end{lstlisting}
+
+This ensures cookies are only transmitted over HTTPS connections.
+
+\subsection{Environment Variable Security}
+
+Production deployments should follow these practices for environment variable management:
+
+\begin{enumerate}
+    \item \textbf{Avoid default passwords}: Change all default credentials (\texttt{DB\_PASSWORD}, \texttt{JWT\_SECRET})
+    \item \textbf{Use secrets management}: Store sensitive values in a secrets manager rather than plaintext \texttt{.env} files
+    \item \textbf{Rotate credentials}: Implement credential rotation policies
+    \item \textbf{Audit access}: Log access to configuration endpoints
+\end{enumerate}
+
+\subsection{Logging and Monitoring}
+
+Production environments should configure comprehensive logging and monitoring:
+
+\begin{lstlisting}[language=bash, caption=Production logging configuration]
+# Enable JSON-structured logging
+APP_ENV=prod
+
+# Enable Prometheus metrics
+PROMETHEUS_METRICS_ENABLED=true
+
+# Configure OpenTelemetry tracing
+OTEL_SERVICE_NAME=cineca-agentic-platform
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+\end{lstlisting}
+
+The JSON log format enables integration with log aggregation systems (ELK Stack, Splunk, CloudWatch Logs).
+
+\subsection{Production Deployment Checklist Summary}
+
+Table~\ref{tab:prod-security-checklist} summarizes critical security settings for production:
+
+\begin{table}[ht]
+\centering
+\caption{Critical production security settings.}
+\label{tab:prod-security-checklist}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Setting} & \textbf{Production Value} & \textbf{Impact} \\
+\hline
+APP\_ENV & prod & Enables security features, JSON logging \\
+ENABLE\_HSTS & true & Enforces HTTPS in browsers \\
+SECURE\_COOKIES & true & Cookies only over HTTPS \\
+TRUST\_PROXY & true & Correct client IP detection \\
+ENABLE\_DOCS & false & Hides API documentation \\
+DB\_PASSWORD & (strong random) & Database access security \\
+JWT\_SECRET & (strong random) & Token signing security \\
+OIDC\_ISSUER & (production IdP) & Authentication security \\
+RATE\_LIMIT\_ENABLED & true & DoS protection \\
+PII\_SCRUBBING\_ENABLED & true & Data privacy \\
+\hline
+\end{tabular}
+\end{table}
+

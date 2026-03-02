@@ -1,0 +1,248 @@
+% TODO checklist:
+% - [x] README.md: Feature boundaries, technology choices
+% - [x] Q&A.md: Q46 (Limitations), Q50 (Comparison showing gaps)
+% - [x] sapthesis-doc.tex: Non-objectives and scope notes in requirements chapter
+
+\section{Scope and Non-Goals}
+\label{sec:scope-nongoals}
+
+Clearly delineating what falls within and outside the scope of this thesis is essential for understanding its contributions and limitations. This section explicitly defines the boundaries of the work.
+
+\subsection{In-Scope Elements}
+
+The following elements are within the scope of this thesis and are addressed through design, implementation, and evaluation:
+
+\subsubsection{Agent Orchestration Engine}
+
+\begin{itemize}
+    \item Multi-step agent run execution with planning and tool invocation
+    \item Intent classification pipeline (pattern-based and LLM fallback)
+    \item Session management for conversational context
+    \item Agent run lifecycle management (pending → running → completed/failed/cancelled)
+    \item Step-by-step execution recording for auditability
+    \item TODO list planning for complex task decomposition
+\end{itemize}
+
+\subsubsection{MCP Tool Framework}
+
+\begin{itemize}
+    \item Tool registry with 34 tools across 17 categories
+    \item Tool discovery API with schema retrieval
+    \item Tool invocation with input validation and output handling
+    \item Per-tool RBAC and audit logging
+    \item Patterns for tool extension and customization
+\end{itemize}
+
+\subsubsection{Graph Database Integration}
+
+\begin{itemize}
+    \item Memgraph graph database integration
+    \item NL-to-Cypher pipeline for natural language querying
+    \item Multi-layer safety validation for generated queries
+    \item Graph schema management and introspection
+    \item Result summarization for user-friendly responses
+\end{itemize}
+
+\subsubsection{Security Framework}
+
+\begin{itemize}
+    \item OIDC/JWT authentication with JWKS key management
+    \item Role-Based Access Control with scope-based permissions
+    \item Multi-tenant data isolation at database level
+    \item Rate limiting with sliding window algorithm
+    \item PII detection and redaction
+    \item Comprehensive audit logging
+\end{itemize}
+
+\subsubsection{Observability Stack}
+
+\begin{itemize}
+    \item Prometheus metrics for all major subsystems
+    \item Structured logging with correlation IDs
+    \item OpenTelemetry distributed tracing
+    \item Kubernetes-compatible health probes
+    \item Component health monitoring
+\end{itemize}
+
+\subsubsection{Background Job System}
+
+\begin{itemize}
+    \item Asynchronous job queue with Redis backend
+    \item Worker processes with heartbeat monitoring
+    \item SSE-based progress streaming
+    \item Job cancellation and graceful shutdown
+    \item Scheduled background tasks (APScheduler)
+\end{itemize}
+
+\subsubsection{User Interfaces}
+
+\begin{itemize}
+    \item Next.js Agent Chat UI for end-user interactions
+    \item Streamlit Control Panel for administration
+    \item API client implementations in TypeScript and Python
+\end{itemize}
+
+\subsubsection{Deployment Infrastructure}
+
+\begin{itemize}
+    \item Docker Compose configuration for development and production
+    \item NGINX reverse proxy configuration
+    \item Prometheus and Grafana monitoring setup
+    \item Database initialization and migration scripts
+\end{itemize}
+
+\subsection{Out-of-Scope Elements (Non-Goals)}
+
+The following elements are explicitly \textbf{not} within the scope of this thesis:
+
+\subsubsection{Advanced RAG Pipeline}
+
+While the platform supports graph-based knowledge querying through NL-to-Cypher, it does \textbf{not} implement:
+
+\begin{itemize}
+    \item Document ingestion and chunking pipelines
+    \item Vector embedding generation and storage
+    \item Semantic similarity search over unstructured documents
+    \item Hybrid retrieval combining vector and keyword search
+\end{itemize}
+
+\paragraph{Rationale:} The focus is on structured knowledge in graph form, which is the primary data representation at CINECA. Document RAG is a complementary capability that could be added in future work but is not essential for the initial deployment context.
+
+\subsubsection{Multi-Agent Collaboration}
+
+The platform implements single-agent orchestration but does \textbf{not} include:
+
+\begin{itemize}
+    \item Agent-to-agent communication protocols
+    \item Multi-agent task delegation and coordination
+    \item Hierarchical agent architectures (manager/worker patterns)
+    \item Agent negotiation and conflict resolution
+\end{itemize}
+
+\paragraph{Rationale:} Multi-agent systems introduce significant complexity in coordination, debugging, and security. The single-agent architecture sufficiently addresses current requirements while providing a foundation for future multi-agent extensions.
+
+\subsubsection{Advanced Agent Architectures}
+
+The platform implements the ReAct (Reasoning + Acting) pattern but does \textbf{not} include:
+
+\begin{itemize}
+    \item Plan-and-execute architectures with separate planning and execution phases
+    \item Tree-of-thought reasoning with branching exploration
+    \item Self-reflection and critique loops
+    \item Constitutional AI safety patterns
+\end{itemize}
+
+\paragraph{Rationale:} The ReAct pattern provides a solid foundation for tool-using agents. More sophisticated architectures could be implemented within the existing framework but are not required for the current use cases.
+
+\subsubsection{Real-Time Streaming Responses}
+
+The platform supports Server-Sent Events (SSE) for job progress but does \textbf{not} implement:
+
+\begin{itemize}
+    \item Token-by-token LLM response streaming to users
+    \item WebSocket-based bidirectional communication
+    \item Real-time collaborative editing features
+\end{itemize}
+
+\paragraph{Rationale:} The current polling-based approach provides adequate user experience for the target use cases. Streaming would improve perceived responsiveness but adds implementation complexity that was deprioritized.
+
+\subsubsection{Code Execution Sandbox}
+
+The platform does \textbf{not} include:
+
+\begin{itemize}
+    \item Sandboxed code execution environments for agent-generated code
+    \item Container-based isolation for untrusted code
+    \item Language-specific interpreters for code execution tools
+\end{itemize}
+
+\paragraph{Rationale:} Safe code execution requires sophisticated sandboxing that is outside the scope of this work. Agents can invoke pre-defined tools but cannot execute arbitrary code.
+
+\subsubsection{Conversation Memory Systems}
+
+Beyond session-scoped context, the platform does \textbf{not} implement:
+
+\begin{itemize}
+    \item Long-term episodic memory across sessions
+    \item Semantic memory with embedding-based retrieval
+    \item Summary memory for conversation compression
+    \item Entity memory for tracking mentioned entities over time
+\end{itemize}
+
+\paragraph{Rationale:} Session-based context suffices for the current use cases. Advanced memory systems could enhance user experience but require additional infrastructure (vector stores) and careful privacy considerations.
+
+\subsubsection{MLOps and Model Training}
+
+The platform does \textbf{not} include:
+
+\begin{itemize}
+    \item Model fine-tuning or training pipelines
+    \item Experiment tracking and model versioning
+    \item A/B testing infrastructure for model comparison
+    \item Model deployment automation
+\end{itemize}
+
+\paragraph{Rationale:} The platform consumes pre-trained models via APIs. Model training and MLOps are separate concerns addressed by dedicated platforms (MLflow, Kubeflow, etc.).
+
+\subsection{Boundary Cases}
+
+Some capabilities exist in limited form within the platform:
+
+\begin{description}
+    \item[Caching:] LLM response caching is supported but not extensively optimized. Semantic deduplication of similar prompts is not implemented.
+    
+    \item[Distributed Deployment:] While the architecture supports horizontal scaling, distributed locking for multi-worker job processing is not fully implemented.
+    
+    \item[Provider-Specific Features:] The platform uses a common provider interface, which means provider-specific features (e.g., OpenAI function calling syntax) are abstracted rather than directly exposed.
+    
+    \item[Graph Analytics:] Basic graph analytics (centrality, paths) are available through tools, but advanced algorithms (community detection, link prediction) are not implemented.
+\end{description}
+
+\subsection{Scope Summary}
+
+Table~\ref{tab:scope-summary} provides a concise summary of scope decisions.
+
+\begin{table}[ht]
+\centering
+\caption{Scope summary: included and excluded capabilities.}
+\label{tab:scope-summary}
+\small
+\begin{tabular}{lcc}
+\hline
+\textbf{Capability} & \textbf{In Scope} & \textbf{Out of Scope} \\
+\hline
+Single-agent orchestration & \checkmark & \\
+Multi-agent collaboration & & \checkmark \\
+Graph NL-to-Cypher & \checkmark & \\
+Document RAG & & \checkmark \\
+OIDC/JWT authentication & \checkmark & \\
+RBAC authorization & \checkmark & \\
+Multi-tenancy & \checkmark & \\
+Prometheus metrics & \checkmark & \\
+OpenTelemetry tracing & \checkmark & \\
+SSE job streaming & \checkmark & \\
+Token streaming & & \checkmark \\
+MCP tools (34) & \checkmark & \\
+Code execution sandbox & & \checkmark \\
+Session context & \checkmark & \\
+Long-term memory & & \checkmark \\
+Docker deployment & \checkmark & \\
+Kubernetes operators & & \checkmark \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Extensibility for Future Work}
+
+While certain capabilities are out of scope for this thesis, the architecture has been designed to accommodate future extensions:
+
+\begin{itemize}
+    \item The tool framework can incorporate document RAG tools
+    \item The orchestrator can be extended with additional agent patterns
+    \item The provider abstraction can support streaming providers
+    \item The job system can be enhanced with distributed locking
+    \item Memory systems can be added as additional tools or services
+\end{itemize}
+
+Chapter~\ref{ch:conclusions} discusses these extension opportunities in the context of future work.
+

@@ -1,0 +1,27 @@
+# ops/grafana/provisioning/datasources/datasource.yml
+# Provision a Prometheus datasource for Cineca Agentic Platform
+
+apiVersion: 1
+
+deleteDatasources:
+  - name: Prometheus
+    orgId: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus_ds
+    access: proxy
+    orgId: 1
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    version: 1
+    jsonData:
+      timeInterval: 15s          # Min step for queries; match Prom scrape_interval
+      httpMethod: POST           # Use POST for large queries
+      manageAlerts: true         # Enable alerting UI (Grafana-managed alerts)
+      prometheusType: Prometheus
+      prometheusVersion: 2.52.0  # Informational; does not need to be exact
+      exemplarTraceIdDestinations: []  # Fill if you integrate tracing (e.g., Tempo)
+    secureJsonData: {}

@@ -1,0 +1,30 @@
+# Docker Compose Configuration for Streamlit UI
+# Standalone configuration - can also be integrated into main project
+
+services:
+  ui-streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8501:8501"
+    env_file:
+      - ../.env  # Load from parent project .env
+    environment:
+      # Override API base URL for standalone use - use host.docker.internal to reach host services
+      - API_BASE_URL=${API_BASE_URL:-http://host.docker.internal:8000}
+    
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Enable host.docker.internal on Linux
+    
+    volumes:
+      - ./logs:/app/logs
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8501/_stcore/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

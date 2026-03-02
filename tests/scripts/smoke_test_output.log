@@ -1,0 +1,23 @@
+==================================
+PostgreSQL Provider & Jobs Smoke Test
+==================================
+BASE: http://localhost:8000/v1
+
+=== 1. Health Checks ===
+[1;33m➜ Checking /health/ready...[0m
+[0;32m✓ Health ready endpoint OK[0m
+[1;33m➜ Checking /health/providers...[0m
+[0;32m✓ Provider health endpoint OK[0m
+[1;33m➜ Checking /health/db...[0m
+[0;32m✓ Database health OK[0m
+[1;33m➜ Checking /health/redis...[0m
+[0;32m✓ Redis health OK[0m
+
+=== 2. Jobs Endpoints (PG auth + Redis fast path) ===
+[1;33m➜ Checking token validity...[0m
+[1;33m⚠ Token expired - skipping jobs tests[0m
+[1;33m  (Jobs endpoints require valid auth token)[0m
+
+=== 3. Providers Endpoints (PG auth + Redis cache) ===
+[1;33m➜ Registering provider...[0m
+curl: (22) The requested URL returned error: 401

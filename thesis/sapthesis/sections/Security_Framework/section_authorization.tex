@@ -1,0 +1,369 @@
+% TODO checklist:
+% - [x] Inspected src/security/authorization.py (RBAC logic, scope matching, wildcard support)
+% - [x] Inspected src/security/perm.py (Permission utilities, role inference)
+% - [x] Inspected src/agent_policies/roles.yaml (Role definitions and scopes)
+% - [x] Inspected src/mcp/policies.yaml (Tool-level authorization policies)
+% - [x] Reviewed Q&A.md Q17 (RBAC implementation details)
+% - [x] Reviewed README.md (Authorization features overview)
+
+\section{Authorization}
+\label{sec:authorization}
+
+The Cineca Agentic Platform implements a comprehensive Role-Based Access Control (RBAC) system that governs access to API endpoints, MCP tools, graph database operations, and administrative functions. The authorization subsystem is designed with defense-in-depth principles, ensuring that multiple layers of access control are applied throughout the request lifecycle.
+
+\subsection{RBAC Model}
+\label{subsec:rbac-model}
+
+The authorization model is built on the concept of \textit{roles} that expand to \textit{scopes}. This two-tier approach provides both administrative simplicity (assigning roles) and fine-grained control (scope-level permissions).
+
+\paragraph{Terminology}
+\begin{itemize}
+    \item \textbf{Roles}: Coarse-grained labels assigned to users (e.g., ``admin'', ``researcher'', ``operator''). Roles are typically assigned at the Identity Provider level and arrive in tokens via the \texttt{roles} claim.
+    \item \textbf{Scopes}: Fine-grained permission strings following a \texttt{resource:action} pattern (e.g., ``tools:invoke'', ``graph:query'', ``admin:tenants:write''). Scopes represent specific capabilities.
+    \item \textbf{Permissions}: In Auth0-style tokens, explicit permission arrays that are treated equivalently to scopes.
+\end{itemize}
+
+\paragraph{Role Hierarchy}
+The platform defines a hierarchy of roles with increasing privilege levels:
+
+\begin{enumerate}
+    \item \textbf{guest}: Minimal capabilities for trial or external users. Limited to schema discovery and basic output formatting.
+    \item \textbf{researcher}: Scientists with read access to graphs, model inference, and visualization capabilities. Cannot modify data.
+    \item \textbf{curator}: Data stewards with graph CRUD operations, quality checks, and archive management.
+    \item \textbf{data\_engineer}: ETL-focused role with bulk operations, system backup, and database switching capabilities.
+    \item \textbf{operator}: SRE/operations role for monitoring, health checks, and rate limit management. No data mutation.
+    \item \textbf{auditor}: Read-only security and compliance oversight with strict safety enforcement.
+    \item \textbf{admin}: Full system access including cross-tenant operations and all administrative functions.
+\end{enumerate}
+
+\subsection{RBAC Implementation Details}
+\label{subsec:rbac-implementation}
+
+The authorization implementation in \texttt{src/security/authorization.py} provides a flexible and extensible framework for access control decisions.
+
+\subsubsection{Role-to-Scope Expansion}
+
+Roles are expanded to scopes using a configurable policy mapping. The platform supports multiple policy sources with a defined precedence:
+
+\begin{enumerate}
+    \item \textbf{Built-in Defaults}: Conservative baseline permissions.
+    \item \textbf{src/agent\_policies/roles.yaml}: Primary role policy file.
+    \item \textbf{src/mcp/policies.yaml}: Tool-specific policies (merged).
+\end{enumerate}
+
+\begin{lstlisting}[language=Python,caption={Role-to-scope expansion logic}]
+_DEFAULT_ROLE_SCOPES: dict[str, list[str]] = {
+    "user": [
+        "read",
+        "agent.run",
+        "tools.invoke",
+        "models.complete",
+        "system.health",
+    ],
+    "admin": [
+        "*",  # Full access via wildcard
+    ],
+}
+
+def _expand_roles_to_scopes(scopes_or_roles: Iterable[str]) -> list[str]:
+    """Expand each token scope/role using the role->scopes mapping."""
+    expanded: list[str] = []
+    seen = set()
+    for token in scopes_or_roles:
+        if token in _ROLE_TO_SCOPES:
+            for s in _ROLE_TO_SCOPES[token]:
+                if s not in seen:
+                    expanded.append(s)
+                    seen.add(s)
+        elif token not in seen:
+            expanded.append(token)
+            seen.add(token)
+    return expanded
+\end{lstlisting}
+
+\subsubsection{Scope Format and Patterns}
+
+Scopes follow a hierarchical naming convention that supports wildcards:
+
+\begin{itemize}
+    \item \textbf{Exact Match}: \texttt{tools:invoke} matches only that specific scope.
+    \item \textbf{Resource Wildcard}: \texttt{tools:*} matches any action on the tools resource.
+    \item \textbf{Super Wildcard}: \texttt{*} grants access to everything (reserved for admin role).
+\end{itemize}
+
+The wildcard matching implementation uses regex-based pattern evaluation:
+
+\begin{lstlisting}[language=Python,caption={Wildcard scope matching}]
+def _scope_satisfies(candidate: str, required: str) -> bool:
+    """Return True if candidate scope covers required."""
+    if candidate == "*":
+        return True
+    # Convert wildcard pattern to regex
+    pattern = r"^" + re.escape(candidate).replace(r"\*", ".*") + r"$"
+    return bool(re.fullmatch(pattern, required))
+\end{lstlisting}
+
+\subsubsection{Authorization Check Modes}
+
+The platform supports two authorization modes:
+
+\begin{enumerate}
+    \item \textbf{any} (default): At least one required scope must be satisfied by the user's effective scopes. Suitable for endpoints with alternative access paths.
+    \item \textbf{all}: All required scopes must be satisfied. Used when multiple distinct permissions are needed.
+\end{enumerate}
+
+\begin{lstlisting}[language=Python,caption={Scope checking with mode support}]
+def check_scopes(
+    user_scopes_or_roles: Iterable[str],
+    required: str | Iterable[str],
+    *,
+    mode: str = "any",
+) -> bool:
+    """Evaluate authorization based on scope matching."""
+    req = _as_list(required)
+    eff = _expand_roles_to_scopes(user_scopes_or_roles)
+    
+    if "*" in eff:
+        return True  # Super admin bypass
+    
+    if mode == "any":
+        for r in req:
+            for c in eff:
+                if _scope_satisfies(c, r):
+                    return True
+        return False
+    
+    # mode == "all"
+    return all(any(_scope_satisfies(c, r) for c in eff) for r in req)
+\end{lstlisting}
+
+\subsubsection{Authorization Decision with Audit Trail}
+
+Every authorization decision is captured with an audit trail:
+
+\begin{lstlisting}[language=Python,caption={Authorization with audit logging}]
+def authorize(
+    user: Any,
+    required_scopes: str | Iterable[str],
+    *,
+    resource: str | None = None,
+    action: str | None = None,
+    mode: str = "any",
+) -> AuthzDecision:
+    """Make an authorization decision and emit an audit event."""
+    req = tuple(_as_list(required_scopes))
+    raw = _extract_scopes(user)
+    eff = tuple(_expand_roles_to_scopes(raw))
+    allowed = check_scopes(raw, req, mode=mode)
+    principal = _principal(user)
+    
+    reason = (
+        "granted by wildcard" if "*" in eff
+        else ("all scopes satisfied" if allowed and mode == "all"
+              else ("one scope satisfied" if allowed 
+                    else "insufficient scopes"))
+    )
+    
+    # Emit audit event
+    audit_policy_decision(
+        policy="role_scope_policy",
+        subject=principal,
+        action=action or req[0],
+        resource=resource or "unknown",
+        allowed=allowed,
+        reason=reason,
+        attributes={"required": list(req), "effective_scopes": list(eff)}
+    )
+    
+    return AuthzDecision(
+        allowed=allowed, 
+        reason=reason, 
+        required=req, 
+        effective_scopes=eff
+    )
+\end{lstlisting}
+
+\subsubsection{FastAPI Integration}
+
+The authorization system integrates seamlessly with FastAPI through dependency injection:
+
+\begin{lstlisting}[language=Python,caption={FastAPI authorization dependency}]
+def require_scopes(
+    required_scopes: str | Iterable[str],
+    *,
+    mode: str = "any",
+    resource: str | None = None,
+):
+    """Create a dependency that enforces scope requirements."""
+    async def _dep(user=Depends(get_current_user)):
+        authorize_or_403(
+            user,
+            required_scopes,
+            resource=resource or "route",
+            mode=mode,
+        )
+        return user
+    return _dep
+
+# Usage in routers
+@router.get("/admin")
+async def admin_only(user=Depends(require_scopes("admin:all"))):
+    return {"ok": True}
+\end{lstlisting}
+
+\subsubsection{Permission Utilities}
+
+The \texttt{perm.py} module provides additional utilities for working with permissions:
+
+\begin{lstlisting}[language=Python,caption={Permission extraction and checking}]
+def current_permissions(user) -> set[str]:
+    """Extract effective permissions from a Principal-like object.
+    
+    Precedence: permissions -> scope/scopes -> roles mapping.
+    """
+    perms: set[str] = set()
+    raw = getattr(user, "raw", {}) or {}
+    
+    # 1) Explicit permissions claim (Auth0-style)
+    if isinstance(raw.get("permissions"), (list, tuple)):
+        perms.update(raw["permissions"])
+    
+    # 2) scope (space-delimited) or scopes (array)
+    scope = raw.get("scope")
+    if isinstance(scope, str):
+        perms.update(s for s in scope.split() if s)
+    
+    # 3) Admin role -> implicit admin:all
+    roles = raw.get("roles")
+    if isinstance(roles, (list, tuple)):
+        if any(str(r).lower() == "admin" for r in roles):
+            perms.add("admin:all")
+    
+    return perms
+
+def has_perms(user, any_of: Iterable[str] | str) -> bool:
+    """Check if user has any of the required permissions."""
+    req = _as_set(any_of)
+    eff = current_permissions(user)
+    if "admin:all" in eff:
+        return True  # Super permission
+    return any(r in eff for r in req)
+\end{lstlisting}
+
+\subsubsection{Policy File Structure}
+
+The \texttt{roles.yaml} file defines comprehensive role policies:
+
+\begin{lstlisting}[language=yaml,caption={Role policy definition structure}]
+roles:
+  admin:
+    description: "Full administrative access"
+    tools:
+      allow: ["*"]
+      deny: []
+    scopes:
+      - "admin:*"
+      - "models:*"
+      - "tools:*"
+      - "db:*"
+      - "graph:*"
+    safety:
+      output_guard: "standard"
+      intent_filter: "standard"
+      pii_scrubber: "redact"
+    limits:
+      rpm: 240
+      tpm: 160000
+      concurrent_jobs: 20
+
+  researcher:
+    description: "Scientists exploring the graph"
+    tools:
+      allow:
+        - "graph.query"
+        - "graph.search"
+        - "catalog.discover"
+      deny:
+        - "graph.crud"
+        - "system.*"
+    scopes:
+      - "models:list"
+      - "models:infer"
+      - "db:query:read"
+    limits:
+      rpm: 60
+      tpm: 40000
+\end{lstlisting}
+
+\subsubsection{Per-Tool Authorization}
+
+MCP tools declare their required scopes via the \texttt{@mcp\_tool} decorator. Authorization is checked before each tool invocation:
+
+\begin{lstlisting}[language=Python,caption={Tool-level authorization declaration}]
+@mcp_tool(
+    name="graph.crud",
+    description="Create, update, delete graph nodes/edges",
+    required_scopes=["graph:crud", "db:write"]
+)
+async def graph_crud(
+    operation: str,
+    node_type: str,
+    properties: dict,
+    ctx: ToolContext
+) -> ToolResult:
+    # Authorization already verified by framework
+    ...
+\end{lstlisting}
+
+\subsubsection{Role Inference}
+
+For UI customization and logging, the platform can infer a user's effective role from their permissions:
+
+\begin{lstlisting}[language=Python,caption={Role inference from permissions}]
+def infer_role_from_principal(principal) -> str | None:
+    """Best-effort role inference from principal scopes."""
+    tokens = set()  # Collect all scopes/permissions/roles
+    
+    # Extract from various claim sources
+    for source in [principal.raw.get("scope"), 
+                   principal.raw.get("scopes"),
+                   principal.raw.get("permissions")]:
+        if isinstance(source, str):
+            tokens |= set(source.split())
+        elif isinstance(source, (list, tuple)):
+            tokens |= set(str(s) for s in source)
+    
+    tokens = {t.lower() for t in tokens}
+    
+    if "admin:all" in tokens or "admin" in tokens:
+        return "admin"
+    if any(t in tokens for t in ("tools:all", "tools:invoke:all")):
+        return "power_user"
+    if any(t in tokens for t in ("tools:basic", "tools:invoke:basic")):
+        return "basic"
+    return None
+\end{lstlisting}
+
+\subsubsection{Authorization Error Responses}
+
+When authorization fails, the platform returns standardized HTTP 403 Forbidden responses:
+
+\begin{lstlisting}[language=Python,caption={Authorization denial with details}]
+def authorize_or_403(user, required_scopes, **kwargs) -> None:
+    """Raise HTTP 403 if authorization denies access."""
+    decision = authorize(user, required_scopes, **kwargs)
+    if not decision.allowed:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Not authorized: requires {list(decision.required)}",
+        )
+\end{lstlisting}
+
+This design ensures that:
+\begin{enumerate}
+    \item Users receive clear feedback about missing permissions.
+    \item All authorization decisions are audited for compliance review.
+    \item The authorization logic is centralized and consistent across all endpoints.
+    \item Role definitions can be updated without code changes (via YAML policies).
+\end{enumerate}
+

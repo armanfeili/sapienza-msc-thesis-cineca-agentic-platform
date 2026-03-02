@@ -1,0 +1,328 @@
+% =============================================================================
+% SECTION: Graph Databases and Natural Language Interfaces
+% Chapter: Background and Related Work
+% =============================================================================
+%
+% TODO Checklist (verified in codebase/docs):
+% [x] Reviewed Q&A.md Q29-Q35 for graph integration and NL-to-Cypher pipeline
+% [x] Reviewed db/memgraph_domain/ for data model (14 node types, 4 relationships)
+% [x] Reviewed src/mcp/tools/graph/ for Cypher-related tools
+% [x] Reviewed docs/database/ for graph database documentation
+% [x] Reviewed src/services/orchestrator.py for NL-to-Cypher intent handling
+% [x] Cross-referenced Memgraph and Neo4j documentation
+%
+% =============================================================================
+
+\section{Graph Databases and Natural Language Interfaces}
+\label{sec:graph-databases}
+
+Graph databases represent a powerful paradigm for storing and querying highly connected data. When combined with natural language interfaces powered by LLMs, they enable intuitive access to complex knowledge structures. This section provides the theoretical foundations for the graph-based knowledge querying capabilities of the Cineca Agentic Platform.
+
+\subsection{Graph Database Fundamentals}
+
+Graph databases are designed to store, manage, and query data organized as graphs---collections of nodes (vertices) connected by edges (relationships). Unlike relational databases that organize data into tables with predefined schemas, graph databases naturally represent and traverse relationships.
+
+\paragraph{Property Graph Model}
+
+The property graph model, used by most modern graph databases, defines:
+
+\begin{itemize}
+    \item \textbf{Nodes}: Entities in the domain, each with a unique identifier and optional labels (types).
+    \item \textbf{Relationships}: Directed connections between nodes, each with a type and optional properties.
+    \item \textbf{Properties}: Key-value pairs attached to both nodes and relationships, storing entity attributes.
+    \item \textbf{Labels}: Tags that categorize nodes into types (e.g., \texttt{:Person}, \texttt{:Workflow}).
+\end{itemize}
+
+This model is particularly well-suited for:
+\begin{itemize}
+    \item Social networks and organizational structures
+    \item Knowledge graphs and ontologies
+    \item Recommendation systems
+    \item Fraud detection and network analysis
+    \item Bioinformatics workflows and data lineage
+\end{itemize}
+
+\paragraph{Graph vs.\ Relational Databases}
+
+Key differences from relational databases include:
+
+\begin{itemize}
+    \item \textbf{Relationship handling}: Relationships are first-class citizens, not foreign key joins.
+    \item \textbf{Traversal efficiency}: Graph databases optimize for relationship traversal, with $O(1)$ edge lookup compared to $O(\log n)$ or $O(n)$ for relational joins.
+    \item \textbf{Schema flexibility}: Nodes can have varying properties without schema migrations.
+    \item \textbf{Query patterns}: Graph queries naturally express path-based and pattern-matching questions.
+\end{itemize}
+
+\paragraph{Use Cases in AI Systems}
+
+Graph databases complement LLM-based systems by providing:
+\begin{itemize}
+    \item \textbf{Structured knowledge}: Explicit relationships that LLMs can reason about.
+    \item \textbf{Explainable queries}: Results that trace back to specific paths and connections.
+    \item \textbf{Dynamic updates}: Knowledge that can be incrementally updated without retraining.
+    \item \textbf{Complex queries}: Pattern matching that would be difficult to express in natural language alone.
+\end{itemize}
+
+\subsection{Cypher Query Language}
+
+Cypher is the most widely adopted query language for property graph databases, originally developed for Neo4j and now supported by multiple graph databases including Memgraph, Amazon Neptune, and others through the openCypher standard.
+
+\paragraph{Syntax Overview}
+
+Cypher uses an ASCII-art style syntax that visually represents graph patterns:
+
+\begin{lstlisting}[language=SQL,caption={Basic Cypher query examples}]
+// Match all Workflow nodes
+MATCH (w:Workflow)
+RETURN w.name, w.status
+
+// Find relationships between workflows
+MATCH (w1:Workflow)-[r:DEPENDS_ON]->(w2:Workflow)
+RETURN w1.name AS source, w2.name AS target, r.type
+
+// Path queries with variable length
+MATCH path = (start:Workflow)-[:DEPENDS_ON*1..3]->(end:Workflow)
+WHERE start.name = 'DataPrep'
+RETURN path
+
+// Aggregation and filtering
+MATCH (w:Workflow)-[:RUNS_ON]->(n:Node)
+WHERE n.gpu_count > 0
+RETURN n.name, COUNT(w) AS workflow_count
+ORDER BY workflow_count DESC
+\end{lstlisting}
+
+\paragraph{Key Cypher Clauses}
+
+\begin{itemize}
+    \item \texttt{MATCH}: Specifies the graph pattern to search for.
+    \item \texttt{WHERE}: Filters matched patterns based on conditions.
+    \item \texttt{RETURN}: Specifies what data to return from matched patterns.
+    \item \texttt{CREATE}: Creates new nodes and relationships.
+    \item \texttt{MERGE}: Creates entities only if they don't exist (upsert semantics).
+    \item \texttt{DELETE}: Removes nodes and relationships.
+    \item \texttt{SET}: Updates properties on nodes and relationships.
+    \item \texttt{WITH}: Chains query parts together, passing results forward.
+    \item \texttt{CALL}: Invokes stored procedures or user-defined functions.
+\end{itemize}
+
+\paragraph{Advantages of Cypher}
+
+Cypher's design offers several advantages:
+\begin{itemize}
+    \item \textbf{Readability}: Pattern syntax is intuitive and visually represents graph structure.
+    \item \textbf{Expressiveness}: Complex traversals and pattern matching in concise queries.
+    \item \textbf{Composability}: Queries can be built up incrementally using \texttt{WITH} clauses.
+    \item \textbf{Standardization}: openCypher provides cross-database portability.
+\end{itemize}
+
+\subsection{Memgraph and Neo4j}
+
+Two prominent graph database systems are particularly relevant to enterprise AI applications:
+
+\paragraph{Neo4j}
+
+Neo4j~% TODO: add bibitem for Neo4j
+is the most widely deployed graph database, offering:
+\begin{itemize}
+    \item \textbf{ACID transactions}: Full transactional support for data integrity.
+    \item \textbf{Native graph storage}: Purpose-built storage engine optimized for graphs.
+    \item \textbf{Enterprise features}: Clustering, security, monitoring, and commercial support.
+    \item \textbf{Rich ecosystem}: Extensive tooling, visualization, and integration options.
+    \item \textbf{Aura cloud service}: Managed cloud offering for simplified deployment.
+\end{itemize}
+
+Neo4j's integration with AI systems is well-developed, with official LangChain components (\texttt{GraphCypherQAChain}) and LlamaIndex integration (\texttt{KnowledgeGraphIndex}).
+
+\paragraph{Memgraph}
+
+Memgraph~% TODO: add bibitem for Memgraph
+is an in-memory graph database designed for real-time analytics and low-latency queries:
+\begin{itemize}
+    \item \textbf{In-memory storage}: Sub-millisecond query latency for most operations.
+    \item \textbf{Cypher compatibility}: Full openCypher support with extensions.
+    \item \textbf{Streaming support}: Native integration with Apache Kafka and other stream sources.
+    \item \textbf{MAGE library}: Collection of graph algorithms and utilities.
+    \item \textbf{Open source core}: Community edition available under open source license.
+\end{itemize}
+
+The Cineca Agentic Platform uses Memgraph as its graph database, selected for:
+\begin{itemize}
+    \item Low-latency queries suitable for interactive agent workflows
+    \item In-memory performance for exploration and prototyping
+    \item openCypher compatibility ensuring query portability
+    \item Simpler operational model compared to distributed databases
+\end{itemize}
+
+\paragraph{Platform-Specific Considerations}
+
+When integrating graph databases into AI agent systems, several considerations apply:
+
+\begin{itemize}
+    \item \textbf{Schema enforcement}: While graph databases are schema-flexible, production deployments benefit from schema constraints to ensure data quality.
+    
+    \item \textbf{Query safety}: User-generated or AI-generated queries must be validated to prevent injection attacks and resource exhaustion.
+    
+    \item \textbf{Tenant isolation}: Multi-tenant systems require mechanisms to restrict queries to tenant-specific data.
+    
+    \item \textbf{Query optimization}: Complex pattern matches can be expensive; monitoring and optimization are essential.
+\end{itemize}
+
+\subsection{Natural Language to Cypher Translation}
+
+The challenge of translating natural language questions into Cypher queries is a key problem in making graph databases accessible to non-technical users and AI agents.
+
+\paragraph{Problem Definition}
+
+Given:
+\begin{itemize}
+    \item A natural language question (e.g., ``Which workflows depend on DataPrep?'')
+    \item A graph schema describing available node types, relationship types, and properties
+    \item Optionally, example queries and domain-specific conventions
+\end{itemize}
+
+The task is to generate a syntactically correct and semantically appropriate Cypher query that answers the question.
+
+\paragraph{Challenges}
+
+NL-to-Cypher translation presents several challenges:
+
+\begin{enumerate}
+    \item \textbf{Schema understanding}: The translator must know what entities and relationships exist in the graph.
+    
+    \item \textbf{Entity resolution}: Natural language references (``the preprocessing workflow'') must be resolved to specific graph entities.
+    
+    \item \textbf{Relationship inference}: Implicit relationships in natural language must be mapped to explicit graph relationships.
+    
+    \item \textbf{Aggregation interpretation}: Questions about ``how many'' or ``most common'' require appropriate aggregation functions.
+    
+    \item \textbf{Path queries}: Questions about connections or dependencies require variable-length path patterns.
+    
+    \item \textbf{Ambiguity handling}: Natural language is often ambiguous; the system must make reasonable interpretations or ask for clarification.
+\end{enumerate}
+
+\paragraph{Approaches}
+
+Several approaches have been developed for NL-to-Cypher translation:
+
+\begin{itemize}
+    \item \textbf{Rule-based systems}: Hand-crafted rules mapping linguistic patterns to query templates. High precision for covered patterns but limited coverage.
+    
+    \item \textbf{Semantic parsing}: Formal methods that build logical representations from natural language, then translate to Cypher. Requires linguistic expertise and domain modeling.
+    
+    \item \textbf{Neural sequence-to-sequence}: End-to-end neural models trained on (question, query) pairs. Requires substantial training data for each domain.
+    
+    \item \textbf{LLM-based generation}: Using large language models to generate Cypher directly from natural language, with schema information provided in the prompt.
+\end{itemize}
+
+The LLM-based approach has become dominant due to its flexibility and zero-shot capability. However, it introduces new challenges around query correctness, safety, and reliability that require additional infrastructure.
+
+\paragraph{LLM-Based NL-to-Cypher Pipeline}
+
+A typical LLM-based NL-to-Cypher pipeline includes:
+
+\begin{enumerate}
+    \item \textbf{Intent classification}: Determining whether the question is graph-related and what type of answer is expected.
+    
+    \item \textbf{Schema retrieval}: Fetching relevant portions of the graph schema to include in the LLM prompt.
+    
+    \item \textbf{Prompt construction}: Building a prompt that includes the question, schema, examples, and generation instructions.
+    
+    \item \textbf{Query generation}: Invoking the LLM to generate a Cypher query.
+    
+    \item \textbf{Query validation}: Checking the generated query for syntax errors, safety issues, and schema compliance.
+    
+    \item \textbf{Query execution}: Running the validated query against the database.
+    
+    \item \textbf{Result summarization}: Formatting query results into a natural language answer.
+\end{enumerate}
+
+\paragraph{Safety Considerations}
+
+LLM-generated queries require careful safety measures:
+
+\begin{itemize}
+    \item \textbf{Syntax validation}: Parse the query to ensure it is syntactically valid before execution.
+    
+    \item \textbf{Read-only enforcement}: For analytical queries, ensure no \texttt{CREATE}, \texttt{DELETE}, or \texttt{SET} clauses are present.
+    
+    \item \textbf{Resource limits}: Set query timeouts and result size limits to prevent resource exhaustion.
+    
+    \item \textbf{Tenant scoping}: Automatically inject tenant filters to prevent cross-tenant data access.
+    
+    \item \textbf{Procedure allowlisting}: Restrict \texttt{CALL} clauses to a whitelist of safe procedures.
+    
+    \item \textbf{Pattern complexity limits}: Prevent overly complex patterns that could cause combinatorial explosion.
+\end{itemize}
+
+\subsection{Graph Schema for Bioinformatics Workflows}
+
+The Cineca Agentic Platform implements a graph schema designed for bioinformatics and computational workflow management. This domain-specific schema demonstrates how graph databases can model complex scientific workflows.
+
+\paragraph{Node Types}
+
+The platform's Memgraph schema includes 14 node types:
+
+\begin{itemize}
+    \item \textbf{Workflow}: Represents a computational workflow or pipeline.
+    \item \textbf{Step}: Individual steps within a workflow.
+    \item \textbf{Input/Output}: Data inputs and outputs for steps.
+    \item \textbf{Tool}: Software tools or executables used in steps.
+    \item \textbf{Resource}: Computational resources (CPU, memory, GPU).
+    \item \textbf{Node}: Compute nodes in the HPC cluster.
+    \item \textbf{Dataset}: Data collections used or produced by workflows.
+    \item \textbf{User}: Users who own or execute workflows.
+    \item \textbf{Project}: Organizational groupings of workflows.
+    \item \textbf{Publication}: Scientific publications related to workflows.
+    \item Additional domain-specific types for bioinformatics entities.
+\end{itemize}
+
+\paragraph{Relationship Types}
+
+Four primary relationship types connect these entities:
+
+\begin{itemize}
+    \item \textbf{DEPENDS\_ON}: Workflow or step dependencies (execution order).
+    \item \textbf{USES}: Tool or resource utilization relationships.
+    \item \textbf{PRODUCES/CONSUMES}: Data flow relationships.
+    \item \textbf{OWNED\_BY/BELONGS\_TO}: Organizational relationships.
+\end{itemize}
+
+This schema enables queries such as:
+\begin{itemize}
+    \item ``What workflows depend on the BLAST tool?''
+    \item ``Which datasets were produced by last week's workflows?''
+    \item ``What is the resource utilization pattern for GPU nodes?''
+    \item ``Show the data lineage for dataset X.''
+\end{itemize}
+
+\paragraph{Schema-Aware Query Generation}
+
+The platform's NL-to-Cypher pipeline is schema-aware: it retrieves the current schema from Memgraph and includes relevant portions in the LLM prompt. This ensures that generated queries reference actual node types, relationship types, and properties, reducing hallucination and improving query validity.
+
+\subsection{Comparison with Document-Based Retrieval}
+
+An alternative to graph-based knowledge access is document-based retrieval augmented generation (RAG), which is discussed further in Section~\ref{sec:rag-kg}. Key differences include:
+
+\begin{table}[ht]
+\centering
+\caption{Comparison of graph-based querying vs.\ document-based RAG.}
+\label{tab:graph-vs-rag}
+\small
+\begin{tabular}{lp{5.5cm}p{5.5cm}}
+\hline
+\textbf{Aspect} & \textbf{Graph-Based (NL-to-Cypher)} & \textbf{Document-Based (RAG)} \\
+\hline
+Knowledge representation & Structured nodes and relationships & Unstructured text chunks \\
+Query mechanism & Pattern matching, traversal & Semantic similarity search \\
+Precision & High for structured queries & Variable, depends on retrieval quality \\
+Relationship handling & Explicit, first-class & Implicit in text, may be missed \\
+Update cost & Incremental node/edge updates & Requires re-embedding \\
+Explainability & Query path is explicit & Retrieval sources can be shown \\
+Domain modeling effort & Requires schema design & Minimal, ingest documents directly \\
+Best for & Structured domains, relationships & Unstructured knowledge, broad coverage \\
+\hline
+\end{tabular}
+\end{table}
+
+The Cineca Agentic Platform focuses on graph-based knowledge access, which aligns with its use case of managing structured bioinformatics workflows and HPC resources. Document-based RAG is noted as a potential future extension for handling unstructured documentation and research papers.

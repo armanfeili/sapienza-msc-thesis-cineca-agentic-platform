@@ -1,0 +1,51 @@
+This is BibTeX, Version 0.99d (TeX Live 2024)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: sapthesis-doc.aux
+The style file: sapthesis.bst
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated glb_str_ptr (elt_size=4) to 20 items from 10.
+Reallocated global_strs (elt_size=200001) to 20 items from 10.
+Reallocated glb_str_end (elt_size=4) to 20 items from 10.
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+Database file #1: references.bib
+You've used 35 entries,
+            3472 wiz_defined-function locations,
+            851 strings with 11157 characters,
+and the built_in function-call counts, 15939 in all, are:
+= -- 1461
+> -- 557
+< -- 4
++ -- 278
+- -- 156
+* -- 640
+:= -- 2052
+add.period$ -- 129
+call.type$ -- 35
+change.case$ -- 209
+chr.to.int$ -- 0
+cite$ -- 35
+duplicate$ -- 1018
+empty$ -- 1463
+format.name$ -- 167
+if$ -- 3884
+int.to.chr$ -- 0
+int.to.str$ -- 35
+missing$ -- 239
+newline$ -- 201
+num.names$ -- 70
+pop$ -- 714
+preamble$ -- 1
+purify$ -- 144
+quote$ -- 0
+skip$ -- 906
+stack$ -- 0
+substring$ -- 266
+swap$ -- 616
+text.length$ -- 4
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 140
+warning$ -- 0
+while$ -- 74
+width$ -- 37
+write$ -- 404

@@ -1,0 +1,74 @@
+# ops/prometheus/prometheus.yml
+# Prometheus configuration for Cineca Agentic Platform
+# - Scrapes the FastAPI app's /metrics
+# - Loads recording rules and alerting rules from local files
+# - Also scrapes Prometheus itself
+# - Tuned for small deployments; adjust intervals for production
+
+global:
+  scrape_interval: 15s        # How often to scrape targets by default
+  scrape_timeout: 10s
+  evaluation_interval: 30s    # How often to evaluate rules
+
+  # Add helpful global labels (edit as needed)
+  external_labels:
+    service: cineca-agentic-platform
+    env: dev
+
+# Rule and alert files (mounted via docker-compose)
+rule_files:
+  - /etc/prometheus/recording_rules.yml
+  - /etc/prometheus/alerts.yml
+
+# Alertmanager integration (optional)
+# If you later add an Alertmanager service, uncomment and set its address:
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  # Scrape the FastAPI application (uvicorn) exposed at port 8000
+  - job_name: "app"
+    honor_labels: true
+    scheme: http
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["app:8000"]
+        labels:
+          instance: "app"
+          component: "fastapi"
+
+    # Optional: relabeling examples if you later need to normalize labels
+    # relabel_configs:
+    #   - source_labels: [__address__]
+    #     target_label: instance
+
+  # Scrape Prometheus itself
+  - job_name: "prometheus"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["prometheus:9090"]
+        labels:
+          instance: "prometheus"
+
+  # Example (commented): scrape a Redis exporter if you add it later
+  # - job_name: "redis"
+  #   static_configs:
+  #     - targets: ["redis-exporter:9121"]
+  #       labels:
+  #         instance: "redis"
+
+  # Example (commented): scrape an OpenTelemetry Collector's Prometheus exporter
+  # - job_name: "otel-collector"
+  #   static_configs:
+  #     - targets: ["otel-collector:8889"]
+  #       labels:
+  #         instance: "otel-collector"
+
+  # Example (commented): scrape a Memgraph metrics endpoint if available
+  # - job_name: "memgraph"
+  #   static_configs:
+  #     - targets: ["memgraph:port"]
+  #       labels:
+  #         instance: "memgraph"

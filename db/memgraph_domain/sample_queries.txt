@@ -1,0 +1,288 @@
+// .db/sample_queries.txt
+
+////////////////////////////////////////////////////////////////////////
+////  Schema inventory  → fixed-column CSV order (no APOC)          ////
+////////////////////////////////////////////////////////////////////////
+CALL {
+
+  /* ─────────────────────────────────────────────────────────────── */
+  /* 1. rows for each relationship TYPE                              */
+  /* ─────────────────────────────────────────────────────────────── */
+  MATCH (a)-[r]->(b)
+  WITH
+    type(r)                         AS _label,
+    labels(a)[0]                    AS _property,
+    count(*)                        AS _count,
+    collect(DISTINCT labels(b)[0])  AS _targets
+  RETURN
+    _label          AS label,
+    _property       AS property,
+    _count          AS count,
+    false           AS unique,
+    false           AS index,
+    false           AS existence,
+    'RELATIONSHIP'  AS type,
+    false           AS array,
+    null            AS sample,
+    1               AS left,
+    0               AS right,
+    '[' + reduce(s = '', x IN _targets |
+           s + CASE s WHEN '' THEN '"' + x + '"' ELSE ', "' + x + '"' END) + ']'
+                     AS other,
+    '[]'            AS otherLabels,
+    'relationship'  AS elementType
+
+  UNION ALL
+  /* ─────────────────────────────────────────────────────────────── */
+  /* 2. rows for each (Node-label × outgoing-rel-type)               */
+  /* ─────────────────────────────────────────────────────────────── */
+  MATCH (n)-[r]->(m)
+  UNWIND labels(n) AS lbl
+  WITH
+    lbl                              AS _label,
+    type(r)                          AS _property,
+    count(*)                         AS _count,
+    collect(DISTINCT labels(m)[0])   AS _targets
+  RETURN
+    _label          AS label,
+    _property       AS property,
+    _count          AS count,
+    false           AS unique,
+    false           AS index,
+    false           AS existence,
+    'RELATIONSHIP'  AS type,
+    false           AS array,
+    null            AS sample,
+    size(_targets)  AS left,
+    0               AS right,
+    '[' + reduce(s = '', x IN _targets |
+           s + CASE s WHEN '' THEN '"' + x + '"' ELSE ', "' + x + '"' END) + ']'
+                     AS other,
+    '[]'            AS otherLabels,
+    'node'          AS elementType
+
+  UNION ALL
+  /* ─────────────────────────────────────────────────────────────── */
+  /* 3. rows for plain node properties                               */
+  /* ─────────────────────────────────────────────────────────────── */
+  MATCH (n)
+  UNWIND labels(n) AS lbl
+  UNWIND keys(n)   AS prop
+  WITH
+    lbl             AS _label,
+    prop            AS _property,
+    count(*)        AS _count
+  RETURN
+    _label          AS label,
+    _property       AS property,
+    _count          AS count,
+    false           AS unique,
+    false           AS index,
+    false           AS existence,
+    'STRING'        AS type,
+    false           AS array,
+    null            AS sample,
+    0               AS left,
+    0               AS right,
+    '[]'            AS other,
+    '[]'            AS otherLabels,
+    'node'          AS elementType
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  Final RETURN fixes the column order for the result table          */
+/* ─────────────────────────────────────────────────────────────────── */
+RETURN
+  label,
+  property,
+  count,
+  unique,
+  index,
+  existence,
+  type,
+  array,
+  sample,
+  left,
+  right,
+  other,
+  otherLabels,
+  elementType
+ORDER BY elementType, label, property;
+
+// MATCH (f:File)
+// RETURN labels(f)[0] AS label, count(*) AS cnt
+// ORDER BY cnt DESC;
+
+// MATCH (f:File)
+// RETURN f.user_filename AS filename,
+//        labels(f)       AS labels,
+//        f.size          AS bytes
+// LIMIT 10;
+
+
+// // =============================================================================
+// // Quick Graph Exploration & Maintenance Snippets  –  Memgraph v2.x
+// // Paste individual lines (or whole blocks) into Memgraph Lab’s query window.
+// // =============================================================================
+
+
+// /*──────────────────────────────────────────────────────────────────────────────
+//   0.  FRESH-START / NUKE-IT-ALL HELPERS  (run only if you really want to wipe)
+// ──────────────────────────────────────────────────────────────────────────────*/
+
+// // -- Remove every node + relationship (keeps indexes & constraints) ----------
+// MATCH ()-[r]-() DELETE r;
+// MATCH (n)       DELETE n;
+
+// // -- Drop everything, including indexes / triggers / streams (analytical mode)
+// DROP GRAPH;
+
+
+// /*──────────────────────────────────────────────────────────────────────────────
+//   1.  QUICK LOOK-UPS
+// ──────────────────────────────────────────────────────────────────────────────*/
+
+// // -- Full *chart*  of the current graph (all nodes + relationships) ----------
+MATCH (a)-[r]->(b) RETURN a, r, b;
+// // (Lab will visualise the whole graph; omit the pattern to return isolated
+// //  nodes too:  MATCH (n) OPTIONAL MATCH (n)-[r]-() RETURN n,r)
+
+// // Show all arbitrary nodes
+// MATCH (n) RETURN n;
+
+// // -- List *all* nodes with their IDs & labels (handy in table view) ----------
+// MATCH (n)
+// RETURN id(n) AS id, labels(n) AS labels, n
+// ORDER BY id;
+
+// // Users and their institutions
+// MATCH (u:User)-[:WORKS_AT]->(i:Institution)
+// RETURN
+//   u.firstName + ' ' + u.lastName        AS user,
+//   u.user_name                           AS username,
+//   i.name                                AS institution
+// ORDER BY institution, user;
+
+// // User → RUNS → Task
+// MATCH (u:User)-[:RUNS]->(t)
+// RETURN
+//   u.user_name         AS username,
+//   labels(t)[0]        AS task_type,   // first label = concrete task label
+//   t.task_id           AS task_id,
+//   t.status            AS status,
+//   t.start             AS started
+// ORDER BY t.start DESC
+// LIMIT 25;
+
+// // Task ← INPUT ← {Fasta | File | BlastDb}
+// MATCH (f)-[:INPUT]->(t)
+// WHERE   ('Fasta'    IN labels(f) OR 
+//          'File'     IN labels(f) OR
+//          'BlastDb'  IN labels(f))
+// RETURN
+//   labels(t)[0]        AS task_type,
+//   t.task_id           AS task_id,
+//   labels(f)[0]        AS input_label,
+//   f.user_filename     AS file_name,
+//   f.size              AS bytes
+// ORDER BY task_type, input_label
+// LIMIT 25;
+
+// // Task → OUTPUT → {File | BlastedSeq | Fasta | Xml | BlastDb}
+// MATCH (t)-[:OUTPUT]->(f)
+// WHERE   ('File'      IN labels(f) OR
+//          'BlastedSeq'IN labels(f) OR
+//          'Fasta'     IN labels(f) OR
+//          'Xml'       IN labels(f) OR
+//          'BlastDb'   IN labels(f))
+// RETURN
+//   labels(t)[0]        AS task_type,
+//   t.task_id           AS task_id,
+//   labels(f)[0]        AS output_label,
+//   f.user_filename     AS file_name,
+//   f.size              AS bytes
+// ORDER BY task_type, output_label
+// LIMIT 25;
+
+// // -- Show 25 arbitrary relationships ----------------------------------------
+// MATCH ()-[r]->() RETURN r LIMIT 25;
+
+// // -- Count all nodes ---------------------------------------------------------
+// MATCH (n) RETURN count(n) AS node_count;
+
+// // -- Count all relationships -------------------------------------------------
+// MATCH ()-[r]->() RETURN count(r) AS rel_count;
+
+
+// /*──────────────────────────────────────────────────────────────────────────────
+//   2.  SCHEMA INTROSPECTION  (portable – works even on Community Edition)
+// ──────────────────────────────────────────────────────────────────────────────*/
+
+// // -- List all labels that exist ---------------------------------------------
+// MATCH (n)
+// WITH DISTINCT labels(n) AS lbls
+// UNWIND lbls AS label
+// RETURN DISTINCT label
+// ORDER BY label;
+
+// // -- List all relationship-types --------------------------------------------
+// MATCH ()-[r]->()
+// RETURN DISTINCT type(r) AS relationship_type
+// ORDER BY relationship_type;
+
+// // -- All property keys ever used on *nodes* ----------------------------------
+// MATCH (n)
+// UNWIND keys(n) AS prop
+// RETURN DISTINCT prop
+// ORDER BY prop;
+
+// // -- All property keys ever used on *relationships* --------------------------
+// MATCH ()-[r]->()
+// UNWIND keys(r) AS prop
+// RETURN DISTINCT prop
+// ORDER BY prop;
+
+// // -- Node counts per label ---------------------------------------------------
+// MATCH (n)
+// UNWIND labels(n) AS lbl
+// RETURN lbl AS label, count(*) AS count
+// ORDER BY count DESC;
+
+// // -- Relationship counts per type -------------------------------------------
+// MATCH ()-[r]->()
+// RETURN type(r) AS rel_type, count(r) AS count
+// ORDER BY count DESC;
+
+
+// /*──────────────────────────────────────────────────────────────────────────────
+//   3.  INDEXES & CONSTRAINTS  (require Memgraph ≥ 2.11)
+// ──────────────────────────────────────────────────────────────────────────────*/
+
+// // -- Existing indexes --------------------------------------------------------
+// SHOW INDEX INFO;
+
+// // -- Existing constraints (Enterprise only; empty on Community) -------------
+// SHOW CONSTRAINT INFO;
+
+
+// /*──────────────────────────────────────────────────────────────────────────────
+//   4.  SAMPLING HELPERS
+// ──────────────────────────────────────────────────────────────────────────────*/
+
+// // -- Property keys on nodes of a specific label   (replace YourLabel) -------
+// MATCH (n:YourLabel)
+// UNWIND keys(n) AS k
+// RETURN DISTINCT k
+// ORDER BY k
+// LIMIT 20;
+
+// // -- Five example nodes of a specific label    (replace YourLabel) ----------
+// MATCH (n:YourLabel)
+// RETURN n
+// LIMIT 5;
+
+// // -- Distinct (from-label)-[rel]→(to-label) triples -------------------------
+// MATCH (a)-[r]->(b)
+// WITH labels(a)[0] AS from, type(r) AS rel, labels(b)[0] AS to
+// RETURN DISTINCT from, rel, to
+// ORDER BY from, rel, to;

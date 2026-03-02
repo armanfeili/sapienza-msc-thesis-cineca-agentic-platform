@@ -1,0 +1,377 @@
+# Cineca Agentic Platform — docker-compose.yml
+# Usage:
+#   docker compose up -d --build --remove-orphans
+#   docker compose logs -f app
+#   docker compose run --rm db-populate
+
+ 
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_DB: "${DB_NAME:-cineca_platform}"
+      POSTGRES_USER: "${DB_USER:-cineca_user}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:-change_me_now}"
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8"
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/postgres_control/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cineca_user} -d ${DB_NAME:-cineca_platform}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    container_name: app
+    environment:
+      APP_HOST: "0.0.0.0"
+      APP_PORT: "8000"
+      LOG_LEVEL: "INFO"
+      MG_HOST: "${MG_HOST:-memgraph}"
+      ENABLE_ADMIN_ROUTES: "1"
+      MG_PORT: "${MG_PORT:-7687}"
+      MG_USER: "${MG_USER:-}"
+      MG_PASSWORD: "${MG_PASSWORD:-}"
+      # Health check configuration
+      HEALTH_TIMEOUT_MS: "${HEALTH_TIMEOUT_MS:-3000}"
+      HEALTH_DB_TIMEOUT_MS: "${HEALTH_DB_TIMEOUT_MS:-3000}"
+      HEALTH_CACHE_TIMEOUT_MS: "${HEALTH_CACHE_TIMEOUT_MS:-1000}"
+      HEALTH_ALLOW_MG_HEALTH_FALLBACK: "${HEALTH_ALLOW_MG_HEALTH_FALLBACK:-true}"
+      REDIS_URL: "redis://redis:6379/0"
+      RATE_LIMIT_BACKEND: "redis"
+      RATE_LIMIT_MODE: "${RATE_LIMIT_MODE:-prod}"  # prod|test
+      # PostgreSQL connection
+      DB_HOST: "${DB_HOST:-postgres}"
+      DB_PORT: "${DB_PORT:-5432}"
+      DB_NAME: "${DB_NAME:-cineca_platform}"
+      DB_USER: "${DB_USER:-cineca_user}"
+      DB_PASSWORD: "${DB_PASSWORD:-change_me_now}"
+      DB_SSLMODE: "${DB_SSLMODE:-disable}"
+      DB_POOL_SIZE: "${DB_POOL_SIZE:-10}"
+      DB_POOL_TIMEOUT: "${DB_POOL_TIMEOUT:-30}"
+      # OIDC Resource Server configuration (provided via host env in dev)
+      OIDC_ISSUER: "${OIDC_ISSUER:-}"
+      OIDC_AUDIENCE: "${OIDC_AUDIENCE:-}"
+      OIDC_JWKS_URL: "${OIDC_JWKS_URL:-}"
+      # Permissions: allow-list of tools for basic users
+      SAFE_TOOLS: "${SAFE_TOOLS:-system.health,system.status,system.metrics,graph.schema,graph.search}"
+      # Local model discovery (host directory mounted read-only as /models inside container)
+      MODELS_DIR: "/models"
+      LLM_PROVIDER: "${LLM_PROVIDER:-local-llamacpp}"
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://ollama:11434/v1}"
+      OLLAMA_TIMEOUT_SECS: "${OLLAMA_TIMEOUT_SECS:-180}"
+      LLM_WARMUP_TIMEOUT: "${LLM_WARMUP_TIMEOUT:-300}"
+      LLM_RUN_TIMEOUT_SECONDS: "${LLM_RUN_TIMEOUT_SECONDS:-1800}"
+      LLM_STEP_TIMEOUT_SECONDS: "${LLM_STEP_TIMEOUT_SECONDS:-1200}"
+      # Memgraph response builder LLM timeout (CPU needs longer than default 5s)
+      MEMGRAPH_BUILDER_LLM_TIMEOUT_MS: "${MEMGRAPH_BUILDER_LLM_TIMEOUT_MS:-180000}"
+      MEMGRAPH_RESPONSE_MODE: "${MEMGRAPH_RESPONSE_MODE:-llm-best-effort}"
+      # Default model configuration
+      DEFAULT_MODEL_NAME: "${DEFAULT_MODEL_NAME:-phi3:mini}"
+      LLM_FALLBACK_MODE: "${LLM_FALLBACK_MODE:-never}"
+      # Catalog caching configuration (optional)
+      CATALOG_CACHE_TTL: "${CATALOG_CACHE_TTL:-3600}"
+      # Jobs configuration
+      ALLOWED_JOB_TYPES: "demo,test,long-running,agent.run"
+      JOB_SIM_SLEEP_MS: "100"
+      JOB_STORE_BACKEND: "${JOB_STORE_BACKEND:-memory}"
+      USE_POSTGRES_JOBS: "${USE_POSTGRES_JOBS:-false}"
+      # Internal DB utilities
+      INTERNAL_DB_UTILS_ENABLED: "${INTERNAL_DB_UTILS_ENABLED:-true}"
+      # OpenTelemetry / Observability
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      memgraph:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - app-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # Mount host LLM artifacts directory (adjust host path if different). Read-only to safeguard host files.
+      - ./ops/ollama/models:/models:ro
+      - "/Users/armanfeili/Arman/Sapienza Courses/4-semester/Thesis/ILP-Thesis-2025/Cineca-Agentic-Platform:/app"
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    container_name: jobs-worker
+    command: ["python", "-u", "-m", "src.workers.jobs_worker"]
+    # Disable HTTP healthcheck from Dockerfile (worker doesn't run HTTP server)
+    healthcheck:
+      disable: true
+    environment:
+      LOG_LEVEL: "INFO"
+      MG_HOST: "${MG_HOST:-memgraph}"
+      MG_PORT: "${MG_PORT:-7687}"
+      MG_USER: "${MG_USER:-}"
+      MG_PASSWORD: "${MG_PASSWORD:-}"
+      REDIS_URL: "redis://redis:6379/0"
+      # PostgreSQL connection
+      DB_HOST: "${DB_HOST:-postgres}"
+      DB_PORT: "${DB_PORT:-5432}"
+      DB_NAME: "${DB_NAME:-cineca_platform}"
+      DB_USER: "${DB_USER:-cineca_user}"
+      DB_PASSWORD: "${DB_PASSWORD:-change_me_now}"
+      DB_SSLMODE: "${DB_SSLMODE:-disable}"
+      DB_POOL_SIZE: "${DB_POOL_SIZE:-10}"
+      DB_POOL_TIMEOUT: "${DB_POOL_TIMEOUT:-30}"
+      # Jobs configuration
+      ALLOWED_JOB_TYPES: "demo,test,long-running,agent.run"
+      USE_POSTGRES_JOBS: "true"
+      JOB_WORKER_POLL_INTERVAL: "${JOB_WORKER_POLL_INTERVAL:-1.0}"
+      JOB_WORKER_HEARTBEAT_INTERVAL: "${JOB_WORKER_HEARTBEAT_INTERVAL:-5.0}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-net
+    volumes:
+      - "/Users/armanfeili/Arman/Sapienza Courses/4-semester/Thesis/ILP-Thesis-2025/Cineca-Agentic-Platform:/app"
+
+  memgraph:
+    image: memgraph/memgraph-platform:latest
+    container_name: memgraph
+    ports:
+      - "7687:7687"
+      - "3000:3000"
+    volumes:
+      - memgraph_data:/var/lib/memgraph
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'RETURN 1;' | mgconsole --host 127.0.0.1 --port 7687 --use-ssl=False || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  db-populate:
+    build:
+      context: .
+      dockerfile: db/memgraph_domain/Dockerfile
+    container_name: db-populate
+    working_dir: /app
+    environment:
+      MG_HOST: "${MG_HOST:-memgraph}"
+      MG_PORT: "${MG_PORT:-7687}"
+      MG_USER: "${MG_USER:-}"
+      MG_PASSWORD: "${MG_PASSWORD:-}"
+    volumes:
+      - ./db:/app/db
+    depends_on:
+      memgraph:
+        condition: service_healthy
+    entrypoint: ["python", "-u", "-m", "db.populate"]
+    restart: "no"
+    networks:
+      - app-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./ops/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./ops/prometheus/recording_rules.yml:/etc/prometheus/recording_rules.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./ops/grafana/provisioning/datasources/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      - ./ops/grafana/provisioning/dashboards/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml:ro
+      - ./docs/observability:/var/lib/grafana/dashboards:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    environment:
+      - OLLAMA_ORIGINS=*
+      - OLLAMA_NUM_PARALLEL=1
+      - OLLAMA_MAX_LOADED_MODELS=1
+      - OLLAMA_FLASH_ATTENTION=1
+      - OLLAMA_KEEP_ALIVE=10m
+      - OLLAMA_NUM_CTX=1024  # Reduce context window to save memory (default 2048)
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./ops/ollama/models:/models:ro
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 10G
+        reservations:
+          cpus: '4'
+          memory: 7G
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  ui_control_panel:
+    build:
+      context: ui_control_panel
+      dockerfile: Dockerfile
+    container_name: ui_control_panel
+    ports:
+      - "8501:8501"
+    environment:
+      - API_BASE_URL=http://app:8000
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN}
+      - AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
+      - AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET}
+      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+      - AUTH0_USER_CLIENT_ID=${AUTH0_USER_CLIENT_ID}
+      - AUTH0_USER_CLIENT_SECRET=${AUTH0_USER_CLIENT_SECRET}
+      - AUTH0_MACHINE_CLIENT_ID=${AUTH0_MACHINE_CLIENT_ID}
+      - AUTH0_MACHINE_CLIENT_SECRET=${AUTH0_MACHINE_CLIENT_SECRET}
+      - AUTH0_ADMIN_USERNAME=${AUTH0_ADMIN_USERNAME}
+      - AUTH0_ADMIN_PASSWORD=${AUTH0_ADMIN_PASSWORD}
+      - AUTH0_USER_USERNAME=${AUTH0_USER_USERNAME}
+      - AUTH0_USER_PASSWORD=${AUTH0_USER_PASSWORD}
+      - AUTH0_ADMIN_TOKEN=${AUTH0_ADMIN_TOKEN}
+      - AUTH0_USER_TOKEN=${AUTH0_USER_TOKEN}
+      - AUTH0_MACHINE_TOKEN=${AUTH0_MACHINE_TOKEN}
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  ui_agent:
+    build:
+      context: ui_agent
+      dockerfile: Dockerfile
+    container_name: ui_agent
+    image: cineca-agentic-platform-ui_agent
+    ports:
+      - "3002:3000"
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN}
+      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+      - AUTH0_USER_CLIENT_ID=${AUTH0_USER_CLIENT_ID}
+      - AUTH0_USER_CLIENT_SECRET=${AUTH0_USER_CLIENT_SECRET}
+      - AUTH0_ADMIN_USERNAME=${AUTH0_ADMIN_USERNAME}
+      - AUTH0_ADMIN_PASSWORD=${AUTH0_ADMIN_PASSWORD}
+      - AUTH0_USER_USERNAME=${AUTH0_USER_USERNAME}
+      - AUTH0_USER_PASSWORD=${AUTH0_USER_PASSWORD}
+    restart: unless-stopped
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  memgraph_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+  ollama_data:

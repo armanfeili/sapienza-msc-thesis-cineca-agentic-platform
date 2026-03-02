@@ -1,0 +1,270 @@
+{
+  "_meta": {
+    "language": "en",
+    "locale": "en-US",
+    "version": "1.0.0",
+    "app": "Cineca Agentic Platform",
+    "last_updated": "2025-08-09"
+  },
+
+  "app": {
+    "name": "Cineca Agentic Platform",
+    "tagline": "Secure graph-native AI for life sciences and research.",
+    "welcome": "Welcome to the Cineca Agentic Platform.",
+    "ready": "Service is ready.",
+    "starting": "Starting services…",
+    "stopping": "Shutting down services…",
+    "shutdown_complete": "Shutdown complete.",
+    "not_configured": "The application is not fully configured. Please check environment variables."
+  },
+
+  "http": {
+    "bad_request": "Bad request.",
+    "unauthorized": "Authentication required.",
+    "forbidden": "You do not have permission to perform this action.",
+    "not_found": "Resource not found.",
+    "conflict": "Request conflicts with current state.",
+    "unprocessable": "Unprocessable entity.",
+    "too_many_requests": "Too many requests. Please try again later.",
+    "server_error": "Internal server error.",
+    "service_unavailable": "Service temporarily unavailable."
+  },
+
+  "health": {
+    "ok": "OK",
+    "status_healthy": "All systems healthy.",
+    "status_degraded": "Service is degraded.",
+    "status_unhealthy": "Service is unhealthy.",
+    "checks": {
+      "app": "Application",
+      "redis": "Redis",
+      "memgraph": "Memgraph",
+      "models": "Models",
+      "background": "Background scheduler",
+      "mcp": "MCP tools"
+    },
+    "detail": {
+      "uptime": "Uptime",
+      "version": "Version",
+      "timestamp": "Timestamp",
+      "commit": "Commit",
+      "environment": "Environment"
+    }
+  },
+
+  "auth": {
+    "sign_in_required": "Please sign in to continue.",
+    "invalid_credentials": "Invalid username or password.",
+    "token_missing": "Authorization token is missing.",
+    "token_invalid": "Authorization token is invalid.",
+    "token_expired": "Your session has expired. Please sign in again.",
+    "forbidden": "You are not authorized to access this resource.",
+    "scope_missing": "Missing required scope(s): {scopes}.",
+    "tenant_missing": "Tenant context is required.",
+    "tenant_invalid": "Tenant '{tenant}' is invalid or disabled.",
+    "api_key_invalid": "The provided API key is invalid."
+  },
+
+  "errors": {
+    "generic": "Something went wrong.",
+    "validation_failed": "Validation failed.",
+    "payload_too_large": "Payload is too large.",
+    "malformed_json": "Malformed JSON payload.",
+    "dependency_unavailable": "A required dependency is unavailable: {name}.",
+    "operation_failed": "Operation failed: {reason}.",
+    "timeout": "The operation timed out.",
+    "not_implemented": "Not implemented.",
+    "conflict": "Conflict with existing resource.",
+    "duplicate": "A duplicate resource already exists.",
+    "unsupported_media_type": "Unsupported media type.",
+    "bad_parameters": "One or more parameters are invalid.",
+    "missing_parameter": "Missing required parameter: {param}."
+  },
+
+  "security": {
+    "policy_violation": "Request blocked by security policy.",
+    "intent_blocked": "The requested action is not allowed for safety reasons.",
+    "output_blocked": "Generated output was blocked by the output guard.",
+    "pii_redacted": "Potential personal data was redacted.",
+    "rate_limited": "Your request was rate limited.",
+    "audit_recorded": "Security audit record captured."
+  },
+
+  "rate_limit": {
+    "too_many_requests": "Rate limit exceeded for '{key}'.",
+    "bucket_exhausted": "No remaining quota for this window.",
+    "retry_after_seconds": "Try again in {seconds} seconds.",
+    "headers": {
+      "limit": "X-RateLimit-Limit",
+      "remaining": "X-RateLimit-Remaining",
+      "reset": "X-RateLimit-Reset"
+    }
+  },
+
+  "models": {
+    "listed": "Available models listed.",
+    "loaded": "Model '{model}' loaded.",
+    "unloaded": "Model '{model}' unloaded.",
+    "reloaded": "Model '{model}' reloaded.",
+    "not_found": "Model '{model}' not found.",
+    "invalid_provider": "Model provider '{provider}' is not available.",
+    "test_started": "Model test started.",
+    "test_passed": "Model test passed.",
+    "test_failed": "Model test failed: {reason}."
+  },
+
+  "tools": {
+    "invoked": "Tool '{tool}' invoked.",
+    "completed": "Tool '{tool}' completed successfully.",
+    "failed": "Tool '{tool}' failed: {reason}.",
+    "not_found": "Tool '{tool}' not found.",
+    "validation_failed": "Tool input validation failed.",
+    "catalog_built": "Tool catalog built."
+  },
+
+  "agent": {
+    "run_started": "Agent run started.",
+    "run_completed": "Agent run completed.",
+    "run_failed": "Agent run failed: {reason}.",
+    "step": {
+      "thinking": "Thinking…",
+      "tool_call": "Calling tool '{tool}'.",
+      "tool_result": "Received tool result.",
+      "finalizing": "Finalizing response…"
+    }
+  },
+
+  "db": {
+    "connected": "Connected to Memgraph.",
+    "disconnected": "Disconnected from Memgraph.",
+    "connection_failed": "Failed to connect to Memgraph.",
+    "cypher_executed": "Cypher query executed.",
+    "transaction_failed": "Transaction failed: {reason}.",
+    "schema_loaded": "Graph schema loaded.",
+    "schema_generated": "Graph schema generated."
+  },
+
+  "mcp": {
+    "server_ready": "MCP server ready.",
+    "tool_registered": "MCP tool '{name}' registered.",
+    "catalog_discovered": "Catalog discovered.",
+    "session_started": "MCP session started.",
+    "session_ended": "MCP session ended."
+  },
+
+  "services": {
+    "orchestrator": {
+      "starting": "Starting orchestrator…",
+      "started": "Orchestrator started.",
+      "stopped": "Orchestrator stopped."
+    },
+    "session": {
+      "created": "Session created.",
+      "updated": "Session updated.",
+      "ended": "Session ended.",
+      "not_found": "Session not found."
+    },
+    "etl": {
+      "job_started": "ETL job '{job}' started.",
+      "job_completed": "ETL job '{job}' completed.",
+      "job_failed": "ETL job '{job}' failed: {reason}."
+    },
+    "archive": {
+      "start": "Archive task started.",
+      "complete": "Archive task completed.",
+      "failed": "Archive task failed: {reason}."
+    },
+    "health": {
+      "checked": "Service health checked."
+    },
+    "status": {
+      "reported": "Service status reported."
+    }
+  },
+
+  "background": {
+    "scheduler_started": "Background scheduler started.",
+    "scheduler_stopped": "Background scheduler stopped.",
+    "job_scheduled": "Job '{job}' scheduled.",
+    "job_running": "Job '{job}' is running.",
+    "job_completed": "Job '{job}' completed.",
+    "job_failed": "Job '{job}' failed: {reason}.",
+    "cleanup": {
+      "started": "Cleanup started.",
+      "completed": "Cleanup completed."
+    },
+    "backups": {
+      "started": "Backup started.",
+      "completed": "Backup completed.",
+      "failed": "Backup failed: {reason}."
+    },
+    "health_checks": {
+      "started": "Health checks started.",
+      "completed": "Health checks completed."
+    }
+  },
+
+  "observability": {
+    "metrics_enabled": "Metrics collection enabled.",
+    "metrics_disabled": "Metrics collection disabled.",
+    "tracing_enabled": "Distributed tracing enabled.",
+    "tracing_disabled": "Distributed tracing disabled."
+  },
+
+  "provenance": {
+    "event_recorded": "Provenance event recorded.",
+    "span_started": "Provenance span started.",
+    "span_completed": "Provenance span completed.",
+    "chain_tip": "Current chain tip: {hash}."
+  },
+
+  "pagination": {
+    "page": "Page {page} of {pages}.",
+    "next": "Next",
+    "prev": "Previous",
+    "per_page": "{count} per page",
+    "showing": "Showing {from}–{to} of {total}"
+  },
+
+  "common": {
+    "id": "ID",
+    "created_at": "Created at",
+    "updated_at": "Updated at",
+    "status": "Status",
+    "success": "Success",
+    "error": "Error",
+    "details": "Details",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "close": "Close",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "download": "Download",
+    "search": "Search",
+    "filter": "Filter",
+    "refresh": "Refresh"
+  },
+
+  "format": {
+    "date": "YYYY-MM-DD",
+    "time": "HH:mm:ss",
+    "datetime": "YYYY-MM-DD HH:mm:ss z",
+    "number": {
+      "decimal": ".",
+      "thousand": ","
+    },
+    "bytes": {
+      "b": "B",
+      "kb": "KB",
+      "mb": "MB",
+      "gb": "GB",
+      "tb": "TB"
+    },
+    "duration": {
+      "ms": "{value} ms",
+      "s": "{value} s",
+      "m": "{value} min",
+      "h": "{value} h"
+    }
+  }
+}

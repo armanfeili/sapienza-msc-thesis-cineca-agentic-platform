@@ -1,0 +1,1471 @@
+{
+  "schema_version": "1.0",
+  "id": "cineca-agentic-platform",
+  "name": "Cineca Agentic Platform — MCP",
+  "version": "0.1.0",
+  "description": "Model Context Protocol manifest for the Cineca Agentic Platform. Exposes graph, system, security, model, and utility tools.",
+  "homepage": "https://example.org/cineca-agentic-platform",
+  "license": "Apache-2.0",
+  "policy_file": "src/mcp/policies.yaml",
+  "categories": [
+    "agent",
+    "cache",
+    "catalog",
+    "data",
+    "db",
+    "errors",
+    "graph",
+    "model",
+    "output",
+    "privacy",
+    "ratelimit",
+    "security",
+    "session",
+    "system",
+    "tenancy",
+    "user",
+    "viz"
+  ],
+  "tools": [
+    {
+      "id": "agent.context@1",
+      "name": "agent.context",
+      "module": "src.mcp.tools.agent.context",
+      "description": "Assemble agent execution context (history, tools, user prefs).",
+      "capabilities": [
+        "agent_orchestration"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "include_tools": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_models": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_policies": {
+            "type": "boolean",
+            "default": false
+          },
+          "include_env": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_tenant": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_user_scopes": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "cache.manage@1",
+      "name": "cache.manage",
+      "module": "src.mcp.tools.cache.manage",
+      "description": "Simple cache operations via Redis when available.",
+      "capabilities": [
+        "cache_management"
+      ],
+      "scopes": [
+        "tools:all"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "get",
+              "set",
+              "delete",
+              "keys"
+            ]
+          },
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "ttl": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "catalog.discover@1",
+      "name": "catalog.discover",
+      "module": "src.mcp.tools.catalog.discover",
+      "description": "Discover available MCP tools with metadata.",
+      "capabilities": [
+        "tool_discovery"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "prefix": {
+            "type": "string"
+          },
+          "names_only": {
+            "type": "boolean",
+            "default": false
+          },
+          "categories_only": {
+            "type": "boolean",
+            "default": false
+          },
+          "include_schemas": {
+            "type": "boolean",
+            "default": false
+          },
+          "include_scopes": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_modules": {
+            "type": "boolean",
+            "default": false
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "name",
+              "category"
+            ],
+            "default": "name"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "data.archive@1",
+      "name": "data.archive",
+      "module": "src.mcp.tools.data.archive",
+      "description": "Mark, restore, purge, or list archived data.",
+      "capabilities": [
+        "data_management"
+      ],
+      "scopes": [
+        "tools:all"
+      ],
+      "namespace": false,
+      "long_running": true,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "mark",
+              "restore",
+              "purge",
+              "status",
+              "list"
+            ]
+          },
+          "node_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "label": {
+            "type": "string"
+          },
+          "timestamp_before": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "data.quality@1",
+      "name": "data.quality",
+      "module": "src.mcp.tools.data.quality",
+      "description": "Run data quality checks on graph nodes and relationships.",
+      "capabilities": [
+        "data_management"
+      ],
+      "scopes": [
+        "tools:all"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "check",
+              "report",
+              "fix"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "auto_fix": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "db.switch@1",
+      "name": "db.switch",
+      "module": "src.mcp.tools.db.switch",
+      "description": "Switch the active database/connection profile (dev/demo).",
+      "capabilities": [
+        "database_management"
+      ],
+      "scopes": [
+        "tools:all"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "target"
+        ],
+        "properties": {
+          "target": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "errors.report@1",
+      "name": "errors.report",
+      "module": "src.mcp.tools.errors.report",
+      "description": "Record and retrieve structured error reports.",
+      "capabilities": [
+        "error_tracking"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "record",
+              "list",
+              "get",
+              "clear"
+            ]
+          },
+          "error_id": {
+            "type": "string"
+          },
+          "error_type": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "graph.analytics@1",
+      "name": "graph.analytics",
+      "module": "src.mcp.tools.graph.analytics",
+      "description": "Run simple graph analytics tasks (e.g., degree counts).",
+      "capabilities": [
+        "reads_db"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "degree",
+              "centrality",
+              "community",
+              "stats"
+            ]
+          },
+          "node_id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "algorithm": {
+            "type": "string"
+          },
+          "params": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "graph.bulk@1",
+      "name": "graph.bulk",
+      "module": "src.mcp.tools.graph.bulk",
+      "description": "Bulk load/export utility for nodes and relationships.",
+      "capabilities": [
+        "reads_db",
+        "writes_db"
+      ],
+      "scopes": [
+        "tools:all"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "load_nodes",
+              "load_relationships",
+              "export"
+            ]
+          },
+          "file": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "csv",
+              "jsonl"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "rel_type": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "graph.crud@1",
+      "name": "graph.crud",
+      "module": "src.mcp.tools.graph.crud",
+      "description": "Create/read/update/delete nodes or relationships.",
+      "capabilities": [
+        "reads_db",
+        "writes_db"
+      ],
+      "scopes": [
+        "tools:all"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "create_node",
+              "update_node",
+              "delete_node",
+              "create_relationship",
+              "delete_relationship"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "match": {
+            "type": "object"
+          },
+          "properties": {
+            "type": "object"
+          },
+          "from": {
+            "type": "object"
+          },
+          "to": {
+            "type": "object"
+          },
+          "rel_type": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    {
+      "id": "graph.generate_cypher@1",
+      "name": "graph.generate_cypher",
+      "module": "src.mcp.tools.graph.generate_cypher",
+      "description": "Generate a safe Cypher query from a natural language goal.",
+      "capabilities": [
+        "nl_to_cypher"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "generate",
+              "validate",
+              "explain"
+            ]
+          },
+          "goal": {
+            "type": "string",
+            "minLength": 3
+          },
+          "schema_hint": {
+            "type": "string"
+          },
+          "max_tokens": {
+            "type": "integer",
+            "minimum": 64
+          },
+          "cypher": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "graph.query@1",
+      "name": "graph.query",
+      "module": "src.mcp.tools.graph.query",
+      "description": "Execute ad-hoc Cypher query against Memgraph with optional parameters.",
+      "capabilities": [
+        "reads_db",
+        "writes_db"
+      ],
+      "scopes": [
+        "tools:all"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action",
+          "cypher"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "run",
+              "explain",
+              "profile"
+            ]
+          },
+          "cypher": {
+            "type": "string",
+            "minLength": 1
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "read_only": {
+            "type": "boolean",
+            "default": true
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "minimum": 100
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "graph.schema@1",
+      "name": "graph.schema",
+      "module": "src.mcp.tools.graph.schema",
+      "description": "Discover labels, relationship types, and property keys.",
+      "capabilities": [
+        "reads_db"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "introspect",
+              "labels",
+              "relationships",
+              "properties"
+            ],
+            "default": "introspect"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "graph.search@1",
+      "name": "graph.search",
+      "module": "src.mcp.tools.graph.search",
+      "description": "Semantic or property-based search over the graph.",
+      "capabilities": [
+        "reads_db"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action",
+          "query"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "search",
+              "similar",
+              "filter"
+            ]
+          },
+          "query": {
+            "type": "string",
+            "minLength": 1
+          },
+          "top_k": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 20
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "semantic",
+              "property",
+              "hybrid"
+            ],
+            "default": "property"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "graph.secure_query@1",
+      "name": "graph.secure_query",
+      "module": "src.mcp.tools.graph.secure_query",
+      "description": "Safely answer user prompts over Memgraph: NL→Cypher, validate (read-only + safety + permissions), execute if allowed, return results.",
+      "capabilities": [
+        "reads_db",
+        "nl_to_cypher",
+        "policy_enforced"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "metadata": {
+        "rate_limit_hint": "10/min per principal",
+        "safety": {
+          "write_operations": "blocked",
+          "read_only_enforcement": true,
+          "permission_checks": "required"
+        }
+      },
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action",
+          "principal",
+          "tenant"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "ask",
+              "generate",
+              "validate",
+              "execute"
+            ]
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 3
+          },
+          "cypher": {
+            "type": "string"
+          },
+          "statement": {
+            "type": "string",
+            "description": "Alias for cypher/query"
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "principal": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tenant": {
+            "type": "string",
+            "minLength": 1
+          },
+          "max_rows": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1000
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "minimum": 100,
+            "default": 5000
+          },
+          "return_format": {
+            "type": "string",
+            "enum": [
+              "rows",
+              "markdown",
+              "csv",
+              "json"
+            ],
+            "default": "rows"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "model.manage@1",
+      "name": "model.manage",
+      "module": "src.mcp.tools.model.manage",
+      "description": "List, load/unload models, and set defaults.",
+      "capabilities": [
+        "model_management"
+      ],
+      "scopes": [
+        "tools:all"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "list",
+              "load",
+              "unload",
+              "set_default",
+              "get_default",
+              "info",
+              "capabilities"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "model.test@1",
+      "name": "model.test",
+      "module": "src.mcp.tools.model.test",
+      "description": "Run a short completion to validate model wiring.",
+      "capabilities": [
+        "model_management"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action",
+          "prompt"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "test",
+              "validate"
+            ]
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "output.format@1",
+      "name": "output.format",
+      "module": "src.mcp.tools.output.format",
+      "description": "Format a template with variables (safe minimal templating).",
+      "capabilities": [
+        "output_formatting"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action",
+          "template"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "render",
+              "validate"
+            ]
+          },
+          "template": {
+            "type": "string",
+            "minLength": 1
+          },
+          "variables": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "output.summarize@1",
+      "name": "output.summarize",
+      "module": "src.mcp.tools.output.summarize",
+      "description": "Summarize text using the default model with privacy guardrails.",
+      "capabilities": [
+        "output_formatting"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action",
+          "text"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "summarize",
+              "condense",
+              "extract"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "max_words": {
+            "type": "integer",
+            "minimum": 10
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "privacy.consent@1",
+      "name": "privacy.consent",
+      "module": "src.mcp.tools.privacy.consent",
+      "description": "Record, check, or revoke a user's consent for data processing.",
+      "capabilities": [
+        "privacy_management"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action",
+          "subject_id"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "record",
+              "check",
+              "revoke",
+              "list"
+            ]
+          },
+          "subject_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "meta": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "ratelimit.manage@1",
+      "name": "ratelimit.manage",
+      "module": "src.mcp.tools.ratelimit.manage",
+      "description": "Inspect or adjust rate limit keys.",
+      "capabilities": [
+        "ratelimit_management"
+      ],
+      "scopes": [
+        "tools:all"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "get",
+              "reset",
+              "set",
+              "list"
+            ]
+          },
+          "key": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "window": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "security.audit@1",
+      "name": "security.audit",
+      "module": "src.mcp.tools.security.audit",
+      "description": "Record and retrieve audit events.",
+      "capabilities": [
+        "security_audit"
+      ],
+      "scopes": [
+        "admin:all"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "access",
+              "custom",
+              "list",
+              "stats",
+              "clear"
+            ]
+          },
+          "category": {
+            "type": "string"
+          },
+          "event_action": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "principal": {
+            "type": "string"
+          },
+          "resource": {
+            "type": "string"
+          },
+          "meta": {
+            "type": "object"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "security.check@1",
+      "name": "security.check",
+      "module": "src.mcp.tools.security.check",
+      "description": "Run security checks on text or Cypher.",
+      "capabilities": [
+        "security_audit"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "intent",
+              "cypher",
+              "validate"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "intent",
+              "cypher"
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "cypher": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "security.permissions@1",
+      "name": "security.permissions",
+      "module": "src.mcp.tools.security.permissions",
+      "description": "Resolve scopes for a role or principal.",
+      "capabilities": [
+        "security_audit"
+      ],
+      "scopes": [
+        "admin:all"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "resolve",
+              "check",
+              "list"
+            ]
+          },
+          "role": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "session.manage@1",
+      "name": "session.manage",
+      "module": "src.mcp.tools.session.manage",
+      "description": "Create/read/update/delete session metadata.",
+      "capabilities": [
+        "session_management"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "create",
+              "get",
+              "update",
+              "delete",
+              "list"
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "system.backup@1",
+      "name": "system.backup",
+      "module": "src.mcp.tools.system.backup",
+      "description": "Trigger/inspect backups.",
+      "capabilities": [
+        "system_info"
+      ],
+      "scopes": [
+        "tools:all"
+      ],
+      "namespace": false,
+      "long_running": true,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "create",
+              "list",
+              "restore",
+              "status"
+            ]
+          },
+          "target": {
+            "type": "string"
+          },
+          "backup_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "system.health@1",
+      "name": "system.health",
+      "module": "src.mcp.tools.system.health",
+      "description": "Return liveness and dependency checks.",
+      "capabilities": [
+        "system_info"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "liveness",
+              "readiness",
+              "details"
+            ],
+            "default": "liveness"
+          },
+          "verbose": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "system.metrics@1",
+      "name": "system.metrics",
+      "module": "src.mcp.tools.system.metrics",
+      "description": "Expose metrics snapshot (Prometheus/text or JSON).",
+      "capabilities": [
+        "system_info"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "scrape",
+              "info"
+            ],
+            "default": "scrape"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "prometheus",
+              "text",
+              "json"
+            ],
+            "default": "text"
+          },
+          "names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "system.status@1",
+      "name": "system.status",
+      "module": "src.mcp.tools.system.status",
+      "description": "Return service status summary.",
+      "capabilities": [
+        "system_info"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "summary",
+              "detailed"
+            ],
+            "default": "summary"
+          },
+          "service": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "tenancy.manage@1",
+      "name": "tenancy.manage",
+      "module": "src.mcp.tools.tenancy.manage",
+      "description": "Select or list tenants; manage allowlist (dev-mode).",
+      "capabilities": [
+        "tenancy_management"
+      ],
+      "scopes": [
+        "admin:all"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "select",
+              "list",
+              "create",
+              "delete",
+              "update"
+            ]
+          },
+          "tenant_id": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "user.profile@1",
+      "name": "user.profile",
+      "module": "src.mcp.tools.user.profile",
+      "description": "Get or update the current user's profile (non-sensitive demo data).",
+      "capabilities": [
+        "user_management"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "get",
+              "set",
+              "update",
+              "delete"
+            ]
+          },
+          "profile": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "viz.render@1",
+      "name": "viz.render",
+      "module": "src.mcp.tools.viz.render",
+      "description": "Render helpers for graphs, tables, and sparklines (Mermaid/DOT/Markdown/sparkline).",
+      "capabilities": [
+        "visualization"
+      ],
+      "scopes": [
+        "tools:basic"
+      ],
+      "namespace": false,
+      "long_running": false,
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "graph_mermaid",
+              "graph_dot",
+              "table_markdown",
+              "sparkline"
+            ]
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "edges": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "LR",
+              "TB",
+              "RL",
+              "BT"
+            ],
+            "default": "LR"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  ]
+}

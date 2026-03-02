@@ -1,0 +1,402 @@
+% TODO checklist:
+% [x] Inspected: src/services/intent_classifier.py (full intent classification implementation)
+% [x] Inspected: src/services/prompt_catalog.py (catalog loading and matching)
+% [x] Inspected: src/services/orchestrator.py (integration with classify_intent)
+% [x] Inspected: Q&A.md (Questions on intent modes and classification)
+% [x] Inspected: tests/integration/resources/memgraph_nl_prompts.json (prompt catalog structure)
+
+\section{Intent Classification}
+\label{sec:intent-classification}
+
+Intent classification serves as the critical routing mechanism that determines how the orchestrator processes incoming user requests. By analyzing prompt content before execution begins, the system can optimize processing paths, apply appropriate security controls, and provide relevant responses without unnecessary computational overhead. This section examines the classification architecture, pattern definitions, and integration with the broader orchestration pipeline.
+
+\subsection{Intent Classification Architecture}
+
+The intent classification system, implemented in \texttt{src/services/intent\_classifier.py}, provides lightweight, heuristic-based classification of user prompts into operational modes. The design prioritizes speed and determinism, using fast regex and keyword matching with optional LLM-based fallback for ambiguous cases.
+
+\subsubsection{Intent Modes}
+
+The classifier recognizes six distinct intent modes, each triggering specialized handling in the orchestrator:
+
+\begin{description}
+    \item[CHAT] General conversation, greetings, meta-questions about the system, and identity queries. These requests bypass complex planning and tool invocation, routing directly to conversational LLM responses.
+    
+    \item[GRAPH] Memgraph database queries and graph operations. Requests in this mode trigger the NL-to-Cypher pipeline for knowledge graph access.
+    
+    \item[SECURITY] Permission, access control, and RBAC-related questions. The orchestrator responds with information about the caller's effective scopes and allowed operations.
+    
+    \item[ADMIN] Administrative operations including write operations, schema changes, and index creation. These requests require elevated privileges and are subject to additional authorization checks.
+    
+    \item[DANGEROUS] Heavy, destructive, or unbounded operations such as bulk deletions, graph wipes, and unlimited exports. These requests trigger safety gates and require explicit admin authorization.
+    
+    \item[EXPLAIN] Query plan analysis requests. When users prefix queries with \texttt{EXPLAIN} or request ``plan only'' execution, the orchestrator returns query execution plans without executing the underlying operations. This enables safe analysis of potentially heavy or dangerous queries.
+\end{description}
+
+\begin{lstlisting}[language=Python, caption={IntentMode enumeration}, label=lst:intent-mode-enum]
+class IntentMode(str, Enum):
+    """Enumeration of supported intent classification modes."""
+    CHAT = "chat"
+    GRAPH = "graph"
+    SECURITY = "security"
+    ADMIN = "admin"
+    DANGEROUS = "dangerous"
+    EXPLAIN = "explain"
+\end{lstlisting}
+
+\subsubsection{Classification Priority}
+
+The classifier evaluates patterns in a strict priority order, ensuring that safety-critical modes are detected first:
+
+\begin{enumerate}
+    \item \textbf{Catalog match}: Pre-matched prompts with known categories (highest confidence: 0.95)
+    \item \textbf{DANGEROUS patterns}: Always checked first for safety (confidence: 0.90)
+    \item \textbf{ADMIN patterns}: Write operations, schema changes (confidence: 0.85)
+    \item \textbf{SECURITY patterns}: Permission queries (confidence: 0.85)
+    \item \textbf{GRAPH patterns}: Database/Cypher indicators (confidence: 0.85)
+    \item \textbf{CHAT patterns}: Greetings, conversational (confidence: 0.95 for exact matches)
+    \item \textbf{Conversational signals}: Fallback detection (confidence: 0.85)
+    \item \textbf{LLM-based classification}: If enabled, for ambiguous cases
+    \item \textbf{Default}: CHAT with low confidence (0.60)
+\end{enumerate}
+
+This ordering ensures that potentially harmful operations are identified before benign interpretations, implementing a fail-safe approach to request routing.
+
+\subsubsection{IntentClassification Result}
+
+The classifier returns a comprehensive result object capturing the classification decision and supporting metadata:
+
+\begin{lstlisting}[language=Python, caption={IntentClassification dataclass}, label=lst:intent-classification]
+@dataclass
+class IntentClassification:
+    """Result of intent classification."""
+    mode: IntentModeType
+    confidence: float  # 0.0 to 1.0
+    reasoning: str     # Machine-readable explanation
+    source: str        # patterns, catalog, llm, conversational, default
+    matched_catalog_id: str | None = None
+    matched_patterns: list[str] | None = None
+    pattern_categories: list[str] | None = None
+    principal_blocked: bool = False
+    requires_admin: bool = False
+    used_llm: bool = False
+\end{lstlisting}
+
+The \texttt{confidence} score enables downstream components to make nuanced decisions---for example, routing low-confidence classifications to human review or requesting clarification from the user.
+
+\subsection{Pattern Categories}
+
+The classifier defines pattern categories for each intent mode, organized as \texttt{PatternCategory} dataclasses containing compiled regular expressions. This structure enables efficient matching and clear organization of detection rules.
+
+\subsubsection{CHAT Patterns}
+
+Chat patterns detect conversational interactions that do not require tool invocation:
+
+\begin{itemize}
+    \item \textbf{Greetings}: Simple salutations (``hi'', ``hello'', ``good morning'')
+    \item \textbf{Compound Greetings}: Greetings followed by questions (``hi, how are you?'')
+    \item \textbf{Identity Questions}: Queries about the system (``who are you?'', ``what can you do?'')
+    \item \textbf{Pleasantries}: Social phrases (``thank you'', ``goodbye'')
+    \item \textbf{Simple Questions}: Basic help requests (``help me'')
+    \item \textbf{Meta-System}: Questions about platform capabilities
+\end{itemize}
+
+\subsubsection{GRAPH Patterns}
+
+Graph patterns identify requests targeting the Memgraph database:
+
+\begin{itemize}
+    \item \textbf{Node Labels}: Cypher label syntax (e.g., \texttt{:Blast}, \texttt{:File})
+    \item \textbf{Cypher Keywords}: Query language keywords (\texttt{MATCH}, \texttt{RETURN}, \texttt{WHERE})
+    \item \textbf{Graph Terminology}: Domain vocabulary (``nodes'', ``edges'', ``relationships'')
+    \item \textbf{Domain Labels}: Bioinformatics-specific labels (\texttt{Blast}, \texttt{BlastedSeq})
+    \item \textbf{Query Operations}: Natural language patterns (``count nodes'', ``show 10'')
+    \item \textbf{NL Queries}: Graph traversal phrases (``shortest path'', ``neighbors of'')
+\end{itemize}
+
+\subsubsection{ADMIN Patterns}
+
+Admin patterns detect operations requiring elevated privileges:
+
+\begin{itemize}
+    \item \textbf{Schema Operations}: Index and constraint management (\texttt{CREATE INDEX})
+    \item \textbf{Property Operations}: Property modifications (``rename property'')
+    \item \textbf{Write Operations}: Data modification (\texttt{MERGE}, \texttt{SET}, \texttt{CREATE})
+\end{itemize}
+
+\subsubsection{DANGEROUS Patterns}
+
+Dangerous patterns identify potentially destructive operations:
+
+\begin{itemize}
+    \item \textbf{Delete Operations}: Data removal (\texttt{DELETE}, \texttt{DETACH DELETE})
+    \item \textbf{Drop Operations}: Database/graph destruction (\texttt{DROP DATABASE})
+    \item \textbf{Bulk Operations}: Unbounded queries (``delete all nodes'', ``without LIMIT'')
+    \item \textbf{Export Operations}: Mass data extraction (``export entire database'')
+    \item \textbf{Continuous Operations}: Infinite loops (``forever'', ``every second'')
+\end{itemize}
+
+\subsubsection{SECURITY Patterns}
+
+Security patterns detect permission and access control queries:
+
+\begin{itemize}
+    \item \textbf{Permission Queries}: Questions about allowed operations (``my permissions'', ``allowed to'')
+    \item \textbf{Tenant Queries}: Organization context (``my organization'')
+    \item \textbf{Danger Queries}: Questions about dangerous operations
+\end{itemize}
+
+\subsection{EXPLAIN-Only Modifier}
+
+The classifier recognizes an important safety modifier: \texttt{EXPLAIN}-only requests. When patterns indicate query plan analysis rather than execution (e.g., \texttt{EXPLAIN}, ``do not execute'', ``plan only''), the classifier treats otherwise dangerous queries as safe graph operations:
+
+\begin{lstlisting}[language=Python, caption={EXPLAIN-only pattern handling}, label=lst:explain-only]
+def _is_explain_only(text: str) -> bool:
+    """Check if this is an EXPLAIN-only request (safe for any query)."""
+    patterns = [
+        r"\bEXPLAIN\b",
+        r"\bprofile\b",
+        r"\bdo\s+not\s+execute\b",
+        r"\bplan\s+only\b",
+        r"\bexecution\s+plan\b",
+    ]
+    return any(re.search(p, text, re.IGNORECASE) for p in patterns)
+\end{lstlisting}
+
+This enables users to safely analyze query execution plans for potentially heavy operations without triggering safety blocks.
+
+\subsection{Principal Context Integration}
+
+The classifier integrates with the security framework to evaluate whether the authenticated principal has permission for the classified operation. For ADMIN and DANGEROUS modes, the classifier checks for admin privileges:
+
+\begin{lstlisting}[language=Python, caption={Principal permission check}, label=lst:principal-check]
+def _check_principal_for_mode(
+    mode: IntentModeType,
+    principal: dict[str, Any] | None,
+) -> tuple[bool, str]:
+    """Check if principal has permission for the classified mode."""
+    if mode not in (IntentMode.ADMIN.value, IntentMode.DANGEROUS.value):
+        return False, ""  # Not blocked
+    
+    if not principal:
+        return False, ""  # No principal = unknown
+    
+    if _principal_has_admin(principal):
+        return False, ""  # Admin has access
+    
+    # Non-admin trying admin/dangerous operation
+    return True, f"Principal lacks admin privileges for {mode} operations"
+\end{lstlisting}
+
+When a non-admin principal attempts an admin or dangerous operation, the classification result includes \texttt{principal\_blocked=True}, enabling the orchestrator to return an appropriate authorization error.
+
+\subsection{Confidence Thresholds}
+
+The \texttt{IntentConfidenceThresholds} class centralizes confidence values used throughout the classification and routing logic:
+
+\begin{table}[htbp]
+\centering
+\caption{Intent classification confidence thresholds}
+\label{tab:confidence-thresholds}
+\begin{tabular}{llr}
+\hline
+\textbf{Category} & \textbf{Threshold} & \textbf{Value} \\
+\hline
+\multicolumn{3}{l}{\textit{Pattern-Based Matches}} \\
+Catalog match & CATALOG\_MATCH & 0.95 \\
+Exact pattern & PATTERN\_EXACT & 0.95 \\
+Strong pattern (dangerous) & PATTERN\_STRONG & 0.90 \\
+Good pattern (admin/security/graph) & PATTERN\_GOOD & 0.85 \\
+Conversational signal & CONVERSATIONAL & 0.85 \\
+\hline
+\multicolumn{3}{l}{\textit{Routing Thresholds}} \\
+Chat routing minimum & CHAT\_ROUTING & 0.60 \\
+Security routing minimum & SECURITY\_ROUTING & 0.75 \\
+Admin routing minimum & ADMIN\_ROUTING & 0.70 \\
+Dangerous routing minimum & DANGEROUS\_ROUTING & 0.70 \\
+Graph routing minimum & GRAPH\_ROUTING & 0.80 \\
+\hline
+Default fallback & DEFAULT\_FALLBACK & 0.50 \\
+\hline
+\end{tabular}
+\end{table}
+
+Higher thresholds for graph and dangerous operations reflect the greater consequences of misclassification in these modes.
+
+\subsection{Prompt Catalog and Pattern-Based Routing}
+\label{subsec:prompt-catalog}
+
+The prompt catalog provides a pre-classified knowledge base of common prompts, enabling deterministic classification and execution for known query patterns. This subsection examines the catalog structure and its role in the classification pipeline.
+
+\subsubsection{Catalog Structure}
+
+The prompt catalog, stored as a JSON file at \texttt{tests/integration/resources/memgraph\_nl\_prompts.json}, contains entries with the following structure:
+
+\begin{lstlisting}[language=Python, caption={Prompt catalog entry structure}, label=lst:catalog-entry]
+{
+    "id": "p01",                    # Unique identifier
+    "text": "How many :Blast nodes?", # Prompt text
+    "category": "read_only",        # Classification category
+    "expected_cypher_contains": [   # Validation patterns
+        "MATCH", ":Blast", "COUNT"
+    ],
+    "limit_hint": 10,               # Suggested LIMIT value
+    "random": false,                # Random sampling flag
+    "allowed_for_user": true,       # RBAC: user access
+    "allowed_for_admin": true,      # RBAC: admin access
+    "smoke": true                   # Include in smoke tests
+}
+\end{lstlisting}
+
+\subsubsection{Catalog Categories}
+
+The catalog organizes prompts into categories that map to intent modes:
+
+\begin{table}[htbp]
+\centering
+\caption{Catalog category to intent mode mapping}
+\label{tab:category-mapping}
+\begin{tabular}{ll}
+\hline
+\textbf{Catalog Category} & \textbf{Intent Mode} \\
+\hline
+read\_only & GRAPH \\
+admin\_write & ADMIN \\
+dangerous & DANGEROUS \\
+security & SECURITY \\
+data\_quality & GRAPH \\
+chat & CHAT \\
+meta & CHAT \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Catalog Loading and Indexing}
+
+The \texttt{load\_prompt\_catalog()} function loads and indexes the catalog once at module import time, caching the result for subsequent lookups:
+
+\begin{lstlisting}[language=Python, caption={Catalog indexing structure}, label=lst:catalog-index]
+@lru_cache(maxsize=1)
+def load_prompt_catalog() -> dict[str, Any]:
+    """Load and index the prompt catalog."""
+    return {
+        "by_id": {},              # prompt_id -> entry
+        "by_text_normalized": {}, # normalized_text -> entry
+        "by_category": {},        # category -> [entries]
+        "all": [],                # all entries
+        "loaded": bool,
+        "path": str | None,
+    }
+\end{lstlisting}
+
+\subsubsection{Text Matching}
+
+The \texttt{match\_prompt\_by\_text()} function provides prompt lookup with optional fuzzy matching:
+
+\begin{enumerate}
+    \item \textbf{Normalization}: Input text is lowercased, stripped, and whitespace-collapsed
+    \item \textbf{Exact Match}: Direct lookup in the normalized text index
+    \item \textbf{Fuzzy Match}: If threshold $< 1.0$, Jaccard similarity over word sets identifies similar prompts
+\end{enumerate}
+
+\begin{lstlisting}[language=Python, caption={Prompt matching algorithm}, label=lst:prompt-matching]
+def match_prompt_by_text(text: str, threshold: float = 0.85):
+    """Find matching prompt entry by text."""
+    normalized = _normalize_text(text)
+    
+    # Try exact match first
+    exact_match = catalog["by_text_normalized"].get(normalized)
+    if exact_match:
+        return exact_match
+    
+    # Fuzzy matching if threshold < 1.0
+    if threshold < 1.0:
+        return _fuzzy_match(normalized, catalog["all"], threshold)
+    
+    return None
+\end{lstlisting}
+
+\subsubsection{Execution Hints}
+
+The catalog provides execution hints that guide the orchestrator's behavior for matched prompts:
+
+\begin{itemize}
+    \item \texttt{limit\_hint}: Suggested \texttt{LIMIT} clause value for unbounded queries
+    \item \texttt{random}: Whether to apply random sampling
+    \item \texttt{todo\_mode}: Specific TODO planning mode
+    \item \texttt{expected\_pattern}: Regex pattern for Cypher validation
+    \item \texttt{expected\_cypher\_contains}: Required keywords in generated Cypher
+\end{itemize}
+
+These hints enable deterministic testing and optimization of common query patterns.
+
+\subsubsection{Category Policies}
+
+The \texttt{get\_category\_policy()} function returns default policies for each category:
+
+\begin{lstlisting}[language=Python, caption={Category policy structure}, label=lst:category-policy]
+{
+    "requires_admin": bool,     # Needs admin privileges
+    "allow_execution": bool,    # Can be executed
+    "needs_limit": bool,        # Requires LIMIT clause
+    "suggest_explain": bool,    # Suggest EXPLAIN mode
+}
+\end{lstlisting}
+
+For example, the ``dangerous'' category sets \texttt{allow\_execution=False} and \texttt{suggest\_explain=True}, guiding users toward safer alternatives.
+
+\subsection{LLM Fallback Classification}
+
+When pattern-based classification is inconclusive (no patterns match or confidence is low), the classifier can optionally invoke an LLM for semantic analysis. This capability is disabled by default (\texttt{INTENT\_LLM\_FALLBACK\_ENABLED=False}) to ensure deterministic behavior and minimize latency.
+
+When enabled, the LLM fallback:
+\begin{enumerate}
+    \item Constructs a classification prompt with the user input and mode descriptions
+    \item Invokes the configured LLM with low temperature for consistency
+    \item Parses the response to extract mode and confidence
+    \item Returns classification with \texttt{source="llm"} and \texttt{used\_llm=True}
+\end{enumerate}
+
+This fallback mechanism provides flexibility for deployments where natural language understanding is prioritized over strict determinism.
+
+\subsection{Metrics and Observability}
+
+The classifier records telemetry for each classification decision:
+
+\begin{lstlisting}[language=Python, caption={Classification metrics recording}, label=lst:classification-metrics]
+def _record_classification_metrics(
+    result: IntentClassification,
+    duration_seconds: float,
+) -> None:
+    """Record classification metrics to Prometheus."""
+    record_intent_classification(
+        mode=result.mode,
+        source=result.source,
+        confidence=result.confidence,
+        duration_seconds=duration_seconds,
+        adjusted=result.principal_blocked,
+    )
+\end{lstlisting}
+
+These metrics enable monitoring of:
+\begin{itemize}
+    \item Classification distribution across intent modes
+    \item Classification source usage (patterns vs.\ catalog vs.\ LLM)
+    \item Confidence score distributions
+    \item Principal blocking rates
+    \item Classification latency
+\end{itemize}
+
+\subsection{Quick Check Helper Functions}
+
+The classifier exports convenience functions for common classification checks:
+
+\begin{itemize}
+    \item \texttt{is\_simple\_chat(goal)}: Returns \texttt{True} if definitely a simple chat prompt
+    \item \texttt{is\_graph\_query(goal)}: Returns \texttt{True} if a graph database query
+    \item \texttt{requires\_admin(goal)}: Returns \texttt{True} if requires admin privileges
+    \item \texttt{is\_security\_question(goal)}: Returns \texttt{True} if a security/permission question
+    \item \texttt{is\_dangerous\_operation(goal)}: Returns \texttt{True} if a dangerous operation
+\end{itemize}
+
+These functions enable fast-path decisions in the orchestrator without constructing full classification results.
+

@@ -1,0 +1,368 @@
+# Cineca Agentic Platform — Retry Policies
+# -----------------------------------------------------------------------------
+# Centralized, declarative retry configuration for outbound calls and internal
+# operations. The runtime (adapters/services) should interpret these policies
+# to decide when/how to retry. All durations are seconds unless noted.
+#
+# Schema (informal):
+#   _meta: { version, updated, description }
+#   defaults:
+#     attempts: <int>
+#     timeout: <float>                 # per-attempt timeout
+#     max_elapsed: <float>             # overall deadline across attempts
+#     backoff:
+#       type: exponential|decorrelated_jitter|fixed
+#       base: <float>                  # initial delay
+#       factor: <float>                # multiplier (exponential)
+#       max: <float>                   # max delay cap
+#       jitter: none|full|equal
+#     retry_on:
+#       http_status: [ints|ranges]     # e.g., [429, "500-599"]
+#       exceptions: [str, ...]         # dotted names or simple class names
+#       error_contains: [str, ...]     # substring matches (case-insensitive)
+#     give_up_on:                      # hard failures, never retry
+#       http_status: [ints|ranges]
+#       exceptions: [str, ...]
+#       error_contains: [str, ...]
+#     hedging:
+#       enabled: <bool>
+#       delay: <float>                 # start a second attempt after this delay
+#       max_parallel: <int>            # total in-flight attempts when hedging
+#     circuit_breaker:
+#       window: <float>                # sliding window duration
+#       min_samples: <int>             # require N calls before evaluating
+#       error_rate_threshold: <float>  # 0..1; open breaker when exceeded
+#       cool_down: <float>             # time until half-open probe
+#
+#   strategies:
+#     <name>:
+#       inherits: <defaults|other-name>
+#       overrides: <same keys as defaults>
+#       notes: <freeform text>
+#
+#   mappings:                          # Logical -> strategy mapping
+#     llm: <strategy-name>
+#     tool_invoke: <strategy-name>
+#     db_cypher: <strategy-name>
+#     network: <strategy-name>
+#     mcp_transport: <strategy-name>
+#     cache: <strategy-name>
+# -----------------------------------------------------------------------------
+
+_meta:
+  version: "1.0.0"
+  updated: "2025-08-09"
+  description: "Retry policies for LLM, tools, DB, MCP, and generic network calls."
+
+defaults:
+  attempts: 5
+  timeout: 30.0
+  max_elapsed: 120.0
+  backoff:
+    type: exponential
+    base: 0.5
+    factor: 2.0
+    max: 20.0
+    jitter: full
+  retry_on:
+    http_status: [429, "500-599"]
+    exceptions:
+      - TimeoutError
+      - ConnectionError
+      - ConnectionResetError
+      - ReadTimeout
+      - WriteTimeout
+      - SocketTimeout
+      - RateLimitError
+      - ServiceUnavailable
+      - ServerBusy
+      - TransientLLMError
+    error_contains:
+      - "timeout"
+      - "timed out"
+      - "temporarily unavailable"
+      - "overloaded"
+      - "try again"
+      - "rate limit"
+      - "connection reset"
+      - "gateway timeout"
+  give_up_on:
+    http_status: [400, 401, 403, 404, 409, 422]
+    exceptions:
+      - ValueError
+      - TypeError
+      - AuthenticationError
+      - AuthorizationError
+      - InvalidRequestError
+      - PolicyViolation
+    error_contains:
+      - "invalid api key"
+      - "forbidden"
+      - "unauthorized"
+      - "not found"
+      - "content policy"
+      - "validation error"
+  hedging:
+    enabled: false
+    delay: 0.2
+    max_parallel: 2
+  circuit_breaker:
+    window: 30.0
+    min_samples: 20
+    error_rate_threshold: 0.5
+    cool_down: 15.0
+
+strategies:
+
+  # Large Language Model (LLM) inference — more conservative overall time, more attempts.
+  llm_standard:
+    inherits: defaults
+    overrides:
+      attempts: 6
+      timeout: 45.0
+      max_elapsed: 150.0
+      backoff:
+        type: exponential
+        base: 0.4
+        factor: 2.0
+        max: 25.0
+        jitter: full
+      retry_on:
+        http_status: [429, "500-599"]
+        exceptions:
+          - RateLimitError
+          - TransientLLMError
+          - TimeoutError
+          - ReadTimeout
+          - ConnectionResetError
+          - ServiceUnavailable
+        error_contains:
+          - "rate limit"
+          - "overloaded"
+          - "timeout"
+          - "capacity"
+          - "server busy"
+      give_up_on:
+        http_status: [400, 401, 403, 404, 409, 422]
+        exceptions:
+          - AuthenticationError
+          - AuthorizationError
+          - InvalidRequestError
+          - PolicyViolation
+        error_contains:
+          - "safety"
+          - "content policy"
+          - "unsupported model"
+          - "invalid"
+      hedging:
+        enabled: true
+        delay: 0.35
+        max_parallel: 2
+      circuit_breaker:
+        window: 60.0
+        min_samples: 30
+        error_rate_threshold: 0.4
+        cool_down: 20.0
+    notes: |
+      Enables light request hedging to mitigate tail latency. Final attempt may lower
+      generation parameters (handled by caller) to improve success under load.
+
+  # Tool invocations (MCP tools) — usually idempotent; keep strict give-up rules for policy/validation errors.
+  tool_invoke_default:
+    inherits: defaults
+    overrides:
+      attempts: 4
+      timeout: 20.0
+      max_elapsed: 60.0
+      backoff:
+        type: exponential
+        base: 0.25
+        factor: 2.0
+        max: 8.0
+        jitter: full
+      retry_on:
+        http_status: [429, "500-599"]
+        exceptions:
+          - TimeoutError
+          - ConnectionError
+          - ConnectionResetError
+          - ServiceUnavailable
+        error_contains:
+          - "temporarily unavailable"
+          - "try again"
+          - "rate limit"
+          - "overloaded"
+      give_up_on:
+        http_status: [400, 401, 403, 404, 409, 422]
+        exceptions:
+          - PolicyViolation
+          - ValidationError
+          - AuthenticationError
+          - AuthorizationError
+        error_contains:
+          - "invalid input"
+          - "missing required"
+          - "forbidden"
+          - "unauthorized"
+      hedging:
+        enabled: false
+      circuit_breaker:
+        window: 45.0
+        min_samples: 15
+        error_rate_threshold: 0.5
+        cool_down: 20.0
+    notes: |
+      Tools often perform side-effect-free reads; callers MUST mark non-idempotent
+      operations to avoid retry storms (e.g., by disabling retries in call-time options).
+
+  # Graph/DB Cypher queries — safe to retry on connection & transient errors; never on syntax/constraint errors.
+  db_cypher_safe:
+    inherits: defaults
+    overrides:
+      attempts: 5
+      timeout: 15.0
+      max_elapsed: 50.0
+      backoff:
+        type: decorrelated_jitter
+        base: 0.3
+        factor: 2.0
+        max: 6.0
+        jitter: full
+      retry_on:
+        http_status: [429, "500-599"]
+        exceptions:
+          - TransientDatabaseError
+          - ServiceUnavailable
+          - ConnectionError
+          - ConnectionResetError
+          - TimeoutError
+        error_contains:
+          - "lock timeout"
+          - "temporarily unavailable"
+          - "connection reset"
+          - "deadlock detected"
+      give_up_on:
+        http_status: [400, 409, 422]
+        exceptions:
+          - SyntaxError
+          - ConstraintViolation
+          - AuthorizationError
+        error_contains:
+          - "syntax error"
+          - "constraint"
+          - "forbidden"
+    notes: |
+      Use for read or idempotent write queries. For bulk writes, prefer the 'db_cypher_bulk' strategy.
+
+  # Bulk writes — fewer attempts, quicker backoff to avoid load amplification.
+  db_cypher_bulk:
+    inherits: db_cypher_safe
+    overrides:
+      attempts: 3
+      timeout: 30.0
+      max_elapsed: 45.0
+      backoff:
+        type: exponential
+        base: 0.5
+        factor: 1.8
+        max: 5.0
+        jitter: full
+    notes: |
+      Callers should chunk batches and checkpoint progress. Retries are conservative.
+
+  # Generic network I/O — catch-all for HTTP calls outside LLM/DB.
+  network_io:
+    inherits: defaults
+    overrides:
+      attempts: 4
+      timeout: 20.0
+      max_elapsed: 90.0
+      backoff:
+        type: exponential
+        base: 0.2
+        factor: 2.0
+        max: 10.0
+        jitter: full
+      retry_on:
+        http_status: [408, 425, 429, "500-599"]
+        exceptions:
+          - TimeoutError
+          - ConnectionError
+          - ConnectionResetError
+          - ReadTimeout
+          - WriteTimeout
+        error_contains:
+          - "timeout"
+          - "temporarily unavailable"
+          - "gateway timeout"
+          - "connection reset"
+      give_up_on:
+        http_status: [400, 401, 403, 404, 409, 422]
+        exceptions:
+          - AuthenticationError
+          - AuthorizationError
+          - InvalidRequestError
+
+  # MCP transport/session — allow slightly higher attempts to absorb relinks.
+  mcp_transport:
+    inherits: defaults
+    overrides:
+      attempts: 6
+      timeout: 10.0
+      max_elapsed: 80.0
+      backoff:
+        type: decorrelated_jitter
+        base: 0.25
+        factor: 2.2
+        max: 12.0
+        jitter: full
+      retry_on:
+        http_status: [429, "500-599"]
+        exceptions:
+          - TimeoutError
+          - ConnectionError
+          - ConnectionResetError
+          - ServiceUnavailable
+          - TransportError
+        error_contains:
+          - "session closed"
+          - "transport error"
+          - "try again"
+          - "overloaded"
+      give_up_on:
+        http_status: [400, 401, 403]
+        exceptions:
+          - AuthenticationError
+          - AuthorizationError
+
+  # Cache (Redis) ops — usually fast; tiny backoff, many quick attempts.
+  cache_quick:
+    inherits: defaults
+    overrides:
+      attempts: 5
+      timeout: 2.0
+      max_elapsed: 6.0
+      backoff:
+        type: exponential
+        base: 0.05
+        factor: 1.7
+        max: 0.5
+        jitter: equal
+      retry_on:
+        exceptions:
+          - TimeoutError
+          - ConnectionError
+          - ConnectionResetError
+      give_up_on:
+        exceptions:
+          - AuthenticationError
+          - AuthorizationError
+
+mappings:
+  llm: llm_standard
+  tool_invoke: tool_invoke_default
+  db_cypher: db_cypher_safe
+  db_cypher_bulk: db_cypher_bulk
+  network: network_io
+  mcp_transport: mcp_transport
+  cache: cache_quick

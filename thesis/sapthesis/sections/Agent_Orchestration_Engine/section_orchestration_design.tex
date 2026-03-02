@@ -1,0 +1,324 @@
+% TODO checklist:
+% [x] Inspected: src/services/orchestrator.py (main orchestration logic, 8000+ lines)
+% [x] Inspected: src/schemas/agents.py (OrchestrationStepInput, OrchestrationStepOutput, TodoItem)
+% [x] Inspected: README.md (high-level architecture)
+% [x] Inspected: Q&A.md (Questions 5, 36 on agent run lifecycle and orchestrator responsibilities)
+% [x] Inspected: src/config_modules/compute.py (timeout configuration)
+
+\section{Orchestration Design}
+\label{sec:orchestration-design}
+
+The Orchestration Engine forms the computational heart of the Cineca Agentic Platform, coordinating the complex interplay between user requests, language model reasoning, tool invocations, and data retrieval operations. This section presents the architectural design of the orchestrator, examining its responsibilities, execution model, and the design trade-offs that shaped its implementation.
+
+\subsection{Orchestrator Architecture and Responsibilities}
+
+The \texttt{Orchestrator} class, implemented in \texttt{src/services/orchestrator.py}, serves as the central coordination point for all agent execution. At over 8,000 lines of code, it represents the most substantial component in the platform, encapsulating the following core responsibilities:
+
+\begin{enumerate}
+    \item \textbf{LLM Call Coordination}: Managing interactions with language models for planning, reasoning, and response generation, including model selection, prompt construction, and response parsing.
+    
+    \item \textbf{Tool Invocation}: Orchestrating the execution of MCP-style tools, handling input validation, output processing, and error recovery.
+    
+    \item \textbf{Cache Integration}: Optionally leveraging Redis caching for response deduplication and performance optimization.
+    
+    \item \textbf{Graph Access}: Coordinating queries against the Memgraph database for knowledge graph operations.
+    
+    \item \textbf{Security Enforcement}: Integrating with the security framework for RBAC checks, tenant isolation, and audit logging.
+    
+    \item \textbf{Metrics and Observability}: Recording execution metrics, latencies, and token usage for monitoring and cost tracking.
+\end{enumerate}
+
+The orchestrator is deliberately designed to be \emph{dependency-tolerant}: every external integration (LLM clients, cache, database, audit) is optional and detected at runtime. This design enables graceful degradation when components are unavailable and simplifies testing through selective mocking.
+
+\begin{lstlisting}[language=Python, caption={Orchestrator class initialization showing dependency tolerance}, label=lst:orchestrator-init]
+class Orchestrator:
+    def __init__(
+        self,
+        llm: Any | None = None,
+        llm_clients: MutableMapping[str, Any] | None = None,
+        db: Any | None = None,
+        cache: Any | None = None,
+        audit: Any | None = None,
+        tools: MutableMapping[str, ToolFunc] | None = None,
+        default_model: str | None = None,
+        llm_device: str = "cpu",
+        llm_max_tokens: int = 2048,
+        llm_max_steps: int = 10,
+    ) -> None:
+        # All dependencies are optional
+        self.llm = llm
+        self.llm_clients = llm_clients or {}
+        self.db = db
+        self.cache = cache
+        self.audit = audit
+        self.tools = tools or {}
+        # ...
+\end{lstlisting}
+
+\subsection{Execution Flow Overview}
+
+The orchestrator processes agent runs through a structured pipeline that transforms user prompts into actionable outputs. Figure~\ref{fig:orchestrator-flow} illustrates the high-level execution flow.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.2cm,
+    box/.style={rectangle, draw, rounded corners, minimum width=3cm, minimum height=0.8cm, align=center, font=\small},
+    decision/.style={diamond, draw, aspect=2, minimum width=2cm, align=center, font=\small},
+    arrow/.style={->, thick}
+]
+    % Nodes
+    \node[box] (input) {User Prompt};
+    \node[box, below of=input] (intent) {Intent Classification};
+    \node[decision, below of=intent, yshift=-0.3cm] (route) {Route?};
+    \node[box, below left of=route, xshift=-2.8cm, yshift=-0.8cm] (chat) {Chat Handler};
+    \node[box, below of=route, yshift=-0.8cm] (graph) {Graph Handler};
+    \node[box, below right of=route, xshift=2.8cm, yshift=-0.8cm] (admin) {Admin Handler};
+    \node[box, below of=graph, yshift=-0.3cm] (plan) {TODO Planning};
+    \node[box, below of=plan] (execute) {Step Execution};
+    \node[box, below of=execute] (output) {Response Assembly};
+    
+    % Arrows
+    \draw[arrow] (input) -- (intent);
+    \draw[arrow] (intent) -- (route);
+    \draw[arrow] (route) -| node[above, font=\tiny] {CHAT} (chat);
+    \draw[arrow] (route) -- node[right, font=\tiny] {GRAPH} (graph);
+    \draw[arrow] (route) -| node[above, font=\tiny] {ADMIN} (admin);
+    \draw[arrow] (chat) |- (output);
+    \draw[arrow] (graph) -- (plan);
+    \draw[arrow] (admin) |- (plan);
+    \draw[arrow] (plan) -- (execute);
+    \draw[arrow] (execute) -- (output);
+\end{tikzpicture}
+\caption{High-level orchestration execution flow}
+\label{fig:orchestrator-flow}
+\end{figure}
+
+The execution flow proceeds through the following stages:
+
+\begin{enumerate}
+    \item \textbf{Request Reception}: The HTTP layer receives the user prompt along with session context, authentication information, and execution parameters.
+    
+    \item \textbf{Intent Classification}: The prompt is analyzed to determine the appropriate processing mode (CHAT, GRAPH, ADMIN, SECURITY, DANGEROUS, or EXPLAIN).
+    
+    \item \textbf{Mode-Specific Routing}: Based on the classified intent, the orchestrator routes to specialized handlers:
+    \begin{itemize}
+        \item \texttt{\_handle\_chat\_mode()}: Direct LLM conversation without tool invocation
+        \item \texttt{\_handle\_graph\_mode()}: Memgraph database operations via NL-to-Cypher
+        \item \texttt{\_handle\_admin\_mode()}: Administrative operations requiring elevated privileges
+        \item \texttt{\_handle\_security\_mode()}: Permission and access control queries
+        \item \texttt{\_handle\_dangerous\_mode()}: Potentially destructive operations with safety gates
+        \item \texttt{\_handle\_explain\_only()}: Query plan analysis without execution
+    \end{itemize}
+    
+    \item \textbf{TODO Planning}: For complex requests, the orchestrator generates a structured plan as a list of TODO items, each representing a discrete step to execute.
+    
+    \item \textbf{Step Execution}: The orchestrator iterates through planned steps, invoking tools, making LLM calls, and accumulating results.
+    
+    \item \textbf{Response Assembly}: Final outputs are aggregated, formatted, and returned to the caller with comprehensive metrics.
+\end{enumerate}
+
+\subsection{OrchestrationResult Data Structure}
+
+The orchestrator produces results encapsulated in the \texttt{OrchestrationResult} dataclass, which captures all execution metadata required for observability, debugging, and cost tracking:
+
+\begin{lstlisting}[language=Python, caption={OrchestrationResult dataclass structure}, label=lst:orchestration-result]
+@dataclass
+class OrchestrationResult:
+    """Complete result of an orchestration run."""
+    success: bool = True
+    outputs: list[dict[str, Any]] = field(default_factory=list)
+    steps: list[dict[str, Any]] = field(default_factory=list)
+    todos: list[dict[str, Any]] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    
+    # Timing metrics
+    overall_ms: int | None = None
+    first_llm_call_ms: int | None = None
+    
+    # LLM usage tracking
+    llm_metrics: list[dict[str, Any]] = field(default_factory=list)
+    llm_call_count: int = 0
+    total_llm_calls: int = 0
+    total_input_tokens: int = 0
+    total_output_tokens: int = 0
+    
+    # Tool usage tracking
+    tool_calls: int = 0
+    tool_errors: int = 0
+    
+    # Execution metadata
+    current_stage: str | None = None
+    metrics: dict[str, Any] = field(default_factory=dict)
+    degraded: bool = False
+    used_fallback: bool = False
+\end{lstlisting}
+
+The \texttt{to\_dict()} method aggregates outputs into a coherent response, extracting final output text from step results and computing summary metrics for API consumers.
+
+\subsection{Timeout Configuration and Budget Management}
+
+The orchestrator implements sophisticated timeout management to prevent runaway executions while accommodating the varying latency characteristics of different deployment environments. The \texttt{ComputeConfig} class provides device-aware defaults:
+
+\begin{table}[htbp]
+\centering
+\caption{Default timeout configuration by compute device}
+\label{tab:timeout-config}
+\begin{tabular}{lrrr}
+\hline
+\textbf{Device} & \textbf{Step Timeout (s)} & \textbf{Run Timeout (s)} & \textbf{Use Case} \\
+\hline
+CPU & 1200 & 3600 & Development, CI \\
+GPU (CUDA) & 30 & 180 & Production inference \\
+MPS (Apple) & 60 & 300 & Development (macOS) \\
+\hline
+\end{tabular}
+\end{table}
+
+These timeouts are configurable via environment variables and are automatically adjusted based on detected hardware capabilities. The orchestrator tracks execution budget consumption, emitting warnings when approaching limits and enforcing hard cutoffs to prevent resource exhaustion.
+
+\subsection{Execution Modes and Run Types}
+\label{subsec:execution-modes}
+
+The platform implements two distinct execution workflows to accommodate different operational requirements. These workflows---\textbf{Workflow A} (synchronous) and \textbf{Workflow B} (asynchronous)---share the same orchestration engine but differ in their execution context, persistence model, and progress reporting mechanisms.
+
+\subsubsection{Workflow A: Synchronous Execution via BackgroundTasks}
+\label{subsubsec:workflow-a}
+
+\paragraph{Overview} Workflow A provides synchronous-style agent execution using FastAPI's \texttt{BackgroundTasks} mechanism. The endpoint (\texttt{POST /v1/agent-runs}) returns immediately with \texttt{status=queued}, while the orchestration runs in the same process context. This approach minimizes infrastructure complexity while providing adequate performance for typical interactive use cases.
+
+\paragraph{Execution Flow} The workflow proceeds through the following stages:
+\begin{enumerate}
+    \item \textbf{Request Reception}: The API layer validates the request, performs rate limiting, and creates an \texttt{AgentRun} record in PostgreSQL with \texttt{status=queued}.
+    \item \textbf{Background Scheduling}: The \texttt{execute\_agent\_run\_background()} function is added to FastAPI's \texttt{BackgroundTasks} queue.
+    \item \textbf{Status Transition}: The background task updates status to \texttt{running} and initializes the orchestrator via \texttt{Orchestrator.from\_env()}.
+    \item \textbf{Orchestration}: The orchestrator executes the full pipeline (intent classification, mode handling, TODO planning, step execution).
+    \item \textbf{Completion}: Results are persisted, status transitions to \texttt{succeeded} or \texttt{failed}, and metrics are emitted.
+\end{enumerate}
+
+\paragraph{Use Cases} Workflow A is optimal for:
+\begin{itemize}
+    \item Simple chat interactions with low latency requirements ($< 30$ seconds)
+    \item Graph queries expected to complete quickly
+    \item Administrative operations requiring immediate feedback
+    \item Single-step orchestration scenarios
+\end{itemize}
+
+\subsubsection{Workflow B: Asynchronous Execution via Job Queue}
+\label{subsubsec:workflow-b}
+
+\paragraph{Overview} Workflow B provides fully asynchronous agent execution through the Redis-backed job queue system. Jobs are created via \texttt{POST /v1/jobs} with \texttt{type=agent.run}, then processed by dedicated worker processes. This workflow survives API server restarts, enables horizontal scaling of workers, and provides real-time progress streaming via Server-Sent Events (SSE).
+
+\paragraph{Execution Flow} The workflow proceeds through the following phases:
+
+\begin{enumerate}
+    \item \textbf{Job Submission}: The API validates the request, creates a job record in PostgreSQL with \texttt{status=queued}, enqueues the job ID to Redis, and returns HTTP 202.
+    \item \textbf{Worker Pickup}: A jobs worker polls the Redis queue, loads the job from PostgreSQL, and transitions status to \texttt{running}.
+    \item \textbf{Agent Execution}: The worker invokes \texttt{\_execute\_agent\_run\_job()}, which:
+    \begin{itemize}
+        \item Creates or loads the linked \texttt{AgentRun} record
+        \item Initializes the orchestrator with full LLM client configuration
+        \item Executes the orchestration pipeline with cancellation checks
+        \item Applies PII scrubbing and output guard validation
+        \item Emits progress events at each orchestration step
+    \end{itemize}
+    \item \textbf{Finalization}: Results are persisted, both job and agent run records are updated to terminal status, and final metrics are emitted.
+\end{enumerate}
+
+\paragraph{Use Cases} Workflow B is recommended for:
+\begin{itemize}
+    \item Complex multi-step agent workflows with unpredictable duration
+    \item Long-running NL-to-Cypher queries requiring extended processing
+    \item Batch processing operations
+    \item Fault-tolerant execution requiring persistence across server restarts
+    \item Scenarios requiring real-time progress streaming to clients
+\end{itemize}
+
+\subsubsection{Workflow Comparison}
+
+Table~\ref{tab:workflow-comparison} summarizes the key differences between Workflow A and Workflow B:
+
+\begin{table}[htbp]
+\centering
+\caption{Comparison of Workflow A (synchronous) and Workflow B (asynchronous) execution modes}
+\label{tab:workflow-comparison}
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Aspect} & \textbf{Workflow A} & \textbf{Workflow B} \\
+\midrule
+Endpoint & \texttt{POST /v1/agent-runs} & \texttt{POST /v1/jobs} \\
+Execution Context & FastAPI BackgroundTasks & Dedicated worker process \\
+Response & HTTP 201, \texttt{status=queued} & HTTP 202, \texttt{status=queued} \\
+Progress Tracking & Poll \texttt{GET /v1/agent-runs/\{id\}} & SSE via \texttt{GET /v1/jobs/\{id\}/events} \\
+Persistence & AgentRun in PostgreSQL & Job + AgentRun in PostgreSQL \\
+Restart Survival & No (in-process) & Yes (Redis queue) \\
+Horizontal Scaling & Limited & Yes (multiple workers) \\
+Cancellation & Limited & Full support (Lua scripts) \\
+Best For & Quick responses, simple workflows & Complex, long-running tasks \\
+\hline
+\end{tabular}
+\end{table}
+
+\paragraph{Selecting Between Workflows} The choice between workflows depends on operational requirements:
+
+\begin{itemize}
+    \item Use \textbf{Workflow A} when simplicity and low latency are priorities, the expected execution time is under 30 seconds, and restart tolerance is not critical.
+    \item Use \textbf{Workflow B} when fault tolerance is required, execution time is unpredictable or expected to exceed 30 seconds, real-time progress streaming is needed, or horizontal scaling of execution capacity is desired.
+\end{itemize}
+
+The platform also supports a hybrid approach: the \texttt{POST /v1/agent-runs} endpoint accepts an optional \texttt{use\_jobs=true} query parameter, which routes execution through Workflow B while maintaining the agent-runs API semantics.
+
+\subsubsection{Test and Demo Modes}
+
+The orchestrator provides specialized modes for testing and demonstration:
+
+\paragraph{Test Mode} When the \texttt{MEMGRAPH\_NL\_TEST\_MODE} environment variable is enabled, the NL-to-Cypher pipeline uses a deterministic prompt catalog to produce predictable Cypher queries, enabling reliable integration testing independent of LLM output variability.
+
+\paragraph{Demo Mode} A simplified execution path that bypasses complex planning for demonstration scenarios, using pre-configured responses to illustrate platform capabilities without incurring LLM costs.
+
+\subsubsection{Simple vs.\ Complex Request Handling}
+
+The orchestrator distinguishes between simple and complex requests to optimize execution:
+
+\paragraph{Simple Chat} Requests classified with high confidence as conversational (greetings, identity questions, pleasantries) bypass TODO planning entirely, routing directly to an LLM for response generation. This fast path minimizes latency for trivial interactions.
+
+\paragraph{Simple Graph Queries} Queries matching patterns in the prompt catalog with known Cypher templates can be executed directly without LLM-based generation, providing deterministic and efficient graph access.
+
+\paragraph{Complex Workflows} Requests requiring multi-step reasoning, tool invocation, or conditional logic proceed through the full planning and execution pipeline, with the orchestrator managing state across steps.
+
+\subsection{Design Trade-offs and Rationale}
+
+The orchestrator's design reflects several deliberate trade-offs:
+
+\paragraph{Centralization vs.\ Modularity} The decision to consolidate orchestration logic in a single large module prioritizes:
+\begin{itemize}
+    \item \textbf{Execution coherence}: A single execution context simplifies state management and debugging
+    \item \textbf{Performance}: Avoiding inter-module communication overhead
+    \item \textbf{Atomicity}: Transactions and rollbacks are easier to manage
+\end{itemize}
+However, this creates challenges for testing individual components in isolation and increases cognitive load for developers navigating the codebase.
+
+\paragraph{Dependency Tolerance vs.\ Feature Completeness} The optional dependency model enables graceful degradation but requires extensive null-checking and fallback logic throughout the codebase. This trade-off prioritizes operational resilience over code simplicity.
+
+\paragraph{Flexibility vs.\ Type Safety} The extensive use of \texttt{dict[str, Any]} types provides flexibility for evolving data structures but sacrifices compile-time type checking. Pydantic schemas at API boundaries provide runtime validation to mitigate this risk.
+
+\subsection{Integration Points}
+
+The orchestrator integrates with the broader platform through well-defined interfaces:
+
+\begin{itemize}
+    \item \textbf{Router Layer}: The \texttt{src/routers/agent\_runs.py} module exposes HTTP endpoints that instantiate and invoke the orchestrator
+    
+    \item \textbf{Security Framework}: The \texttt{src/security/perm.py} module provides principal context and permission checking
+    
+    \item \textbf{MCP Tools}: The \texttt{src/mcp/} package supplies registered tools accessible via the orchestrator's tool registry
+    
+    \item \textbf{Metrics}: The \texttt{src/observability/} package receives execution telemetry for Prometheus export
+    
+    \item \textbf{Background Jobs}: The \texttt{src/workers/jobs\_worker.py} invokes the orchestrator for asynchronous execution
+\end{itemize}
+
+This modular integration enables the orchestrator to function as a reusable component across different execution contexts while maintaining separation of concerns with the platform's other subsystems.
+

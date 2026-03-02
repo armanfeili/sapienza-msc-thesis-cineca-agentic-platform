@@ -1,0 +1,331 @@
+% TODO checklist:
+% - Inspected: src/config.py (main Settings class, 680+ lines)
+% - Inspected: src/config_modules/compute.py (ComputeConfig class)
+% - Inspected: src/config_modules/__init__.py
+% - Inspected: Q&A.md section on Configuration System (Q13)
+% - Inspected: docker-compose.yml environment variables
+% - Inspected: docker-compose.override.yml development overrides
+
+\section{Configuration System}
+\label{sec:configuration}
+
+The Cineca Agentic Platform employs a comprehensive configuration system built on Pydantic Settings, enabling type-safe, validated configuration management with seamless environment variable integration. This section describes the configuration architecture, the hierarchical loading mechanism, and the specialized compute configuration module that adapts runtime behavior to the underlying hardware capabilities.
+
+\subsection{Configuration Architecture}
+
+The platform's configuration follows a layered architecture that prioritizes flexibility while maintaining type safety and validation guarantees:
+
+\begin{verbatim}
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         CONFIGURATION SOURCES                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│  1. .env file (loaded by python-dotenv)                                 │
+│  2. Environment variables (override .env)                               │
+│  3. Default values in Pydantic models                                   │
+│  4. Computed properties (runtime derivation)                            │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         SETTINGS CLASSES                                 │
+├─────────────────────────────────────────────────────────────────────────┤
+│  src/config.py::Settings                                                │
+│    - App settings (APP_ENV, APP_HOST, APP_PORT, LOG_LEVEL)              │
+│    - Database settings (DB_HOST, DB_PORT, DB_NAME, etc.)                │
+│    - Cache/Rate-limit settings (REDIS_URL, RATE_LIMIT_*)                │
+│    - Security settings (JWT_*, OIDC_*, PII_*, INTENT_FILTER_*)          │
+│    - LLM settings (LLM_PROVIDER, OLLAMA_*, DEFAULT_MODEL_NAME)          │
+│    - Observability (PROMETHEUS_*, OTEL_*)                               │
+│    - Background jobs (SCHEDULER_*, JOB_*)                               │
+│                                                                          │
+│  src/config_modules/compute.py::ComputeConfig                           │
+│    - Device configuration (cpu/cuda/mps/auto)                           │
+│    - Timeout configuration (step_timeout, run_timeout)                  │
+│    - Concurrency limits (max_concurrent_llm_calls)                      │
+│    - Model selection (plan_model_name, execute_model_name)              │
+└─────────────────────────────────────────────────────────────────────────┘
+\end{verbatim}
+
+The configuration system implements several key patterns that ensure robust operation across different environments:
+
+\paragraph{Pydantic Settings with Field Validation}
+The main \texttt{Settings} class in \texttt{src/config.py} extends \texttt{pydantic\_settings.BaseSettings} and defines over 100 configuration fields with explicit types, default values, and descriptive documentation. Each field uses \texttt{pydantic.Field} to specify metadata:
+
+\begin{lstlisting}[language=Python, caption=Example configuration field definitions from src/config.py]
+class Settings(BaseSettings):
+    # Application settings
+    APP_ENV: str = Field(
+        default="dev", 
+        description="Environment name (dev/stage/prod)"
+    )
+    APP_HOST: str = Field(default="0.0.0.0")
+    APP_PORT: int = Field(default=8000)
+    LOG_LEVEL: str = Field(default="INFO")
+    
+    # PostgreSQL settings
+    DB_HOST: str = Field(default="postgres")
+    DB_PORT: int = Field(default=5432)
+    DB_PASSWORD: str = Field(
+        default="change_me_now", 
+        description="Database password - CHANGE IN PRODUCTION!"
+    )
+    DB_POOL_SIZE: int = Field(default=10)
+    DB_POOL_PRE_PING: bool = Field(
+        default=True, 
+        description="Test connections before checkout"
+    )
+    
+    # Security settings
+    OIDC_ISSUER: str | None = Field(
+        default=None, 
+        description="OIDC issuer URL to validate against"
+    )
+    RATE_LIMIT_ENABLED: bool = Field(default=True)
+    PII_SCRUBBING_ENABLED: bool = Field(default=True)
+\end{lstlisting}
+
+\paragraph{Field Validators and Normalizers}
+The configuration system employs Pydantic's \texttt{field\_validator} decorators to normalize and validate input values. This ensures consistent behavior regardless of input format:
+
+\begin{lstlisting}[language=Python, caption=Configuration validators ensuring consistent values]
+@field_validator("LOG_LEVEL", mode="before")
+@classmethod
+def normalize_loglevel(cls, v: str) -> str:
+    v = (v or "INFO").upper()
+    if v in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
+        return v
+    return "INFO"  # Safe fallback
+
+@field_validator("APP_ENV", mode="before")
+@classmethod
+def normalize_env(cls, v: str) -> str:
+    return (v or "dev").lower()
+
+@field_validator("MEMGRAPH_RESPONSE_MODE", mode="before")
+@classmethod
+def validate_memgraph_response_mode(cls, v: Any) -> str:
+    valid_modes = {"fallback-only", "llm-best-effort", "llm-required"}
+    normalized = str(v).strip().lower()
+    if normalized not in valid_modes:
+        return "llm-best-effort"  # Safe default
+    return normalized
+\end{lstlisting}
+
+\paragraph{Computed Properties}
+The \texttt{Settings} class provides computed properties that derive values from multiple configuration fields:
+
+\begin{lstlisting}[language=Python, caption=Computed database URL property]
+@property
+def database_url(self) -> str:
+    """Build PostgreSQL connection URL from settings."""
+    from urllib.parse import quote_plus
+    user = quote_plus(self.DB_USER)
+    password = quote_plus(self.DB_PASSWORD)
+    url = f"postgresql://{user}:{password}@{self.DB_HOST}:" \
+          f"{self.DB_PORT}/{self.DB_NAME}"
+    if self.DB_SSLMODE and self.DB_SSLMODE != "disable":
+        url += f"?sslmode={self.DB_SSLMODE}"
+    return url
+\end{lstlisting}
+
+\subsection{Configuration Categories}
+
+Table~\ref{tab:config-categories} summarizes the major configuration categories and their primary settings.
+
+\begin{table}[ht]
+\centering
+\caption{Configuration categories and representative settings.}
+\label{tab:config-categories}
+\small
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.2cm}|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}p{2.2cm}|}
+\hline
+\textbf{Category} & \textbf{Key Settings} & \textbf{Prefix} \\
+\hline
+Application & APP\_ENV, APP\_HOST, APP\_PORT, LOG\_LEVEL, ENABLE\_DOCS & APP\_ \\
+\hline
+PostgreSQL & DB\_HOST, DB\_PORT, DB\_NAME, DB\_USER, DB\_PASSWORD, DB\_POOL\_SIZE & DB\_ \\
+\hline
+Redis Cache & REDIS\_URL, RATE\_LIMIT\_BACKEND, RATE\_LIMIT\_ENABLED & REDIS\_, RATE\_LIMIT\_ \\
+\hline
+Memgraph & MG\_HOST, MG\_PORT, MG\_USER, MG\_PASSWORD, MG\_TLS & MG\_ \\
+\hline
+Security & JWT\_SECRET, OIDC\_ISSUER, OIDC\_AUDIENCE, OIDC\_JWKS\_URL & JWT\_, OIDC\_ \\
+\hline
+LLM/Models & LLM\_PROVIDER, OLLAMA\_BASE\_URL, DEFAULT\_MODEL\_NAME & LLM\_, OLLAMA\_ \\
+\hline
+Observability & PROMETHEUS\_METRICS\_ENABLED, OTEL\_SERVICE\_NAME & PROMETHEUS\_, OTEL\_ \\
+\hline
+Background Jobs & SCHEDULER\_ENABLED, JOB\_STORE\_BACKEND, JOB\_TTL\_DAYS & SCHEDULER\_, JOB\_ \\
+\hline
+Data Protection & PII\_SCRUBBING\_ENABLED, INTENT\_FILTER\_ENABLED, OUTPUT\_GUARD\_ENABLED & --- \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Compute Configuration}
+\label{subsec:compute-config}
+
+The \texttt{ComputeConfig} class in \texttt{src/config\_modules/compute.py} provides device-aware configuration for LLM execution. This specialized module adapts timeouts, concurrency limits, and model selection based on the available hardware:
+
+\begin{lstlisting}[language=Python, caption=ComputeConfig class for device-aware settings]
+class ComputeConfig(BaseSettings):
+    """Configuration for compute resources and LLM execution."""
+    
+    # Device configuration
+    device: DeviceType = "cpu"  # cpu | cuda | mps | auto
+    
+    # Concurrency limits
+    max_concurrent_llm_calls: int = 1
+    
+    # Timeout configuration
+    step_timeout_seconds: int = 1200  # Individual step timeout
+    run_timeout_seconds: int = 1800   # Overall run timeout
+    
+    # Model selection
+    plan_model_name: str | None = None
+    execute_model_name: str | None = None
+    
+    # Test mode flags
+    test_mode: bool = False
+    memgraph_nl_test_mode: bool = False
+\end{lstlisting}
+
+\paragraph{Device-Aware Defaults}
+The compute configuration automatically adapts to the underlying hardware through computed properties:
+
+\begin{table}[ht]
+\centering
+\caption{Device-specific recommended defaults for LLM execution.}
+\label{tab:device-defaults}
+\begin{tabular}{lccc}
+\hline
+\textbf{Device} & \textbf{Step Timeout (s)} & \textbf{Run Timeout (s)} & \textbf{Concurrency} \\
+\hline
+CPU & 1200 (20 min) & 1800 (30 min) & 1 \\
+CUDA (NVIDIA GPU) & 30 & 120 & 4 \\
+MPS (Apple Silicon) & 60 & 180 & 2 \\
+Auto & 60 & 180 & 2 \\
+Test Mode & 60 & 120 & 1 \\
+Memgraph NL Test & 90 & 180 & 1 \\
+\hline
+\end{tabular}
+\end{table}
+
+The tuning guidelines for these settings reflect practical experience with different deployment scenarios:
+\begin{itemize}
+    \item \textbf{CPU environments}: Use higher timeouts (1200s step, 1800s run) and lower concurrency (1). CPU-based inference with models like \texttt{phi3:mini} can take several minutes per call, requiring 20--30 minute run budgets.
+    \item \textbf{GPU environments}: Use lower timeouts (30s step, 120s run) and higher concurrency (4). GPU acceleration enables rapid inference with parallel execution.
+    \item \textbf{MPS (Apple Silicon)}: Moderate timeouts (60s step, 180s run) with moderate concurrency (2). Apple's Metal Performance Shaders provide good acceleration but with different characteristics than CUDA.
+\end{itemize}
+
+\paragraph{Timeout Clamping}
+The compute configuration implements intelligent timeout clamping to ensure individual steps never exceed the total run budget:
+
+\begin{lstlisting}[language=Python, caption=Timeout clamping logic in apply\_recommended\_defaults]
+def apply_recommended_defaults(self) -> None:
+    """Apply device-appropriate defaults if not explicitly set."""
+    fields_set = set(getattr(self, "model_fields_set", set()))
+    
+    # Apply run timeout first for step clamping reference
+    if "run_timeout_seconds" not in fields_set:
+        self.run_timeout_seconds = self.recommended_run_timeout
+    
+    if "step_timeout_seconds" not in fields_set:
+        recommended_step = self.recommended_step_timeout
+        # Clamp step timeout to run timeout
+        self.step_timeout_seconds = min(
+            recommended_step, 
+            self.run_timeout_seconds
+        )
+\end{lstlisting}
+
+\subsection{Environment Variable Integration}
+
+The configuration system integrates seamlessly with Docker Compose and Kubernetes deployments through environment variable injection. The \texttt{docker-compose.yml} file demonstrates this pattern:
+
+\begin{lstlisting}[language=bash, caption=Environment variable injection in Docker Compose]
+services:
+  app:
+    environment:
+      APP_HOST: "0.0.0.0"
+      APP_PORT: "8000"
+      LOG_LEVEL: "INFO"
+      
+      # Database configuration
+      DB_HOST: "${DB_HOST:-postgres}"
+      DB_PORT: "${DB_PORT:-5432}"
+      DB_NAME: "${DB_NAME:-cineca_platform}"
+      
+      # LLM configuration
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://ollama:11434/v1}"
+      OLLAMA_TIMEOUT_SECS: "${OLLAMA_TIMEOUT_SECS:-180}"
+      DEFAULT_MODEL_NAME: "${DEFAULT_MODEL_NAME:-phi3:mini}"
+      
+      # Memgraph response configuration
+      MEMGRAPH_RESPONSE_MODE: "${MEMGRAPH_RESPONSE_MODE:-llm-best-effort}"
+      MEMGRAPH_BUILDER_LLM_TIMEOUT_MS: "${MEMGRAPH_BUILDER_LLM_TIMEOUT_MS:-180000}"
+\end{lstlisting}
+
+This pattern allows operators to customize behavior through shell environment variables or \texttt{.env} files while maintaining sensible defaults for standard deployments.
+
+\subsection{Configuration Singleton Pattern}
+
+The configuration system implements a singleton pattern to ensure consistent settings access throughout the application:
+
+\begin{lstlisting}[language=Python, caption=Singleton configuration instances]
+# In src/config.py
+settings = Settings()
+
+# In src/config_modules/compute.py
+_compute_config: ComputeConfig | None = None
+
+def get_compute_config() -> ComputeConfig:
+    global _compute_config
+    if _compute_config is None:
+        _compute_config = ComputeConfig()
+        _compute_config.apply_recommended_defaults()
+    return _compute_config
+
+# Convenience export
+compute_config = get_compute_config()
+\end{lstlisting}
+
+This pattern ensures that all components of the application access the same configuration instance, avoiding inconsistencies that could arise from multiple instantiations with different environment states.
+
+\subsection{Complex Type Parsing}
+
+Several configuration fields require parsing complex types from environment variable strings. The \texttt{Settings} class implements custom validators for these cases:
+
+\begin{lstlisting}[language=Python, caption=Complex type parsing for LLM configuration]
+@field_validator("LLM_TOOL_PREFERENCES", mode="before")
+@classmethod
+def parse_tool_preferences(cls, v: Any) -> Any:
+    """Accept JSON string or comma-separated k=v pairs."""
+    if v is None or isinstance(v, dict):
+        return v
+    if isinstance(v, str):
+        s = v.strip()
+        if s.startswith("{"):
+            return json.loads(s)  # JSON format
+        # Parse comma-separated key=value format
+        out = {}
+        for part in s.split(","):
+            if "=" in part:
+                k, val = part.split("=", 1)
+                out[k.strip()] = val.strip()
+        return out or None
+    return None
+
+@field_validator("OLLAMA_MODEL_MAP", mode="before")
+@classmethod
+def parse_ollama_model_map(cls, v: Any) -> dict | None:
+    """Parse JSON mapping of logical model IDs to Ollama tags."""
+    if isinstance(v, dict):
+        return {str(k): str(vv) for k, vv in v.items()}
+    if isinstance(v, str) and v.strip().startswith("{"):
+        return json.loads(v)
+    return None
+\end{lstlisting}
+
+These validators enable flexible configuration through environment variables while maintaining type safety within the application.
+
