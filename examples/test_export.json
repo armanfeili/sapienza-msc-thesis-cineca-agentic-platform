@@ -1,4 +1,0 @@
-{
-  "resources": ["tenants", "models", "agents"],
-  "format": "json"
-}

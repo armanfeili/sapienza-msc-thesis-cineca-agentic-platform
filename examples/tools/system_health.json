@@ -1,7 +1,0 @@
-{
-  "name": "system.health",
-  "arguments": {
-    "action": "check",
-    "components": ["postgres", "redis", "memgraph"]
-  }
-}
