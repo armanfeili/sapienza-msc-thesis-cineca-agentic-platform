@@ -19,7 +19,7 @@
 **Sapienza University of Rome**
 
 ## Department
-**Information Engineering, Electronics and Telecommunications**
+**Information Engineering, Informatics and Statistics**
 
 ## Company
 **CINECA**
@@ -42,26 +42,40 @@
 5. Architecture – First Designs
 6. Architecture – Final
 7. Authentication Layer & UI
-8. Security Middleware Stack (Parts 1-3)
-9. API Layer - Routers
-10. API Layer - Workflows A & B
-11. Job Creation
-12. Workers (Job Processing Engine)
-13. Agent.run Job Handler (Full Orchestration Pipeline)
-14. Service Layer - Orchestrator (Parts 1-3)
-15. LLM Providers (Model-Agnostic Architecture)
-16. MCP Runtime & Tools (Parts 1-5)
-17. NL-to-Cypher Pipeline (Graph Mode)
-18. Data Layer - Redis, PostgreSQL, Memgraph (Parts 1-4)
-19. Adapters
-20. Resilience Framework
-21. Background Framework (APScheduler)
-22. Observability (Parts 1-2)
-23. Phase 4 Completion - Agent Run (Workflow A)
-24. Phase 4 Completion - Job Completion (Workflow B) (Parts 1-2)
-25. Conclusion
-26. Future Works
-27. Thanks / Q&A
+8. Security Middleware Stack (Part 1/3)
+9. Security Middleware Stack (Part 2/3)
+10. Security Middleware Stack (Part 3/3)
+11. API Layer - Routers
+12. API Layer - Workflows A & B
+13. Job Creation
+14. Workers (Job Processing Engine)
+15. Agent.run Job Handler (Full Orchestration Pipeline)
+16. Service Layer - Orchestrator (Part 1/3)
+17. Service Layer - Orchestrator (Part 2/3)
+18. Service Layer - Orchestrator (Part 3/3)
+19. LLM Providers (Model-Agnostic Architecture)
+20. MCP Runtime & Tools (Part 1/5)
+21. MCP Runtime & Tools (Part 2/5)
+22. MCP Runtime & Tools (Part 3/5)
+23. MCP Runtime & Tools (Part 4/5)
+24. MCP Runtime & Tools (Part 5/5)
+25. NL-to-Cypher Pipeline (Graph Mode)
+26. Data Layer - Redis, PostgreSQL, Memgraph (Part 1/4)
+27. Data Layer - Redis, PostgreSQL, Memgraph (Part 2/4)
+28. Data Layer - Redis, PostgreSQL, Memgraph (Part 3/4)
+29. Data Layer - Redis, PostgreSQL, Memgraph (Part 4/4)
+30. Adapters
+31. Resilience Framework
+32. Background Framework (APScheduler)
+33. Observability (Part 1/2)
+34. Observability (Part 2/2)
+35. Phase 4 Completion - Agent Run (Workflow A)
+36. Phase 4 Completion - Job Completion (Workflow B) (Part 1/2)
+37. Phase 4 Completion - Job Completion (Workflow B) (Part 2/2)
+38. Conclusion
+39. Comparison with SOTA
+40. Future Works
+41. Thanks / Q&A
 
 ---
 
@@ -101,14 +115,14 @@ Basic chatbots can't handle real tasks. They:
 
 ## Full Stack Production-Grade Platform
 - End-to-end agentic system: NL input → tool-executed, auditable, reproducible workflows
-- Chat UI (Next.js, JWT, SSE), Admin UI (Streamlit), NGINX (TLS, CORS), 75+ API endpoints, async workers (Redis + SSE)
+- Chat UI (Next.js, JWT, SSE), Admin UI (Streamlit), NGINX (TLS, CORS), 76 API endpoints, async workers (Redis + SSE)
 
 ## Orchestration Engine
 - 4 phases: Intent → TODO Plan → LLM+Tool Steps → Safe Final Output
 - Graph Mode (NL→Cypher): GRAPH intent → Normalize → Lookup → Cypher → 6-level validation → Memgraph exec
 
 ## MCP + Tools
-- 34 tools, 12 categories (Graph, Model, ETL...), with RBAC, schema checks, audit logs, rate limits
+- 34 tools, 17 categories (Graph, Security, System, Cache, Catalog, Model, Agent, Analytics, Admin, ETL, CRUD, Export...), with RBAC, schema checks, audit logs, rate limits
 
 ## Security & Governance
 - JWT, RBAC, tenant filtering, rate limits, Pydantic guards, PII filter, error trace ID—multi-tenant safe
@@ -133,7 +147,7 @@ Basic chatbots can't handle real tasks. They:
 
 ## Key Stats
 
-- **76** API endpoints across 16 FastAPI routers categories
+- **76** API endpoints across 16 FastAPI router categories
 - **34** implemented MCP tools across 17 capability categories
 - **16+** infrastructure components (databases, queues, tracing, rate limits, gateways, etc.)
 - **3,000+** automated tests (unit, integration, security, orchestration logic)
@@ -196,17 +210,205 @@ Basic chatbots can't handle real tasks. They:
 
 # SLIDE 5: ARCHITECTURE – FIRST DESIGNS
 
-**Showing Evolutions in Six months**
+**Showing evolution over six months**
 
 *[Architecture evolution diagrams placeholder]*
 
 ---
 
+## ARCHITECTURE – FINAL (At a Glance)
+
+Parallel Background Monitoring, Backup, Cleanup sessions
+
+UI -> Security Layer -> API Layer -> Job Creation -> Workers -> Service Layer -> Final Response
+
+Service Layer: Orchestrator - 4 Phases
+
+Detect Intent -> TODO Planning multi-step run -> Step Execution, FOR EACH TODO -> Final Response Generation
+
+Inside "Step Execution, FOR EACH TODO":
+- Step 1) Call LLM Providers
+- Step 2) Invoke MCP Tools
+- Step 3) NL -> CYPHER PIPELINE
+- Step 4) Record on Data LAYER
+
+
 # SLIDE 6: ARCHITECTURE - FINAL
 
 **Simplified**
 
-*[Final architecture diagram placeholder]*
+AUTHENTICATION LAYER - UI
+
+- Identity Provider (OIDC / Auth0)
+- Agent Chat UI (Next.js / React)
+- Control Panel UI (Streamlit)
+- Reverse Proxy / API Gateway (NGINX)
+
+SECURITY MIDDLEWARE STACK
+
+1. CORS Handler
+   - Cross-Origin Resource Sharing policy enforcement
+
+2. Trace Context
+   - OpenTelemetry distributed tracing context
+
+3. Auth JWT
+   - token validation
+   - RBAC PERMISSION:
+     (admin, operator, user, viewer)
+
+4. Rate Limit
+   - Redis-backed rate limiting with multiple dimensions
+
+5. Tenant Resolver
+   - Multi-tenancy isolation and context resolution
+
+6. Input Guard
+   - Request payload validation and sanitization
+
+7. Output Guard
+   - Response sanitization and compliance
+
+8. Error Handler
+   - Centralized exception handling and error response formatting
+
+API LAYER (Routers)
+
+- [LONG-RUNNING JOB ENDPOINTS] WORKFLOW B
+- [AGENT RUN ENDPOINTS] WORKFLOW A
+
+WORKFLOW B
+
+JOB CREATION & ENQUEUE
+
+WORKERS
+- Job Processing Worker
+- SSE STREAMING TO CONTROL PANEL
+
+Parallel
+
+BACKGROUND FRAMEWORK
+- Health check
+- Cleanup sessions (hourly)
+- Backup databases (daily)
+
+OBSERVABILITY & MONITORING
+- Instrumentation & Endpoints
+- Tracing (OTel Collector + APM Backend)
+- Grafana (Dashboards)
+- Prometheus (Metrics Collection)
+
+WORKFLOW A
+
+SERVICE LAYER
+
+ORCHESTRATOR SERVICE:
+1 Run per prompt/Job,
+4 Phases
+
+PHASE 1)
+INTENT CLASSIFICATION
+
+PHASE 2)
+TODO Planning
+(multi-step run)
+
+PHASE 3)
+Step Execution,
+FOR EACH TODO
+
+PHASE 4)
+Finalization & Response Generation
+
+ADDITIONAL SERVICES
+- Session Service
+- Job Service
+
+Step 4) ADAPTERS & Resilience
+
+LLM Adapters
+- Ollama adapter
+- OpenAI-style API adapter
+- Azure OpenAI adapter
+
+Resilience Mechanisms
+- CLOSED (normal) -> OPEN (reject)
+  -> HALF-OPEN (test one) -> CLOSED
+- Automatic Retries
+- Cost Tracking per provider/model
+
+Database Adapters
+- Redis Adapter
+- PostgreSQL Adapter
+- Memgraph Adapter
+
+PHASE 3:
+Step Execution, FOR EACH TODO
+
+Step 1)
+Call LLM Providers via Adaptors
+- Ollama (Local)
+- OpenAI
+- Azure OpenAI / Other Providers
+
+Step 2)
+Invoke MCP Tools with RBAC check
+(34 Tools, 17 Categories)
+
+Categories:
+- GRAPH
+- SECURITY
+- SYSTEM
+- CACHE
+- CATALOG
+- MODEL
+- AGENT
+- ANALYTICS
+- ADMIN
+- ETL
+- CRUD
+- EXPORT
+- DATA QUALITY
+- OUTPUT FORMATTING
+- DB SWITCHING
+- SESSION MANAGEMENT
+- TENANCY MANAGEMENT
+
+Step 3)
+[In case of GRAPH mode]
+NL -> CYPHER PIPELINE
+
+1. Normalize NL prompt
+2. Catalog Lookup (pre-validated pattern match)
+3. Generate Cypher (via LLM, if no catalog match)
+4. Validate Safety (6 layers: syntax, read-only, tenant boundaries, depth limit, timeout, result cap)
+5. Execute Cypher query on Memgraph
+6. Summarize results to natural language
+
+Step 4) DATA & INFRASTRUCTURE LAYER
+
+Redis (Cache & Queues)
+- Cache
+- Queues
+- Rate Limiting
+- Control
+
+PostgreSQL
+
+Tables:
+- tenants
+- agent_runs
+- steps
+- sessions
+- jobs
+- job_events
+- tool_manifests
+- model_defaults
+- audit_logs
+
+Memgraph (Graph Database)
+- Nodes
+- Relationships
 
 ---
 
@@ -362,7 +564,7 @@ the client receives:
 
 # SLIDE 11: API LAYER - Routers
 
-**The platform exposes 75 endpoint routes organized into 16 versioned API groups, each for specific domain.**
+**The platform exposes 76 endpoint routes organized into versioned API groups, each for a specific domain.**
 
 | Endpoint | Description |
 |----------|-------------|
