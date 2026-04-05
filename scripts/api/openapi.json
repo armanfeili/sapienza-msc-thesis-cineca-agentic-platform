@@ -5,7 +5,7 @@
     "version": "0.1.0"
   },
   "paths": {
-    "/": {
+    "/v1/": {
       "get": {
         "tags": [
           "meta"
@@ -28,7 +28,7 @@
         }
       }
     },
-    "/health/live": {
+    "/v1/health/live": {
       "get": {
         "tags": [
           "health"
@@ -63,7 +63,7 @@
         }
       }
     },
-    "/health/ready": {
+    "/v1/health/ready": {
       "get": {
         "tags": [
           "health"
@@ -126,7 +126,7 @@
         }
       }
     },
-    "/health/components": {
+    "/v1/health/components": {
       "get": {
         "tags": [
           "health"
@@ -179,7 +179,7 @@
         }
       }
     },
-    "/health/components/{name}": {
+    "/v1/health/components/{name}": {
       "get": {
         "tags": [
           "health"
@@ -237,7 +237,7 @@
         }
       }
     },
-    "/health/startup": {
+    "/v1/health/startup": {
       "get": {
         "tags": [
           "health"
@@ -306,7 +306,7 @@
         }
       }
     },
-    "/health/config": {
+    "/v1/health/config": {
       "get": {
         "tags": [
           "health"
@@ -347,7 +347,7 @@
         }
       }
     },
-    "/auth/me": {
+    "/v1/auth/me": {
       "get": {
         "tags": [
           "auth"
@@ -383,7 +383,7 @@
         ]
       }
     },
-    "/tools": {
+    "/v1/tools": {
       "get": {
         "tags": [
           "tools"
@@ -481,7 +481,7 @@
         ]
       }
     },
-    "/tools/{name}/invocations": {
+    "/v1/tools/{name}/invocations": {
       "post": {
         "tags": [
           "tools"
@@ -566,7 +566,7 @@
         }
       }
     },
-    "/tools/{name}/invocations/{eid}": {
+    "/v1/tools/{name}/invocations/{eid}": {
       "get": {
         "tags": [
           "tools"
@@ -646,7 +646,7 @@
         }
       }
     },
-    "/tools/{name}": {
+    "/v1/tools/{name}": {
       "get": {
         "tags": [
           "tools"
@@ -712,7 +712,7 @@
         }
       }
     },
-    "/jobs": {
+    "/v1/jobs": {
       "get": {
         "tags": [
           "jobs"
@@ -998,7 +998,7 @@
         }
       }
     },
-    "/jobs/{job_id}": {
+    "/v1/jobs/{job_id}": {
       "get": {
         "tags": [
           "jobs"
@@ -1222,7 +1222,7 @@
         }
       }
     },
-    "/jobs/{job_id}/events": {
+    "/v1/jobs/{job_id}/events": {
       "get": {
         "tags": [
           "jobs"
@@ -1369,7 +1369,7 @@
         }
       }
     },
-    "/models/instances": {
+    "/v1/models/instances": {
       "get": {
         "tags": [
           "models-instances"
@@ -1599,7 +1599,7 @@
         }
       }
     },
-    "/models/defaults": {
+    "/v1/models/defaults": {
       "get": {
         "tags": [
           "models-instances"
@@ -1952,7 +1952,7 @@
         }
       }
     },
-    "/models/instances/{instance_id}": {
+    "/v1/models/instances/{instance_id}": {
       "get": {
         "tags": [
           "models-instances"
@@ -2128,7 +2128,7 @@
         }
       }
     },
-    "/models/instances/{instance_id}/tests": {
+    "/v1/models/instances/{instance_id}/tests": {
       "post": {
         "tags": [
           "models-instances"
@@ -2233,7 +2233,7 @@
         }
       }
     },
-    "/admin/models/providers": {
+    "/v1/admin/models/providers": {
       "get": {
         "tags": [
           "models-providers"
@@ -2243,10 +2243,9 @@
         "operationId": "list_providers_v1_admin_models_providers_get",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -2312,10 +2311,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/admin/models/providers/register": {
+    "/v1/admin/models/providers/register": {
       "post": {
         "tags": [
           "models-providers"
@@ -2369,15 +2369,15 @@
         },
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
-        ]
+        ],
+        "x-internal": true
       }
     },
-    "/admin/models/providers/main": {
+    "/v1/admin/models/providers/main": {
       "get": {
         "tags": [
           "models-providers"
@@ -2387,10 +2387,9 @@
         "operationId": "get_main_client_v1_admin_models_providers_main_get",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -2444,10 +2443,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/admin/models/providers/{provider_id}": {
+    "/v1/admin/models/providers/{provider_id}": {
       "get": {
         "tags": [
           "models-providers"
@@ -2457,10 +2457,9 @@
         "operationId": "get_provider_v1_admin_models_providers__provider_id__get",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -2512,7 +2511,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-internal": true
       },
       "patch": {
         "tags": [
@@ -2523,10 +2523,9 @@
         "operationId": "patch_provider_v1_admin_models_providers__provider_id__patch",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -2586,7 +2585,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-internal": true
       },
       "delete": {
         "tags": [
@@ -2597,10 +2597,9 @@
         "operationId": "delete_provider_v1_admin_models_providers__provider_id__delete",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -2643,10 +2642,11 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/admin/models/providers/default": {
+    "/v1/admin/models/providers/default": {
       "put": {
         "tags": [
           "models-providers"
@@ -2700,15 +2700,15 @@
         },
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
-        ]
+        ],
+        "x-internal": true
       }
     },
-    "/admin/models/manifests/builtins": {
+    "/v1/admin/models/manifests/builtins": {
       "get": {
         "tags": [
           "models-manifests-builtins"
@@ -2739,18 +2739,15 @@
         },
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
-        ]
+        ],
+        "x-internal": true
       }
     },
-    "/admin/models/manifests/builtins/staged": {
+    "/v1/admin/models/manifests/builtins/staged": {
       "post": {
         "tags": [
           "models-manifests-builtins"
@@ -2760,13 +2757,9 @@
         "operationId": "stage_manifest_v1_admin_models_manifests_builtins_staged_post",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -2830,10 +2823,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/admin/models/manifests/builtins/activations": {
+    "/v1/admin/models/manifests/builtins/activations": {
       "post": {
         "tags": [
           "models-manifests-builtins"
@@ -2843,13 +2837,9 @@
         "operationId": "activate_manifest_v1_admin_models_manifests_builtins_activations_post",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -2920,10 +2910,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/admin/models/manifests/builtins/rollbacks": {
+    "/v1/admin/models/manifests/builtins/rollbacks": {
       "post": {
         "tags": [
           "models-manifests-builtins"
@@ -2933,13 +2924,9 @@
         "operationId": "rollback_manifest_v1_admin_models_manifests_builtins_rollbacks_post",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -3010,10 +2997,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/admin/models/manifests/builtins/history": {
+    "/v1/admin/models/manifests/builtins/history": {
       "get": {
         "tags": [
           "models-manifests-builtins"
@@ -3023,13 +3011,9 @@
         "operationId": "list_history_v1_admin_models_manifests_builtins_history_get",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -3081,10 +3065,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/admin/processes": {
+    "/v1/admin/processes": {
       "get": {
         "tags": [
           "admin-processes"
@@ -3094,10 +3079,9 @@
         "operationId": "list_processes_endpoint_v1_admin_processes_get",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -3254,10 +3238,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/admin/processes/{pid}": {
+    "/v1/admin/processes/{pid}": {
       "delete": {
         "tags": [
           "admin-processes"
@@ -3267,10 +3252,9 @@
         "operationId": "stop_process_endpoint_v1_admin_processes__pid__delete",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -3322,10 +3306,11 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/admin/processes/history/manifests": {
+    "/v1/admin/processes/history/manifests": {
       "get": {
         "tags": [
           "admin-processes"
@@ -3335,10 +3320,9 @@
         "operationId": "get_manifest_history_endpoint_v1_admin_processes_history_manifests_get",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -3461,10 +3445,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/admin/processes/history/processes": {
+    "/v1/admin/processes/history/processes": {
       "get": {
         "tags": [
           "admin-processes"
@@ -3474,10 +3459,9 @@
         "operationId": "get_process_history_endpoint_v1_admin_processes_history_processes_get",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -3654,10 +3638,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/admin/jobs": {
+    "/v1/admin/jobs": {
       "get": {
         "tags": [
           "jobs"
@@ -3667,10 +3652,9 @@
         "operationId": "list_admin_jobs_v1_admin_jobs_get",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -3817,7 +3801,8 @@
           "500": {
             "$ref": "#/components/responses/InternalError"
           }
-        }
+        },
+        "x-internal": true
       },
       "post": {
         "tags": [
@@ -3828,10 +3813,9 @@
         "operationId": "create_job_proxy_v1_admin_jobs_post",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "requestBody": {
@@ -3947,10 +3931,11 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/admin/jobs/{job_id}": {
+    "/v1/admin/jobs/{job_id}": {
       "delete": {
         "tags": [
           "jobs"
@@ -3960,10 +3945,9 @@
         "operationId": "cancel_job_proxy_v1_admin_jobs__job_id__delete",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -4011,10 +3995,11 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/admin/tenants": {
+    "/v1/admin/tenants": {
       "get": {
         "tags": [
           "admin-tenants",
@@ -4025,10 +4010,9 @@
         "operationId": "list_tenants_v1_admin_tenants_get",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -4179,7 +4163,8 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       },
       "post": {
         "tags": [
@@ -4191,10 +4176,9 @@
         "operationId": "create_tenant_v1_admin_tenants_post",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -4462,10 +4446,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/admin/tenants/{tenant_id}": {
+    "/v1/admin/tenants/{tenant_id}": {
       "get": {
         "tags": [
           "admin-tenants",
@@ -4476,10 +4461,9 @@
         "operationId": "get_tenant_v1_admin_tenants__tenant_id__get",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -4570,7 +4554,8 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       },
       "patch": {
         "tags": [
@@ -4582,10 +4567,9 @@
         "operationId": "patch_tenant_v1_admin_tenants__tenant_id__patch",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -4741,7 +4725,8 @@
           "403": {
             "$ref": "#/components/responses/Forbidden"
           }
-        }
+        },
+        "x-internal": true
       },
       "delete": {
         "tags": [
@@ -4753,10 +4738,9 @@
         "operationId": "delete_tenant_v1_admin_tenants__tenant_id__delete",
         "security": [
           {
-            "HTTPBearer": []
-          },
-          {
-            "HTTPBearer": []
+            "HTTPBearer": [
+              "admin:all"
+            ]
           }
         ],
         "parameters": [
@@ -4883,10 +4867,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/agents/sessions": {
+    "/v1/agents/sessions": {
       "post": {
         "tags": [
           "agents"
@@ -5142,7 +5127,7 @@
         }
       }
     },
-    "/agents/sessions/{session_id}": {
+    "/v1/agents/sessions/{session_id}": {
       "get": {
         "tags": [
           "agents"
@@ -5330,7 +5315,7 @@
         }
       }
     },
-    "/agents/sessions/{session_id}/steps": {
+    "/v1/agents/sessions/{session_id}/steps": {
       "get": {
         "tags": [
           "agents"
@@ -5604,7 +5589,7 @@
         }
       }
     },
-    "/agent-runs": {
+    "/v1/agent-runs": {
       "post": {
         "tags": [
           "agents"
@@ -5741,7 +5726,7 @@
         }
       }
     },
-    "/agent-runs/{run_id}": {
+    "/v1/agent-runs/{run_id}": {
       "get": {
         "tags": [
           "agents"
@@ -5852,7 +5837,7 @@
         }
       }
     },
-    "/agent-runs/{run_id}/steps": {
+    "/v1/agent-runs/{run_id}/steps": {
       "get": {
         "tags": [
           "agents"
@@ -5960,7 +5945,7 @@
         }
       }
     },
-    "/agent-runs/{run_id}/outputs": {
+    "/v1/agent-runs/{run_id}/outputs": {
       "get": {
         "tags": [
           "agents"
@@ -6067,7 +6052,7 @@
         }
       }
     },
-    "/internal/ops/auto-start-override": {
+    "/v1/internal/ops/auto-start-override": {
       "post": {
         "tags": [
           "internal"
@@ -6193,10 +6178,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/internal/ops/preview-staged": {
+    "/v1/internal/ops/preview-staged": {
       "get": {
         "tags": [
           "internal"
@@ -6288,10 +6274,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/internal/ops/llm-smoke-test": {
+    "/v1/internal/ops/llm-smoke-test": {
       "post": {
         "tags": [
           "internal"
@@ -6344,10 +6331,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/internal/ops/tools-smoke-test": {
+    "/v1/internal/ops/tools-smoke-test": {
       "post": {
         "tags": [
           "internal"
@@ -6400,10 +6388,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/internal/db/jobs": {
+    "/v1/internal/db/jobs": {
       "post": {
         "tags": [
           "internal"
@@ -6532,10 +6521,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/internal/db/jobs/{job_id}": {
+    "/v1/internal/db/jobs/{job_id}": {
       "get": {
         "tags": [
           "internal"
@@ -6636,7 +6626,8 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       },
       "delete": {
         "tags": [
@@ -6706,10 +6697,11 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/internal/db/counts": {
+    "/v1/internal/db/counts": {
       "get": {
         "tags": [
           "internal"
@@ -6773,10 +6765,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/admin/ops/auto-start-override": {
+    "/v1/admin/ops/auto-start-override": {
       "post": {
         "tags": [
           "admin-ops"
@@ -6852,10 +6845,11 @@
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "x-internal": true
       }
     },
-    "/admin/ops/preview-staged": {
+    "/v1/admin/ops/preview-staged": {
       "get": {
         "tags": [
           "admin-ops"
@@ -6928,10 +6922,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/admin/db/jobs": {
+    "/v1/admin/db/jobs": {
       "post": {
         "tags": [
           "admin-db"
@@ -7010,10 +7005,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/admin/db/jobs/{job_id}": {
+    "/v1/admin/db/jobs/{job_id}": {
       "get": {
         "tags": [
           "admin-db"
@@ -7082,7 +7078,8 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "x-internal": true
       },
       "delete": {
         "tags": [
@@ -7138,10 +7135,11 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-internal": true
       }
     },
-    "/admin/db/counts": {
+    "/v1/admin/db/counts": {
       "get": {
         "tags": [
           "admin-db"
@@ -7182,10 +7180,11 @@
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "x-internal": true
       }
     },
-    "/batch/operations": {
+    "/v1/batch/operations": {
       "post": {
         "tags": [
           "Batch Operations"
@@ -7244,7 +7243,7 @@
         ]
       }
     },
-    "/batch/models/bulk-create": {
+    "/v1/batch/models/bulk-create": {
       "post": {
         "tags": [
           "Batch Operations"
@@ -7319,7 +7318,7 @@
         }
       }
     },
-    "/batch/models/bulk-delete": {
+    "/v1/batch/models/bulk-delete": {
       "delete": {
         "tags": [
           "Batch Operations"
@@ -7393,7 +7392,7 @@
         }
       }
     },
-    "/batch/tools/bulk-create": {
+    "/v1/batch/tools/bulk-create": {
       "post": {
         "tags": [
           "Batch Operations"
@@ -7468,7 +7467,7 @@
         }
       }
     },
-    "/export/export": {
+    "/v1/export/export": {
       "post": {
         "tags": [
           "Export/Import"
@@ -7525,7 +7524,7 @@
         ]
       }
     },
-    "/export/export/tenant/{tenant_id}": {
+    "/v1/export/export/tenant/{tenant_id}": {
       "post": {
         "tags": [
           "Export/Import"
@@ -7586,7 +7585,7 @@
         }
       }
     },
-    "/export/import": {
+    "/v1/export/import": {
       "post": {
         "tags": [
           "Export/Import"
@@ -7643,6 +7642,28 @@
             "HTTPBearer": []
           }
         ]
+      }
+    },
+    "/v2/health/live": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Liveness probe (v2)",
+        "operationId": "live_v2_v2_health_live_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
       }
     }
   },
@@ -13671,6 +13692,13 @@
           "type": {
             "type": "string",
             "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
           }
         },
         "type": "object",
@@ -14059,6 +14087,20 @@
       }
     }
   },
+  "servers": [
+    {
+      "url": "/{version}",
+      "variables": {
+        "version": {
+          "default": "v1",
+          "enum": [
+            "v1",
+            "v2"
+          ]
+        }
+      }
+    }
+  ],
   "tags": [
     {
       "name": "meta"
@@ -14100,21 +14142,13 @@
       "name": "admin-db"
     },
     {
-      "name": "internal"
-    },
-    {
       "name": "Batch Operations"
     },
     {
       "name": "Export/Import"
-    }
-  ],
-  "servers": [
-    {
-      "url": "/v1"
     },
     {
-      "url": "/v2"
+      "name": "internal"
     }
   ],
   "security": [

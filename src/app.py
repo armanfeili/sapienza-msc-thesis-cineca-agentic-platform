@@ -14,8 +14,8 @@ import os
 import re
 import time
 import uuid
-from collections.abc import Iterable
-from contextlib import suppress
+from collections.abc import AsyncIterator, Iterable
+from contextlib import asynccontextmanager, suppress
 from typing import Any
 
 import structlog
@@ -140,6 +140,18 @@ def create_app() -> FastAPI:
         # Don't fail startup, but log prominently
         pass
 
+    # ──────────────────────────────────────────────────────────────────
+    # Lifespan: all startup/shutdown logic in a single context manager
+    # (replaces deprecated on_event / add_event_handler)
+    # ──────────────────────────────────────────────────────────────────
+    @asynccontextmanager
+    async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
+        # ── STARTUP ──────────────────────────────────────────────────
+        await _run_startup_tasks(app)
+        yield
+        # ── SHUTDOWN ─────────────────────────────────────────────────
+        await _run_shutdown_tasks(app)
+
     # Disable FastAPI's built-in docs; we provide only versioned UIs at /v1/docs and /v2/docs
     app = FastAPI(
         title="Cineca Agentic Platform",
@@ -147,193 +159,8 @@ def create_app() -> FastAPI:
         docs_url=None,
         redoc_url=None,
         openapi_url="/openapi.json",
+        lifespan=_lifespan,
     )
-
-    # ──────────────────────────────────────────────────────────────────
-    # Startup Event: Provider Alignment & DMR Warmup
-    # ──────────────────────────────────────────────────────────────────
-    @app.on_event("startup")
-    async def startup_init_default_model():
-        """
-        Initialize default model at startup:
-        1. Resolve default from DMR (not env var)
-        2. Align provider configuration if needed
-        3. Warmup model for fast first request
-        """
-        try:
-            from src.services.default_model_resolver import DefaultModelResolver
-            from src.services.model_warmup import get_warmup_service
-            
-            dmr = DefaultModelResolver()
-            
-            # Step 1: Resolve default model from DMR
-            logger.info("startup.default_model.resolving", extra={"scope": "global"})
-            default_result = await dmr.get_default_model(tenant_id=None, scope="global")
-            
-            if not default_result:
-                logger.warning(
-                    "startup.no_default_model",
-                    extra={"action": "skipped", "reason": "no_default_configured"}
-                )
-                return
-            
-            model_id = default_result.get("model_id")
-            source = default_result.get("source", "unknown")
-            
-            logger.info(
-                "startup.default_model.resolved",
-                extra={"model_id": model_id, "source": source}
-            )
-            
-            # Step 2: Check provider alignment (optional - depends on provider repo availability)
-            try:
-                from db.postgres_control.repositories import provider_repo
-                
-                # Get provider for this model (if available)
-                provider_id = default_result.get("provider_id")
-                if provider_id:
-                    provider = provider_repo.get_provider(provider_id)
-                    if provider:
-                        provider_model = provider.get("model")
-                        if provider_model and provider_model != model_id:
-                            logger.info(
-                                "startup.provider_model.mismatch",
-                                extra={
-                                    "provider_id": provider_id,
-                                    "provider_model": provider_model,
-                                    "default_model": model_id,
-                                    "action": "alignment_recommended"
-                                }
-                            )
-            except Exception as prov_exc:
-                # Non-fatal: Provider alignment is best-effort
-                logger.debug(f"startup.provider_alignment.skipped: {prov_exc}")
-            
-            # Step 3: Warmup model
-            logger.info("startup.model_warmup.starting", extra={"model_id": model_id})
-            warmup_service = get_warmup_service()
-            warmup_result = await warmup_service.warmup_model(
-                model_id=model_id,
-                provider_id=default_result.get("provider_id", "unknown")
-            )
-            
-            if warmup_result["success"]:
-                logger.info(
-                    "startup.model_warmup.succeeded",
-                    extra={
-                        "model_id": model_id,
-                        "duration_ms": warmup_result["duration_ms"],
-                        "attempts": warmup_result["attempts"]
-                    }
-                )
-            else:
-                logger.warning(
-                    "startup.model_warmup.failed",
-                    extra={
-                        "model_id": model_id,
-                        "error": warmup_result["error"],
-                        "attempts": warmup_result["attempts"]
-                    }
-                )
-            
-            # Step 4: Warmup DMR cache
-            logger.info("startup.dmr_cache.warming", extra={"scope": "global"})
-            await dmr.warmup_cache(tenant_id=None, scope="global")
-            logger.info("startup.dmr_cache.warmed", extra={"scope": "global"})
-            
-            # Step 5: Start provider health background scheduler
-            try:
-                from src.background.provider_health_scheduler import get_scheduler
-                scheduler = get_scheduler()
-                await scheduler.start()
-                logger.info("startup.provider_health_scheduler.started")
-            except Exception as sched_exc:
-                # Non-fatal: Scheduler is optional
-                logger.warning(
-                    f"startup.provider_health_scheduler.failed: {sched_exc}",
-                    extra={"action": "continued"},
-                    exc_info=True
-                )
-            
-            # Step 6: Warmup orchestrator models (from compute config)
-            try:
-                from src.config_modules.compute import get_compute_config
-                compute_cfg = get_compute_config()
-                
-                if compute_cfg.warmup_models:
-                    logger.info(
-                        "startup.orchestrator_models.warming",
-                        extra={"models": compute_cfg.warmup_models}
-                    )
-                    
-                    for model_name in compute_cfg.warmup_models:
-                        if not model_name:
-                            continue
-                        
-                        logger.info(
-                            "startup.orchestrator_model.warmup_started",
-                            extra={"model": model_name}
-                        )
-                        
-                        warmup_result = await warmup_service.warmup_model(
-                            model_id=model_name,
-                            provider_id="ollama"  # Default to Ollama for orchestrator models
-                        )
-                        
-                        if warmup_result["success"]:
-                            logger.info(
-                                "startup.orchestrator_model.warmup_succeeded",
-                                extra={
-                                    "model": model_name,
-                                    "duration_ms": warmup_result["duration_ms"],
-                                }
-                            )
-                        else:
-                            logger.warning(
-                                "startup.orchestrator_model.warmup_failed",
-                                extra={
-                                    "model": model_name,
-                                "error": warmup_result.get("error"),
-                            }
-                        )
-                else:
-                    logger.info(
-                        "startup.orchestrator_models.no_env_overrides",
-                        extra={"note": "No orchestrator model overrides provided via environment; using DB defaults"}
-                    )
-                    
-            except Exception as warmup_exc:
-                # Non-fatal: Orchestrator warmup is optional
-                logger.warning(
-                    f"startup.orchestrator_warmup.failed: {warmup_exc}",
-                    extra={"action": "continued"},
-                    exc_info=True
-                )
-            
-        except Exception as exc:
-            # Non-fatal: Startup continues even if warmup fails
-            logger.warning(
-                f"startup.init_default_model.failed: {exc}",
-                extra={"action": "continued"},
-                exc_info=True
-            )
-    
-    @app.on_event("shutdown")
-    async def shutdown_cleanup():
-        """Gracefully shutdown background tasks."""
-        logger.info("shutdown.cleanup.start")
-        
-        try:
-            # Stop provider health scheduler
-            from src.background.provider_health_scheduler import get_scheduler
-            scheduler = get_scheduler()
-            await scheduler.stop()
-            logger.info("shutdown.provider_health_scheduler.stopped")
-        except Exception as exc:
-            logger.warning(
-                f"shutdown.cleanup.failed: {exc}",
-                exc_info=True
-            )
 
     # CORS
     def _split_csv(v: str | Iterable[str]) -> list[str]:
@@ -1066,366 +893,17 @@ def create_app() -> FastAPI:
 
     app.openapi = custom_openapi
 
-    # Graceful shutdown: flip readiness to not ready first, allow brief drain
-    try:
-        import importlib
-
-        health_mod = None
-        with suppress(Exception):
-            health_mod = importlib.import_module("src.routers.health")
-
-        if health_mod and hasattr(health_mod, "set_ready"):
-
-            async def _on_shutdown():
-                with suppress(Exception):
-                    health_mod.set_ready(False)
-
-                # Close async Redis client gracefully
-                if settings.JOB_STORE_BACKEND.lower() == "redis":
-                    try:
-                        from db.redis_cache.async_client import close_async_redis
-
-                        await close_async_redis()
-                        logger.info("async_redis.shutdown.closed")
-                    except Exception:
-                        logger.warning("async_redis.shutdown.failed", exc_info=True)
-
-                # allow a configurable drain time for inflight requests
-                import asyncio
-
-                try:
-                    drain = int(os.getenv("SHUTDOWN_DRAIN_SECONDS", "15"))
-                except Exception:
-                    drain = 15
-
-                with suppress(Exception):
-                    await asyncio.sleep(drain)
-
-            app.add_event_handler("shutdown", _on_shutdown)
-
-            # Ensure readiness is explicitly set to True at startup so TestClient
-            # lifecycle (which triggers shutdown handlers) does not leak a
-            # 'not ready' state into other tests or app instances.
-            async def _on_startup():
-                try:
-                    # Only set ready if migrations are applied and an operator
-                    # hasn't explicitly set the instance to not-ready via admin toggle.
-                    enforce = os.getenv("ENFORCE_MIGRATIONS", "0").lower() in ("1", "true", "yes")
-                    migrations_ok = True
-                    if enforce:
-                        migrations_ok = os.getenv("MIGRATIONS_APPLIED", "false").lower() in (
-                            "1",
-                            "true",
-                            "yes",
-                        ) or os.path.exists("/app/.migrations_ok")
-                    # Read current _is_ready flag from the health module if present
-                    current_ready = True
-                    try:
-                        current_ready = getattr(health_mod, "_is_ready", True)
-                    except Exception:
-                        current_ready = True
-
-                    if migrations_ok and current_ready:
-                        health_mod.set_ready(True)
-                except Exception:
-                    pass
-
-            app.add_event_handler("startup", _on_startup)
-
-            # Initialize default model and warm up Ollama
-            async def _startup_init_default_model():
-                """Initialize default model instance and warm up Ollama provider."""
-                try:
-                    import asyncio
-                    from scripts.init_default_model import init_default_model
-                    
-                    # Run in thread to avoid blocking async event loop
-                    await asyncio.to_thread(init_default_model)
-                    logger.info("startup.init_default_model.complete")
-                except Exception as e:
-                    # Non-fatal: log warning but allow app to start
-                    logger.warning("startup.init_default_model.failed", extra={"error": str(e)})
-
-            app.add_event_handler("startup", _startup_init_default_model)
-
-            # Async Redis client lifecycle (job storage)
-            async def _startup_async_redis():
-                """Initialize async Redis client for job storage if needed."""
-                if settings.JOB_STORE_BACKEND.lower() == "redis":
-                    try:
-                        from db.redis_cache.async_client import async_redis_health, get_async_redis
-
-                        # Lazy init will happen on first use, but verify connection
-                        await get_async_redis()  # Initialize connection pool
-                        health = await async_redis_health()
-                        if health.get("ok"):
-                            logger.info(
-                                "async_redis.startup.connected",
-                                extra={
-                                    "latency_ms": health.get("latency_ms"),
-                                    "backend": settings.JOB_STORE_BACKEND,
-                                    "ttl_days": settings.JOB_TTL_DAYS,
-                                },
-                            )
-                        else:
-                            logger.warning("async_redis.startup.unhealthy", extra={"error": health.get("error")})
-                    except Exception:
-                        logger.warning("async_redis.startup.failed", exc_info=True)
-
-            app.add_event_handler("startup", _startup_async_redis)
-
-            # Seed default provider in dev/demo mode (so /providers/main works)
-            async def _seed_default_provider():
-                """Seed a default provider in dev/demo mode if none exists."""
-                # Skip seeding if explicitly disabled via environment variable
-                if os.getenv("SEED_DEMO_PROVIDER", "").lower() in ("false", "0", "no"):
-                    logger.debug("seed_provider.skip", extra={"reason": "SEED_DEMO_PROVIDER disabled"})
-                    return
-
-                if not (settings.DEMO_MODE or settings.APP_ENV == "dev"):
-                    return
-
-                try:
-                    from db.postgres_control.repositories import provider_repo as pg_repo
-
-                    # Check if a global default already exists
-                    try:
-                        existing = pg_repo.get_provider_default(scope="global", tenant_id=None)
-                        if existing:
-                            logger.debug("seed_provider.skip", extra={"reason": "default_exists"})
-                            return
-                    except Exception:
-                        pass  # No default exists, proceed to seed
-
-                    # Check if demo provider already registered
-                    providers = pg_repo.list_providers(tenant_id="global")
-                    demo_provider = next((p for p in providers if p.get("name") == "demo-openai"), None)
-
-                    if not demo_provider:
-                        # Register demo provider
-                        demo_provider = pg_repo.create_provider(
-                            name="demo-openai",
-                            type="openai_compatible",
-                            base_url="https://api.openai.com/v1",
-                            model="gpt-4",
-                            tenant_id="global",
-                            config={},
-                            actor="system:seed",
-                        )
-                        logger.info("seed_provider.registered", extra={"provider": "demo-openai"})
-
-                    # Set as global default
-                    pg_repo.set_provider_default(
-                        scope="global",
-                        provider_id=demo_provider.get("id") or demo_provider.get("name"),
-                        tenant_id=None,
-                        actor="system:seed",
-                    )
-                    logger.info("seed_provider.default_set", extra={"provider": "demo-openai"})
-
-                except Exception as exc:
-                    logger.warning("seed_provider.failed", extra={"error": str(exc)}, exc_info=True)
-
-            app.add_event_handler("startup", _seed_default_provider)
-
-            # Startup provider health check (A.3.1)
-            async def _verify_provider_connectivity():
-                """Verify default provider is reachable at startup (fail fast if unreachable)."""
-                try:
-                    from db.postgres_control.repositories import provider_repo as pg_repo
-                    from src.background.provider_health import check_provider_health
-
-                    # Get default provider (global scope)
-                    default_provider = pg_repo.get_provider_default(scope="global", tenant_id=None)
-
-                    if not default_provider:
-                        # Check if any provider exists
-                        providers = pg_repo.list_providers(tenant_id=None)
-                        if not providers:
-                            # No providers at all - this is OK in dev/demo mode
-                            if settings.DEMO_MODE or settings.APP_ENV == "dev":
-                                logger.info("provider.startup.skip", extra={"reason": "no_providers_in_dev_mode"})
-                                return
-                            else:
-                                logger.warning("provider.startup.no_default", extra={"reason": "no_providers_found"})
-                                return
-                        # Use first available provider
-                        provider_id = providers[0].get("id") or providers[0].get("name")
-                        provider = pg_repo.get_provider(provider_id)
-                    else:
-                        provider_id = default_provider.get("provider_id")
-                        provider = pg_repo.get_provider(provider_id)
-
-                    if not provider:
-                        logger.warning("provider.startup.not_found", extra={"provider_id": provider_id})
-                        return
-
-                    # Perform health check
-                    health = await check_provider_health(provider, timeout=5.0)
-
-                    if not health.get("ok"):
-                        error_msg = health.get("error", "unknown")
-                        logger.error(
-                            "provider.startup.unhealthy",
-                            extra={
-                                "provider_id": provider_id,
-                                "provider_name": provider.get("name"),
-                                "error": error_msg,
-                            },
-                        )
-                        # In production, fail fast; in dev/demo, continue with warning
-                        if not (settings.DEMO_MODE or settings.APP_ENV == "dev"):
-                            raise RuntimeError(
-                                f"Default provider {provider.get('name')} unhealthy at startup: {error_msg}"
-                            )
-                        else:
-                            logger.warning(
-                                "provider.startup.degraded_but_continuing", extra={"provider_id": provider_id}
-                            )
-                    else:
-                        logger.info(
-                            "provider.startup.ready",
-                            extra={
-                                "provider_id": provider_id,
-                                "provider_name": provider.get("name"),
-                                "status_code": health.get("status_code"),
-                            },
-                        )
-                except RuntimeError:
-                    # Re-raise runtime errors (fail fast)
-                    raise
-                except Exception as exc:
-                    logger.warning("provider.startup.check_failed", extra={"error": str(exc)}, exc_info=True)
-                    # Don't fail startup, but log prominently
-
-            app.add_event_handler("startup", _verify_provider_connectivity)
-
-            # Model warm-up call (A.3.2 - non-fatal)
-            async def _warmup_default_model():
-                """Pre-load default model with test inference (non-fatal)."""
-                try:
-                    from db.postgres_control.repositories import model_instance_repo, provider_repo
-                    from src.adapters.llm import LLMClient
-
-                    # Get default model instance (global scope)
-                    default = model_instance_repo.get_default(scope="global", tenant_id=None)
-
-                    if not default:
-                        logger.debug("model.warmup.skip", extra={"reason": "no_default_model"})
-                        return
-
-                    instance_id = getattr(default, "instance_id", None)
-                    instance = model_instance_repo.get_instance(instance_id)
-
-                    if not instance or not instance.get("enabled"):
-                        logger.debug("model.warmup.skip", extra={"reason": "instance_not_enabled"})
-                        return
-
-                    # Get provider for base_url
-                    provider_id = instance.get("provider_id")
-                    provider = provider_repo.get_provider(provider_id)
-
-                    if not provider:
-                        logger.debug("model.warmup.skip", extra={"reason": "provider_not_found"})
-                        return
-
-                    base_url = provider.get("base_url")
-                    model_id = instance.get("model_id")
-                    instance_name = instance.get("instance_name")
-
-                    if not base_url:
-                        logger.debug("model.warmup.skip", extra={"reason": "no_base_url"})
-                        return
-
-                    # Create LLM client and perform test inference
-                    client = LLMClient(model=model_id, api_key=None, base_url=base_url)
-
-                    # Simple test completion with extended timeout for model loading
-                    # (First load can take 60-120s for quantized models on CPU, up to 180s on very slow CPUs)
-                    # Use LLM_WARMUP_TIMEOUT from settings (default: 300s / 5min)
-                    warmup_timeout = getattr(settings, "LLM_WARMUP_TIMEOUT", 300)
-                    try:
-                        response = await asyncio.wait_for(
-                            client.complete(prompt="Test", max_tokens=5, temperature=0), timeout=warmup_timeout
-                        )
-                        logger.info(
-                            "model.warmup.success",
-                            extra={
-                                "instance_name": instance_name,
-                                "model_id": model_id,
-                                "response_length": len(str(response)),
-                                "timeout_used": warmup_timeout,
-                            },
-                        )
-                    except TimeoutError:
-                        logger.warning("model.warmup.timeout", extra={"instance_name": instance_name, "timeout": warmup_timeout})
-                    except Exception as warmup_exc:
-                        logger.warning(
-                            "model.warmup.failed", extra={"instance_name": instance_name, "error": str(warmup_exc)}
-                        )
-                except Exception as exc:
-                    # Non-fatal: warmup failures should not block startup
-                    logger.warning("model.warmup.error", extra={"error": str(exc)}, exc_info=True)
-
-            app.add_event_handler("startup", _warmup_default_model)
-
-            # Models repo hydration & sync (providers/instances/defaults)
-            try:  # pragma: no cover - startup integration
-                from src.repositories import models_repo
-
-                models_repo.hydrate_from_redis()
-                models_repo.backfill_to_redis_if_empty()
-                models_repo.sync_providers_to_orchestrator()
-                logger.info("models_repo.startup.hydrated", extra={"providers": models_repo.provider_count()})
-            except Exception:
-                logger.warning("models_repo.startup.failed", exc_info=True)
-
-            # Background scheduler (health checks, provider health, etc.)
-            # Skip scheduler in test environment or if explicitly disabled
-            enable_scheduler = os.getenv("ENABLE_SCHEDULER", "true").lower() not in ("false", "0", "no")
-            is_test = os.getenv("APP_ENV") == "test" or os.getenv("PYTEST_CURRENT_TEST")
-            
-            if enable_scheduler and not is_test:
-                async def _startup_scheduler():
-                    """Start background scheduler for periodic tasks."""
-                    try:
-                        from src.background.scheduler import start_scheduler
-
-                        scheduler = start_scheduler()
-                        app.state.scheduler = scheduler
-                        logger.info("scheduler.startup.started")
-                    except Exception as exc:
-                        logger.warning("scheduler.startup.failed", extra={"error": str(exc)}, exc_info=True)
-
-                async def _shutdown_scheduler():
-                    """Stop background scheduler gracefully."""
-                    try:
-                        from src.background.scheduler import shutdown_scheduler
-
-                        scheduler = getattr(app.state, "scheduler", None)
-                        if scheduler:
-                            shutdown_scheduler(wait=True)
-                            logger.info("scheduler.shutdown.stopped")
-                    except Exception as exc:
-                        logger.warning("scheduler.shutdown.failed", extra={"error": str(exc)}, exc_info=True)
-
-                app.add_event_handler("startup", _startup_scheduler)
-                app.add_event_handler("shutdown", _shutdown_scheduler)
-            else:
-                logger.info("scheduler.disabled", reason="test environment" if is_test else "ENABLE_SCHEDULER=false")
-    except Exception:
-        logger.debug("no health module to flip readiness on shutdown")
-
+    # The _probe_ollama_tags helper is called from _run_startup_tasks below.
     async def _probe_ollama_tags() -> None:
-        import logging
-        from contextlib import suppress
+        import logging as _logging
+        from contextlib import suppress as _suppress
 
         try:
             import httpx
         except Exception:
             return
 
-        probe_logger = logging.getLogger("cineca.ollama")
+        probe_logger = _logging.getLogger("cineca.ollama")
 
         try:
             from src.repositories import models_repo
@@ -1437,9 +915,9 @@ def create_app() -> FastAPI:
 
         providers: list[dict[str, Any]] = []
         instances: list[dict[str, Any]] = []
-        with suppress(Exception):
+        with _suppress(Exception):
             providers = [p for p in models_repo.list_providers() if isinstance(p, dict)]
-        with suppress(Exception):
+        with _suppress(Exception):
             instances = [i for i in models_repo.list_instances() if isinstance(i, dict)]
 
         ollama_provider_ids = {p.get("id") for p in providers if is_ollama_provider(p)}
@@ -1463,8 +941,6 @@ def create_app() -> FastAPI:
         if not base_url:
             base_url = settings.resolve_ollama_base_url()
 
-        # Strip /v1 suffix if present since /api/tags is a native Ollama endpoint
-        # (not OpenAI-compatible), while other calls use /v1/chat/completions
         probe_base = base_url.rstrip("/")
         if probe_base.endswith("/v1"):
             probe_base = probe_base[:-3]
@@ -1522,7 +998,7 @@ def create_app() -> FastAPI:
         for inst in instances:
             provider_id = inst.get("provider_id")
             if provider_id in ollama_provider_ids:
-                with suppress(Exception):
+                with _suppress(Exception):
                     model_id = inst.get("model_id") or inst.get("name")
                     if model_id:
                         logical_models.add(str(model_id))
@@ -1562,7 +1038,329 @@ def create_app() -> FastAPI:
                 },
             )
 
-    app.add_event_handler("startup", _probe_ollama_tags)
+    # ──────────────────────────────────────────────────────────────────
+    # Consolidated startup/shutdown tasks (called from _lifespan above)
+    # ──────────────────────────────────────────────────────────────────
+    async def _run_startup_tasks(app: FastAPI) -> None:
+        # 1. DMR warmup & provider alignment
+        try:
+            from src.services.default_model_resolver import DefaultModelResolver
+            from src.services.model_warmup import get_warmup_service
+
+            dmr = DefaultModelResolver()
+            logger.info("startup.default_model.resolving", extra={"scope": "global"})
+            default_result = await dmr.get_default_model(tenant_id=None, scope="global")
+
+            if default_result:
+                model_id = default_result.get("model_id")
+                source = default_result.get("source", "unknown")
+                logger.info("startup.default_model.resolved", extra={"model_id": model_id, "source": source})
+
+                try:
+                    from db.postgres_control.repositories import provider_repo
+
+                    provider_id = default_result.get("provider_id")
+                    if provider_id:
+                        provider = provider_repo.get_provider(provider_id)
+                        if provider:
+                            provider_model = provider.get("model")
+                            if provider_model and provider_model != model_id:
+                                logger.info(
+                                    "startup.provider_model.mismatch",
+                                    extra={
+                                        "provider_id": provider_id,
+                                        "provider_model": provider_model,
+                                        "default_model": model_id,
+                                        "action": "alignment_recommended",
+                                    },
+                                )
+                except Exception as prov_exc:
+                    logger.debug(f"startup.provider_alignment.skipped: {prov_exc}")
+
+                logger.info("startup.model_warmup.starting", extra={"model_id": model_id})
+                warmup_service = get_warmup_service()
+                warmup_result = await warmup_service.warmup_model(
+                    model_id=model_id, provider_id=default_result.get("provider_id", "unknown")
+                )
+                if warmup_result["success"]:
+                    logger.info(
+                        "startup.model_warmup.succeeded",
+                        extra={"model_id": model_id, "duration_ms": warmup_result["duration_ms"], "attempts": warmup_result["attempts"]},
+                    )
+                else:
+                    logger.warning(
+                        "startup.model_warmup.failed",
+                        extra={"model_id": model_id, "error": warmup_result["error"], "attempts": warmup_result["attempts"]},
+                    )
+
+                logger.info("startup.dmr_cache.warming", extra={"scope": "global"})
+                await dmr.warmup_cache(tenant_id=None, scope="global")
+                logger.info("startup.dmr_cache.warmed", extra={"scope": "global"})
+
+                try:
+                    from src.background.provider_health_scheduler import get_scheduler
+
+                    scheduler = get_scheduler()
+                    await scheduler.start()
+                    logger.info("startup.provider_health_scheduler.started")
+                except Exception as sched_exc:
+                    logger.warning(f"startup.provider_health_scheduler.failed: {sched_exc}", extra={"action": "continued"}, exc_info=True)
+
+                try:
+                    from src.config_modules.compute import get_compute_config
+
+                    compute_cfg = get_compute_config()
+                    if compute_cfg.warmup_models:
+                        logger.info("startup.orchestrator_models.warming", extra={"models": compute_cfg.warmup_models})
+                        for model_name in compute_cfg.warmup_models:
+                            if not model_name:
+                                continue
+                            logger.info("startup.orchestrator_model.warmup_started", extra={"model": model_name})
+                            wr = await warmup_service.warmup_model(model_id=model_name, provider_id="ollama")
+                            if wr["success"]:
+                                logger.info("startup.orchestrator_model.warmup_succeeded", extra={"model": model_name, "duration_ms": wr["duration_ms"]})
+                            else:
+                                logger.warning("startup.orchestrator_model.warmup_failed", extra={"model": model_name, "error": wr.get("error")})
+                    else:
+                        logger.info("startup.orchestrator_models.no_env_overrides", extra={"note": "No orchestrator model overrides provided via environment; using DB defaults"})
+                except Exception as warmup_exc:
+                    logger.warning(f"startup.orchestrator_warmup.failed: {warmup_exc}", extra={"action": "continued"}, exc_info=True)
+            else:
+                logger.warning("startup.no_default_model", extra={"action": "skipped", "reason": "no_default_configured"})
+        except Exception as exc:
+            logger.warning(f"startup.init_default_model.failed: {exc}", extra={"action": "continued"}, exc_info=True)
+
+        # 2. Flip readiness to True (if health module present)
+        try:
+            import importlib
+
+            health_mod = None
+            with suppress(Exception):
+                health_mod = importlib.import_module("src.routers.health")
+
+            if health_mod and hasattr(health_mod, "set_ready"):
+                try:
+                    enforce = os.getenv("ENFORCE_MIGRATIONS", "0").lower() in ("1", "true", "yes")
+                    migrations_ok = True
+                    if enforce:
+                        migrations_ok = os.getenv("MIGRATIONS_APPLIED", "false").lower() in ("1", "true", "yes") or os.path.exists("/app/.migrations_ok")
+                    current_ready = getattr(health_mod, "_is_ready", True)
+                    if migrations_ok and current_ready:
+                        health_mod.set_ready(True)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        # 3. Initialize default model via init script
+        try:
+            from scripts.init_default_model import init_default_model
+
+            await asyncio.to_thread(init_default_model)
+            logger.info("startup.init_default_model.complete")
+        except Exception as e:
+            logger.warning("startup.init_default_model.failed", extra={"error": str(e)})
+
+        # 4. Async Redis client lifecycle
+        if settings.JOB_STORE_BACKEND.lower() == "redis":
+            try:
+                from db.redis_cache.async_client import async_redis_health, get_async_redis
+
+                await get_async_redis()
+                health = await async_redis_health()
+                if health.get("ok"):
+                    logger.info("async_redis.startup.connected", extra={"latency_ms": health.get("latency_ms"), "backend": settings.JOB_STORE_BACKEND, "ttl_days": settings.JOB_TTL_DAYS})
+                else:
+                    logger.warning("async_redis.startup.unhealthy", extra={"error": health.get("error")})
+            except Exception:
+                logger.warning("async_redis.startup.failed", exc_info=True)
+
+        # 5. Seed default provider in dev/demo mode
+        if os.getenv("SEED_DEMO_PROVIDER", "").lower() not in ("false", "0", "no") and (settings.DEMO_MODE or settings.APP_ENV == "dev"):
+            try:
+                from db.postgres_control.repositories import provider_repo as pg_repo
+
+                try:
+                    existing = pg_repo.get_provider_default(scope="global", tenant_id=None)
+                    if existing:
+                        logger.debug("seed_provider.skip", extra={"reason": "default_exists"})
+                        existing = True  # sentinel
+                except Exception:
+                    existing = None
+
+                if not existing or existing is True:
+                    pass  # skip seeding if default already exists
+
+                if not existing:
+                    providers_list = pg_repo.list_providers(tenant_id="global")
+                    demo_provider = next((p for p in providers_list if p.get("name") == "demo-openai"), None)
+                    if not demo_provider:
+                        demo_provider = pg_repo.create_provider(
+                            name="demo-openai", type="openai_compatible", base_url="https://api.openai.com/v1",
+                            model="gpt-4", tenant_id="global", config={}, actor="system:seed",
+                        )
+                        logger.info("seed_provider.registered", extra={"provider": "demo-openai"})
+                    pg_repo.set_provider_default(
+                        scope="global", provider_id=demo_provider.get("id") or demo_provider.get("name"),
+                        tenant_id=None, actor="system:seed",
+                    )
+                    logger.info("seed_provider.default_set", extra={"provider": "demo-openai"})
+            except Exception as exc:
+                logger.warning("seed_provider.failed", extra={"error": str(exc)}, exc_info=True)
+
+        # 6. Verify provider connectivity
+        try:
+            from db.postgres_control.repositories import provider_repo as pg_repo
+            from src.background.provider_health import check_provider_health
+
+            default_provider = pg_repo.get_provider_default(scope="global", tenant_id=None)
+            if not default_provider:
+                prov_list = pg_repo.list_providers(tenant_id=None)
+                if not prov_list:
+                    if settings.DEMO_MODE or settings.APP_ENV == "dev":
+                        logger.info("provider.startup.skip", extra={"reason": "no_providers_in_dev_mode"})
+                    else:
+                        logger.warning("provider.startup.no_default", extra={"reason": "no_providers_found"})
+                    default_provider = None
+                else:
+                    pid = prov_list[0].get("id") or prov_list[0].get("name")
+                    prov = pg_repo.get_provider(pid)
+                    if prov:
+                        hc = await check_provider_health(prov, timeout=5.0)
+                        if hc.get("ok"):
+                            logger.info("provider.startup.ready", extra={"provider_id": pid, "provider_name": prov.get("name"), "status_code": hc.get("status_code")})
+                        else:
+                            logger.error("provider.startup.unhealthy", extra={"provider_id": pid, "error": hc.get("error", "unknown")})
+                            if not (settings.DEMO_MODE or settings.APP_ENV == "dev"):
+                                raise RuntimeError(f"Default provider {prov.get('name')} unhealthy at startup: {hc.get('error')}")
+                            logger.warning("provider.startup.degraded_but_continuing", extra={"provider_id": pid})
+            elif default_provider:
+                pid = default_provider.get("provider_id")
+                prov = pg_repo.get_provider(pid)
+                if prov:
+                    hc = await check_provider_health(prov, timeout=5.0)
+                    if hc.get("ok"):
+                        logger.info("provider.startup.ready", extra={"provider_id": pid, "provider_name": prov.get("name"), "status_code": hc.get("status_code")})
+                    else:
+                        logger.error("provider.startup.unhealthy", extra={"provider_id": pid, "error": hc.get("error", "unknown")})
+                        if not (settings.DEMO_MODE or settings.APP_ENV == "dev"):
+                            raise RuntimeError(f"Default provider {prov.get('name')} unhealthy at startup: {hc.get('error')}")
+                        logger.warning("provider.startup.degraded_but_continuing", extra={"provider_id": pid})
+                else:
+                    logger.warning("provider.startup.not_found", extra={"provider_id": pid})
+        except RuntimeError:
+            raise
+        except Exception as exc:
+            logger.warning("provider.startup.check_failed", extra={"error": str(exc)}, exc_info=True)
+
+        # 7. Warmup default model with test inference (non-fatal)
+        try:
+            from db.postgres_control.repositories import model_instance_repo, provider_repo
+            from src.adapters.llm import LLMClient
+
+            default = model_instance_repo.get_default(scope="global", tenant_id=None)
+            if default:
+                instance_id = getattr(default, "instance_id", None)
+                instance = model_instance_repo.get_instance(instance_id)
+                if instance and instance.get("enabled"):
+                    prov_id = instance.get("provider_id")
+                    prov = provider_repo.get_provider(prov_id)
+                    if prov and prov.get("base_url"):
+                        client = LLMClient(model=instance.get("model_id"), api_key=None, base_url=prov.get("base_url"))
+                        warmup_timeout = getattr(settings, "LLM_WARMUP_TIMEOUT", 300)
+                        try:
+                            response = await asyncio.wait_for(client.complete(prompt="Test", max_tokens=5, temperature=0), timeout=warmup_timeout)
+                            logger.info("model.warmup.success", extra={"instance_name": instance.get("instance_name"), "model_id": instance.get("model_id"), "response_length": len(str(response)), "timeout_used": warmup_timeout})
+                        except TimeoutError:
+                            logger.warning("model.warmup.timeout", extra={"instance_name": instance.get("instance_name"), "timeout": warmup_timeout})
+                        except Exception as warmup_exc:
+                            logger.warning("model.warmup.failed", extra={"instance_name": instance.get("instance_name"), "error": str(warmup_exc)})
+        except Exception as exc:
+            logger.warning("model.warmup.error", extra={"error": str(exc)}, exc_info=True)
+
+        # 8. Models repo hydration & sync
+        try:
+            from src.repositories import models_repo
+
+            models_repo.hydrate_from_redis()
+            models_repo.backfill_to_redis_if_empty()
+            models_repo.sync_providers_to_orchestrator()
+            logger.info("models_repo.startup.hydrated", extra={"providers": models_repo.provider_count()})
+        except Exception:
+            logger.warning("models_repo.startup.failed", exc_info=True)
+
+        # 9. Background scheduler
+        enable_scheduler = os.getenv("ENABLE_SCHEDULER", "true").lower() not in ("false", "0", "no")
+        is_test = os.getenv("APP_ENV") == "test" or os.getenv("PYTEST_CURRENT_TEST")
+        if enable_scheduler and not is_test:
+            try:
+                from src.background.scheduler import start_scheduler
+
+                scheduler = start_scheduler()
+                app.state.scheduler = scheduler
+                logger.info("scheduler.startup.started")
+            except Exception as exc:
+                logger.warning("scheduler.startup.failed", extra={"error": str(exc)}, exc_info=True)
+        else:
+            logger.info("scheduler.disabled", extra={"reason": "test environment" if is_test else "ENABLE_SCHEDULER=false"})
+
+        # 10. Probe Ollama tags
+        with suppress(Exception):
+            await _probe_ollama_tags()
+
+    async def _run_shutdown_tasks(app: FastAPI) -> None:
+        # 1. Stop provider health scheduler
+        logger.info("shutdown.cleanup.start")
+        try:
+            from src.background.provider_health_scheduler import get_scheduler
+
+            scheduler = get_scheduler()
+            await scheduler.stop()
+            logger.info("shutdown.provider_health_scheduler.stopped")
+        except Exception as exc:
+            logger.warning(f"shutdown.cleanup.failed: {exc}", exc_info=True)
+
+        # 2. Flip readiness to False & drain
+        try:
+            import importlib
+
+            health_mod = None
+            with suppress(Exception):
+                health_mod = importlib.import_module("src.routers.health")
+            if health_mod and hasattr(health_mod, "set_ready"):
+                with suppress(Exception):
+                    health_mod.set_ready(False)
+        except Exception:
+            pass
+
+        # 3. Close async Redis client
+        if settings.JOB_STORE_BACKEND.lower() == "redis":
+            try:
+                from db.redis_cache.async_client import close_async_redis
+
+                await close_async_redis()
+                logger.info("async_redis.shutdown.closed")
+            except Exception:
+                logger.warning("async_redis.shutdown.failed", exc_info=True)
+
+        # 4. Stop background scheduler
+        try:
+            from src.background.scheduler import shutdown_scheduler
+
+            sched = getattr(app.state, "scheduler", None)
+            if sched:
+                shutdown_scheduler(wait=True)
+                logger.info("scheduler.shutdown.stopped")
+        except Exception as exc:
+            logger.warning("scheduler.shutdown.failed", extra={"error": str(exc)}, exc_info=True)
+
+        # 5. Drain time for inflight requests
+        try:
+            drain = int(os.getenv("SHUTDOWN_DRAIN_SECONDS", "15"))
+        except Exception:
+            drain = 15
+        with suppress(Exception):
+            await asyncio.sleep(drain)
 
     # Register fallback health endpoints if not provided by routers
     def _has_get(path: str) -> bool:
