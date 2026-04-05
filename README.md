@@ -1,4 +1,4 @@
-# Cineca Agentic Platform
+# CINECA Agentic Platform: An Enterprise-Grade Multi-Tenant AI Orchestrator with MCP Tools and Secure Graph Querying
 
 A production-ready, enterprise-grade **Agentic AI Platform** built with FastAPI that enables intelligent LLM-powered agents to interact with graph databases (Memgraph), execute tools via MCP (Model Context Protocol), and orchestrate complex multi-step workflows—all with comprehensive security, observability, and multi-tenancy support.
 
@@ -1899,4 +1899,11 @@ These documents provide:
 ---
 
 **Author:** Arman Feili  
-**Thesis Project:** Sapienza University of Rome, 2025
+**University:** Sapienza University of Rome  
+**Department:** Information Engineering, Electronics and Telecommunications  
+**Company:** CINECA  
+**Academic Year:** 2025/2026  
+
+**University Advisor:** Prof. Maria De Marsico  
+**University Co-Advisors:** Prof. Marco Raoul Marini, Dr. Valerio Venanzi  
+**CINECA Advisors:** Dr. Giuseppe Melfi, Dr. Marco Puccini
