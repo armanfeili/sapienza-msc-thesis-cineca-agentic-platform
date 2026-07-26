@@ -1,8 +1,8 @@
-PWD /Users/armanfeili/Arman/Sapienza Courses/4-semester/Thesis/ILP-Thesis-2025/Cineca-Agentic-Platform/thesis/main
+PWD /Users/armanfeili/code/New Projects/Thesis/sapienza-msc-thesis-cineca-agentic-platform/thesis/main
 INPUT /Users/armanfeili/Library/TinyTeX/texmf.cnf
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/web2c/texmf.cnf
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-var/web2c/pdftex/pdflatex.fmt
-INPUT /Users/armanfeili/Arman/Sapienza Courses/4-semester/Thesis/ILP-Thesis-2025/Cineca-Agentic-Platform/thesis/main/sapthesis-doc.tex
+INPUT sapthesis-doc.tex
 OUTPUT sapthesis-doc.log
 INPUT ./sapthesis.cls
 INPUT sapthesis.cls
@@ -469,13 +469,25 @@ INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/ec-lmbx12
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/ec-lmr17.tfm
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/ec-lmbx12.tfm
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/ts1-lmr10.tfm
-INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/ec-lmr12.tfm
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/tex/latex/lm/t1lmtt.fd
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/tex/latex/lm/t1lmtt.fd
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/tex/latex/lm/t1lmtt.fd
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/ec-lmtt10.tfm
+INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/ec-lmr12.tfm
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/ec-lmbxi10.tfm
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/ec-lmri10.tfm
+INPUT ../sapthesis/figures/quick_glance_updated.png
+INPUT ../sapthesis/figures/quick_glance_updated.png
+INPUT ../sapthesis/figures/quick_glance_updated.png
+INPUT ../sapthesis/figures/quick_glance_updated.png
+INPUT ../sapthesis/figures/DIAGRAM_SIMPLE.png
+INPUT ../sapthesis/figures/DIAGRAM_SIMPLE.png
+INPUT ../sapthesis/figures/DIAGRAM_SIMPLE.png
+INPUT ../sapthesis/figures/DIAGRAM_SIMPLE.png
+INPUT ../sapthesis/figures/DIAGRAM_FULL_WORKFLOWS.png
+INPUT ../sapthesis/figures/DIAGRAM_FULL_WORKFLOWS.png
+INPUT ../sapthesis/figures/DIAGRAM_FULL_WORKFLOWS.png
+INPUT ../sapthesis/figures/DIAGRAM_FULL_WORKFLOWS.png
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/ec-lmcsc10.tfm
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/ec-lmtt10.tfm
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc
@@ -483,6 +495,14 @@ INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathit.
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/ec-lmr8.tfm
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/ec-lmr6.tfm
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc
+INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/ec-lmtti10.tfm
+INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/ec-lmr9.tfm
+INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/ec-lmbx9.tfm
+INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/rm-lmr9.tfm
+INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/lmmi9.tfm
+INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/lm/lmsy9.tfm
+INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam10.tfm
+INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm10.tfm
 INPUT ./sapthesis-doc.bbl
 INPUT ./sapthesis-doc.bbl
 INPUT sapthesis-doc.bbl
@@ -491,15 +511,18 @@ INPUT ./sapthesis-doc.out
 INPUT ./sapthesis-doc.out
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx10.pfb
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx12.pfb
+INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx9.pfb
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmbxi10.pfb
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmcsc10.pfb
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi10.pfb
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr10.pfb
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr7.pfb
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr8.pfb
+INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr9.pfb
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmri10.pfb
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmss10.pfb
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmss17.pfb
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmssbx10.pfb
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmsy10.pfb
 INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmtt10.pfb
+INPUT /Users/armanfeili/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmtti10.pfb

@@ -12,6 +12,12 @@
 \newblock \url{https://github.com/modelcontextprotocol/servers} (2024).
 \newblock Repository of reference and community-contributed MCP servers. Accessed: 2025-01-15.
 
+\bibitem{apscheduler2023}
+\textsc{{APScheduler contributors}}.
+\newblock {Advanced Python Scheduler (APScheduler)}.
+\newblock \url{https://apscheduler.readthedocs.io} (2023).
+\newblock Accessed: 2025-01-15.
+
 \bibitem{argoworkflows2023}
 \textsc{{Argoproj}}.
 \newblock {Argo Workflows}: The workflow engine for {Kubernetes}.

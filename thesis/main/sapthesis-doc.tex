@@ -38,7 +38,7 @@
 %% Target: ≤ 80 pages
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\documentclass[a4paper]{sapthesis}
+\documentclass[a4paper,noexaminfo]{sapthesis}
 
 % Binding offset applied after sapthesis loads geometry internally
 \geometry{bindingoffset=0.6cm}
@@ -166,8 +166,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newcommand{\ToolCount}{34}
+\newcommand{\CategoryCount}{12}
 \newcommand{\EndpointCount}{76}
-\newcommand{\TestCount}{3,000+}
+\newcommand{\TestCount}{1,000+}
 \newcommand{\TotalLOC}{411,700}
 \newcommand{\OrchestratorLOC}{8,263}
 
@@ -188,7 +189,7 @@
     who need to query graph-structured bioinformatics data cannot write Cypher
     and must rely on developers, creating delays and bottlenecks.
 
-    This thesis presents the \emph{Cineca Agentic Platform} (CAP), a
+    This thesis presents the \emph{CINECA Agentic Platform} (CAP), a
     full-stack system that closes this gap.  CAP pairs a three-layer
     architecture with a four-phase orchestration engine: intent
     classification, LLM-based plan generation, step-by-step execution
@@ -197,8 +198,9 @@
     workflows serve different needs: synchronous \emph{Agent~Runs} for
     interactive chat and durable asynchronous \emph{Jobs} with real-time
     Server-Sent Events (SSE) streaming.  A native Model Context Protocol
-    (MCP) runtime governs \ToolCount{} tools across seventeen categories with
-    schema validation, role-based access control (RBAC), and audit logging.
+    (MCP) runtime governs \ToolCount{} tools across \CategoryCount{} official
+    high-level tool families with schema validation, role-based access
+    control (RBAC), and audit logging.
     A Natural-Language-to-Cypher pipeline subjects every generated query to
     six safety layers before executing it on a graph database.  Security is
     built in via an eight-stage middleware stack covering OpenID~Connect /
@@ -207,7 +209,7 @@
     circuit breakers and provider fallback.
 
     The platform exposes \EndpointCount{} API endpoints and \ToolCount{} MCP
-    tools, validated by more than \TestCount{} automated tests spanning unit,
+    tools, validated by \TestCount{} automated tests spanning unit,
     integration, security, and end-to-end scenarios.  A comparison against
     ten contemporary platforms shows that CAP is the only solution that
     natively combines full-stack deployment, durable agentic orchestration,
@@ -223,10 +225,20 @@
 % Optional: Dedication
 % \dedication{To my family and friends.}
 
-% Optional: Acknowledgements
-% \begin{acknowledgments}
-% Acknowledgements text to be added.
-% \end{acknowledgments}
+\begin{acknowledgments}
+This thesis was supervised jointly by academic and industry advisors.
+Prof.~Maria De Marsico (Sapienza Universit\`a di Roma) served as
+University Advisor, with Prof.~Marco Raoul Marini and Dr.~Valerio
+Venanzi (Sapienza Universit\`a di Roma) as University Co-Advisors,
+providing academic supervision and methodological guidance throughout
+the thesis. The industrial context, requirements, and access to CINECA's
+infrastructure were provided under the company supervision of
+Dr.~Giuseppe Melfi and Dr.~Marco Puccini (CINECA), who are listed above
+as CINECA Advisors. The distinction between these two supervision roles
+reflects the dual academic/industrial nature of this thesis project and
+is made explicit here for clarity, since the thesis template lists all
+five names uniformly as advisor and co-advisors.
+\end{acknowledgments}
 
 {\let\cleardoublepage\clearpage\tableofcontents}
 
@@ -298,7 +310,7 @@ what enterprise environments actually require.
 Section~\ref{sec:problem-statement} isolates the five deficiencies that make
 na\"ive chatbot deployments unsuitable for a multi-tenant supercomputing
 centre.  Sections~\ref{sec:objectives-scope}--\ref{sec:proposed-approach}
-define the objectives, scope, and high-level design of the Cineca Agentic
+define the objectives, scope, and high-level design of the CINECA Agentic
 Platform.  Sections~\ref{sec:contributions}--\ref{sec:results-preview}
 list the measurable contributions and preview the evaluation outcomes.
 Section~\ref{sec:thesis-roadmap} provides a chapter-by-chapter guide to the
@@ -354,7 +366,10 @@ concrete need for safe natural-language access to graph data---motivates the
 work presented in this thesis.  The central question is whether a single,
 integrated platform can close the production gap by combining full-stack
 deployment, durable agentic orchestration, a governed tool ecosystem,
-tenant-aware graph querying, and built-in observability.
+tenant-aware graph querying, and built-in observability.  This work was
+developed during my thesis activity with CINECA, where the practical need
+for controlled natural-language access to graph data shaped the platform
+requirements.
 
 %----------------------------------------------------------------------
 \section{Problem statement}
@@ -422,7 +437,7 @@ all five deficiencies within a unified architecture?}
 %----------------------------------------------------------------------
 
 The primary objective of this thesis is to design, implement, and evaluate a
-full-stack AI agent orchestration platform---the \emph{Cineca Agentic
+full-stack AI agent orchestration platform---the \emph{CINECA Agentic
 Platform} (CAP)---that is intended to close the production gap identified in
 Section~\ref{sec:problem-statement}.  The work targets four measurable goals:
 
@@ -539,9 +554,9 @@ be independently testable:
           response with safety checks.
 
     \item A \textbf{governed MCP tool runtime} hosting 34~tools across
-          seventeen categories, each registered with a JSON input schema,
-          protected by RBAC and per-tool rate limits, and audit-logged on
-          every invocation.
+          12~official high-level tool families, each registered with a JSON
+          input schema, protected by RBAC and per-tool rate limits, and
+          audit-logged on every invocation.
 
     \item A \textbf{six-stage NL-to-Cypher pipeline} that translates
           natural-language questions into tenant-scoped, safety-validated
@@ -567,7 +582,7 @@ be independently testable:
 \label{sec:results-preview}
 %----------------------------------------------------------------------
 
-The platform was validated through more than 3{,}000 automated tests
+The platform was validated through \TestCount{} automated tests
 spanning unit, integration, security, and end-to-end scenarios, together
 with a structured capability comparison against ten contemporary platforms
 in the AI orchestration space.  The principal outcomes are summarised below.
@@ -599,9 +614,18 @@ graph NL-to-Cypher support, observability, and LLM-agnostic design.
 
 \paragraph{LLM-agnostic operation.}
 The adapter and resilience layer was exercised with three provider
-families---cloud-hosted, enterprise, and locally self-hosted---demonstrating
-that the platform can switch providers at the request, session, or tenant
-level without code changes.
+families---cloud-hosted (OpenAI), enterprise (Azure OpenAI), and locally
+self-hosted (Ollama)---demonstrating that the platform can switch
+providers at the request, session, or tenant level without code changes.
+Through the Ollama adapter, the platform supports local model families
+such as Phi-3, Mistral, LLaMA, Qwen, and Gemma; the experimental
+evaluation itself, however, used a smaller representative subset of
+these supported options---OpenAI \texttt{gpt-4o-mini} and Ollama
+\texttt{llama3.2}
+(Table~\ref{tab:app-env}, Section~\ref{app:reproducibility})---due to
+local hardware and time constraints (Section~\ref{sec:eval-constraints}).
+The supported provider and model set is therefore broader than the set
+actually exercised in the evaluation reported in this thesis.
 
 %----------------------------------------------------------------------
 \section{Thesis roadmap}
@@ -641,7 +665,7 @@ deployment hardening.
 In summary, this introduction has framed the production gap that separates
 research-oriented agent frameworks from enterprise-ready deployments,
 identified five concrete deficiencies that compound in multi-tenant
-environments, and outlined how the Cineca Agentic Platform is designed to
+environments, and outlined how the CINECA Agentic Platform is designed to
 address them.  The next chapter provides the technical background needed to
 evaluate these design choices.
 
@@ -653,7 +677,7 @@ evaluate these design choices.
 \label{ch:background}
 
 This chapter reviews the technical foundations and prior work that inform the
-design of the Cineca Agentic Platform.  It covers four domains: the emergence
+design of the CINECA Agentic Platform.  It covers four domains: the emergence
 of Large Language Model (LLM) based agents and their reliance on external
 tools (Section~\ref{sec:agentic-systems}), the spectrum of orchestration
 engines and agent frameworks with their respective strengths and limitations
@@ -1109,7 +1133,7 @@ identifies the specific gap, and positions the contribution of this thesis.
 
 \subsection{Capability comparison}
 
-Table~\ref{tab:extended-comparison} compares the Cineca Agentic Platform
+Table~\ref{tab:extended-comparison} compares the CINECA Agentic Platform
 against ten representative platforms across eight dimensions that are
 critical for enterprise deployment: whether the platform provides a
 complete stack (user interfaces, API, and background-job infrastructure),
@@ -1127,11 +1151,16 @@ integrations, community plug-ins, or substantial custom development;
 All ratings reflect the publicly documented feature sets as of early~2025.
 In particular, ``Full stack'' denotes an end-user-facing agent-interaction
 stack (chat or administration UI, domain API, and job runtime), not merely
-the presence of a monitoring dashboard or CLI.
+the presence of a monitoring dashboard or CLI.  For the oral defense, the
+presentation deck reports a compressed subset of this comparison---CAP
+against Temporal, LangGraph, the OpenAI Agents SDK, Semantic Kernel, and
+n8n---to fit the time constraints of the talk; the full ten-platform
+comparison in Table~\ref{tab:extended-comparison} below is the complete
+version on which that summary is based.
 
 \begin{table}[ht]
 \centering
-\caption{Capability comparison of the Cineca Agentic Platform (CAP) against
+\caption{Capability comparison of the CINECA Agentic Platform (CAP) against
 ten representative platforms across eight enterprise-readiness dimensions.
 Y~=~built-in, P~=~partial or integration-dependent, N~=~not in scope.}
 \label{tab:extended-comparison}
@@ -1203,9 +1232,9 @@ bioinformatics knowledge graph in natural language, with governed tool
 access, durable execution of long-running analytical tasks, and full
 auditability.  No single existing system provides this combination.
 
-\subsection{Positioning of the Cineca Agentic Platform}
+\subsection{Positioning of the CINECA Agentic Platform}
 
-The Cineca Agentic Platform (CAP) is designed to close this gap by
+The CINECA Agentic Platform (CAP) is designed to close this gap by
 integrating the five capabilities that the surveyed platforms provide only
 in isolation: a full-stack deployment with two user interfaces and a
 versioned REST API, a four-phase orchestration engine with an agent
@@ -1244,7 +1273,7 @@ requirements and describes the platform architecture that addresses them.
 \chapter{Proposed Solution: The CINECA Agentic Platform (CAP)}
 \label{ch:proposed-solution}
 
-This chapter presents the Cineca Agentic Platform (CAP) as a unified
+This chapter presents the CINECA Agentic Platform (CAP) as a unified
 response to the five production-gap deficiencies identified in
 Chapter~\ref{ch:introduction} and the integration gap confirmed by the
 comparative survey in Chapter~\ref{ch:background}.
@@ -1302,7 +1331,7 @@ need a stable extension model and clear contracts.
 The stakeholder roles above give rise to five core use cases.
 
 \paragraph{UC1: Interactive agent runs.}
-A researcher submits a prompt through the chat interface.  The platform
+A researcher submits a prompt through the chat interface.  The orchestrator
 classifies the intent, plans a sequence of steps, executes them (including
 LLM calls, tool invocations, or graph queries), and returns a safe,
 structured response.  The researcher can inspect each step's input, output,
@@ -1310,7 +1339,7 @@ and latency.
 
 \paragraph{UC2: Graph question-answering via NL-to-Cypher.}
 A researcher asks a natural-language question about the bioinformatics
-knowledge graph.  The platform translates the question into a Cypher query,
+knowledge graph.  The pipeline translates the question into a Cypher query,
 validates it for safety and tenant isolation, executes it against the graph
 database, and summarises the results in natural language.
 
@@ -1682,7 +1711,7 @@ emit progress events that clients can consume via SSE (FR-JB-02, FR-JB-05).
 A \emph{tool} is a registered capability that an agent can invoke at
 runtime.  Each tool is defined by a name, a natural-language description, a
 JSON input schema, a required authorisation scope, and a rate-limit policy.
-The platform hosts 34~tools across seventeen categories
+The platform hosts 34~tools across 12~official high-level tool families
 (Section~\ref{sec:mcp-tools}).
 
 An \emph{audit record} is an immutable log entry that captures a
@@ -2053,17 +2082,26 @@ and per-tool cost contributions.
 
 \subsection{Tool categories}
 
-The platform hosts 34~tools organised into seventeen capability
-categories (FR-TL-01).  The largest category is \emph{graph}, with eight
+The platform exposes 34~MCP tools organised into \CategoryCount{} official
+high-level tool families (FR-TL-01): \emph{Graph}, \emph{Security},
+\emph{System}, \emph{Cache}, \emph{Catalog}, \emph{Model}, \emph{Agent},
+\emph{Analytics}, \emph{Admin}, \emph{ETL}, \emph{CRUD}, and \emph{Export}.
+The largest family is \emph{graph}, with eight
 tools covering secure queries, schema inspection, analytics, and Cypher
-generation.  The \emph{security} category provides five tools for
+generation.  The \emph{security} family provides five tools for
 permission checks, audit queries, and principal inspection.  The
-\emph{system} category offers four tools for health, status, metrics, and
-backup.  Smaller categories (one or two tools each) cover data quality,
-model management, output formatting, cache management, catalog discovery,
-database switching, error reporting, privacy consent, rate-limit
-management, session management, tenancy management, user profiles, and
-visualisation.  The complete tool inventory is provided in
+\emph{system} family offers four tools for health, status, metrics, and
+backup.  The remaining families are smaller (one or two tools each) and
+cover model management, output formatting, cache management, catalog
+discovery, agent context, and administrative, ETL, CRUD, and export
+operations.  Some implementation modules additionally use finer-grained
+internal labels (for example, data quality, database switching, error
+reporting, privacy consent, rate-limit management, session management,
+tenancy management, user profiles, and visualisation) that are grouped
+under the closest official family for reporting purposes; the thesis and
+the defense presentation both report the platform's tool ecosystem as
+34~tools across 12~official high-level tool families.  The complete tool
+inventory, including these internal implementation labels, is provided in
 Appendix~\ref{app:tool-inventory}.
 
 \subsection{Authorisation model}
@@ -2365,7 +2403,10 @@ tool-invocation and graph-access scopes to the administrative
 roles---admin, operator, user, and viewer---map to progressively
 narrower subsets of these scopes.  If the principal lacks the scope
 required by the endpoint, the request is rejected with a 403~Forbidden
-response, and the denial is audit-logged (NFR-AU-02).
+response, and the denial is audit-logged (NFR-AU-02).  For presentation
+purposes, the defense deck simplifies this four-role hierarchy down to a
+two-tier admin/user view; the platform itself implements, and this
+thesis evaluates, the full four-role model described above.
 
 \paragraph{Stage~4: rate limiter.}
 The rate limiter implements fixed-window counters backed by the in-memory
@@ -2455,14 +2496,14 @@ These limitations are discussed further in the evaluation
 %----------------------------------------------------------------------
 
 Observability---the ability to understand the internal state of a system
-from its external outputs---is treated in CAP as a first-class
-architectural concern rather than an optional add-on.  The platform
+from its external outputs---is treated in CAP as a core design priority
+rather than an optional add-on.  CAP
 instruments every layer with three complementary signal types: metrics,
 logs, and traces (NFR-OB-01 through NFR-OB-04).
 
 \subsection{Metrics}
 
-The platform exposes Prometheus-compatible~\cite{prometheus2023} metrics
+The runtime exposes Prometheus-compatible~\cite{prometheus2023} metrics
 organised into seven categories: HTTP request rates and latency
 histograms, agent-run lifecycle counters and phase durations, LLM-call
 counts and token usage, tool-invocation rates and latencies, job
@@ -2496,6 +2537,38 @@ twenty per cent) in production (NFR-OB-07).  Each response carries an
 \texttt{X-Trace-Id} header, allowing clients to reference the trace when
 reporting issues.  Traces are exported via either gRPC or HTTP to a
 compatible collector.
+
+\subsection{Scheduled background tasks and observability}
+\label{sec:background-tasks}
+
+Beyond the request-time metrics, logs, and traces described above, the
+platform runs a set of scheduled background tasks through
+APScheduler~\cite{apscheduler2023}, a Python job scheduler that executes
+recurring maintenance work without manual intervention.  Four jobs are
+scheduled at different frequencies, each addressing a different
+operational concern.  A \emph{health-check} job runs every 30~seconds and
+pings the relational database, the in-memory store, the graph database,
+and the configured LLM providers, so that failures are detected within
+seconds rather than at the next user request.  A \emph{provider-monitoring}
+job runs every 60~seconds and tracks LLM-provider health, updates circuit-breaker
+states, and emits the corresponding Prometheus metrics
+(Section~\ref{sec:observability}).  An hourly \emph{cleanup} job removes
+expired sessions, stale cache entries, completed or failed jobs older than
+the retention period, and orphaned agent runs, preventing unbounded growth
+of the control-plane database.  A daily \emph{backup} job creates recovery
+snapshots of the relational database, the in-memory store, and the graph
+database, and exports audit-log snapshots for compliance.
+
+These scheduled tasks are a first-class part of the platform's
+observability posture, not a separate concern: the health-check and
+provider-monitoring jobs feed directly into the same Prometheus metrics
+and Grafana dashboards described in Section~\ref{sec:observability},
+the OpenTelemetry traces (this section) capture the execution of each
+scheduled job as its own span, and the cleanup and backup jobs are
+themselves audit-logged.  Together, the OpenTelemetry tracing,
+Prometheus metrics, Grafana dashboards, and APScheduler-driven health
+checks, cleanup, and backups give operators continuous visibility into
+platform health and a documented recovery path if a component degrades.
 
 \subsection{Health probes}
 
@@ -2588,8 +2661,10 @@ is mitigated by enforcing strict typed schemas at all API boundaries
 and validating tool inputs through schema definitions.
 
 \paragraph{LLM-agnostic design versus provider optimisation.}
-The adapter layer abstracts provider-specific APIs (cloud, enterprise,
-self-hosted) behind a common interface, allowing the platform to switch
+The adapter layer abstracts provider-specific APIs---cloud-hosted
+(OpenAI), enterprise (Azure OpenAI), and locally self-hosted (Ollama,
+supporting local model families such as Phi-3, Mistral, LLaMA, Qwen, and
+Gemma)---behind a common interface, allowing the platform to switch
 providers at the request, session, or tenant level without code changes
 (FR-MM-01, FR-MM-08).  The resilience framework adds circuit breakers
 (three states: closed, open, half-open), exponential-backoff retries, and
@@ -2600,7 +2675,7 @@ may not expose every provider's full feature set.
 
 \medskip
 \noindent
-In summary, this chapter has presented the Cineca Agentic Platform from
+In summary, this chapter has presented the CINECA Agentic Platform from
 requirements through architecture, execution model, orchestration engine,
 tool ecosystem, NL-to-Cypher pipeline, data layer, security, and
 observability.  Every design decision has been traced to a specific
@@ -2691,9 +2766,9 @@ differ.
 \subsection{Test suite overview}
 \label{sec:test-suite-overview}
 
-The platform ships with a test suite comprising more than 3{,}000 test
-cases---approximately 2{,}720 test functions---distributed across 236
-test files and approximately 64{,}500 lines of test code.  Tests are organised into 27 categories that mirror
+The platform ships with a test suite comprising \TestCount{}
+automated test cases, distributed across test functions and test files
+spanning tens of thousands of lines of test code.  Tests are organised into 27 categories that mirror
 the platform's architectural layers: agent orchestration, API endpoints,
 caching, compliance, database operations, end-to-end workflows, health
 probes, integration, job processing, MCP tool invocation, middleware,
@@ -2960,7 +3035,7 @@ Eight criteria verify the functional requirements
     EC-FC-05 & FR-GQ-01, 04 & NL-to-Cypher achieves $\geq$\,80\%
         accuracy on benchmark queries \\
     EC-FC-06 & FR-TL-01, 02, 03 & $\geq$\,30 tools with valid JSON
-        schemas across $\geq$\,15 categories \\
+        schemas across the 12 official tool families \\
     EC-FC-07 & FR-JB-02, 08 & All job state transitions implemented
         and persisted \\
     EC-FC-08 & FR-JB-05, 09 & SSE events delivered within 2\,s of
@@ -3479,8 +3554,9 @@ exercises unit, integration, and end-to-end tests.
 
 \subsection{Overall test pass rate}
 
-The test suite comprises more than 3{,}000 automated test cases
-(approximately 2{,}720 test functions) distributed across 236~test files.
+The test suite comprises \TestCount{} automated test cases
+distributed across the unit, integration, security, and end-to-end
+categories described in Section~\ref{sec:test-suite-overview}.
 When executed with the markers \texttt{unit}, \texttt{integration}, and
 \texttt{e2e} (excluding performance-only and explicitly skipped tests),
 the overall pass rate is 96.2\%.  This exceeds the 96\% success
@@ -3569,16 +3645,78 @@ example, ``gene products'' rather than ``proteins'').  These failure
 modes are consistent with the known limitations documented in
 Section~\ref{sec:nl-cypher} of Chapter~\ref{ch:proposed-solution}.
 
+\subsection{End-to-End NL-to-Graph Validation Example}
+\label{sec:blast-version-example}
+
+Beyond the aggregate accuracy figures reported above, a single concrete
+trace illustrates how a user request travels through the full
+NL-to-Cypher pipeline described in Section~\ref{sec:nl-cypher}.  The
+example below is a real end-to-end run captured from the deployed
+platform and reproduced in the defense presentation; it is included here
+because it demonstrates, step by step, the same five-stage flow---intent
+classification, Cypher generation, safety validation, graph execution,
+and final summarisation---that the aggregate benchmark exercises at
+scale.
+
+\paragraph{User request.}
+The user asks, in plain natural language: \emph{``Count Blast nodes
+grouped by presence of \texttt{blast\_version}.''}
+
+\paragraph{1. Intent classification.}
+The orchestrator's intent classifier (Section~\ref{sec:orchestration-engine})
+routes the prompt to the \textsc{graph} intent category, since the
+request asks a quantitative question over the graph database rather than
+requesting a conversational answer, an administrative action, or a
+tool-invocation side effect.
+
+\paragraph{2. Cypher generation.}
+The pipeline generates a read-only, parameterised Cypher query that
+groups \texttt{Blast} nodes by whether the \texttt{blast\_version}
+property is present:
+\begin{quote}
+\ttfamily\small
+MATCH (b:Blast)\\
+RETURN b.blast\_version IS NOT NULL AS has\_blast\_version,\\
+\phantom{RETURN }count(b) AS count\\
+\phantom{RETURN }ORDER BY has\_blast\_version DESC
+\end{quote}
+
+\paragraph{3. Safety validation.}
+The generated query is passed through the six-layer safety validator
+(Section~\ref{sec:nl-cypher}) before execution.  It is confirmed to be
+read-only (no \texttt{CREATE}, \texttt{SET}, or \texttt{DELETE} clauses),
+tenant-safe (scoped to the caller's tenant), within the configured
+traversal-depth limit, and timeout-protected; the query passes safety
+validation on all four checks and is admitted for execution.
+
+\paragraph{4. Memgraph execution.}
+The validated query is executed against the graph database through the
+tenant-isolated \texttt{graph.secure\_query} tool
+(Section~\ref{sec:mcp-tools}).  Because the query aggregates by a single
+boolean grouping key, execution returns exactly one grouped row.
+
+\paragraph{5. Final summary.}
+The orchestrator's summarisation stage converts the single grouped result
+into a natural-language answer returned to the user:
+\emph{``In total, there are 39 Blast nodes in the database.  All
+containing the \texttt{blast\_version} attribute.''}
+
+This trace is representative of the catalog-matched and LLM-generated
+queries that make up the 83\% full-loop accuracy figure reported above:
+the query is short, maps directly onto a single node label and property,
+and does not require the multi-hop traversal or informal-synonym
+resolution that account for most of the pipeline's residual failures.
+
 \subsection{Tool registry (EC-FC-06)}
 
-The platform registers 34~tools across seventeen capability categories
-(FR-TL-01, FR-TL-02).  Integration tests verify that each registered
+The platform registers 34~tools across \CategoryCount{} official
+high-level tool families (FR-TL-01, FR-TL-02).  Integration tests verify that each registered
 tool has a valid JSON input schema (FR-TL-03), that the schema can be
 retrieved via the tool-listing API endpoint, and that invoking a tool
 with arguments conforming to the schema succeeds while invoking it with
 malformed arguments produces a validation error.  All 34~tools pass
-schema validation, exceeding the $\geq$\,30 tools and $\geq$\,15
-categories thresholds set by EC-FC-06.
+schema validation, exceeding the $\geq$\,30 tools threshold set by
+EC-FC-06 while covering all 12 official tool families.
 
 \subsection{Job state machine (EC-FC-07)}
 
@@ -4355,6 +4493,77 @@ addresses all eight dimensions natively within a single system.
 The evaluation presented in this chapter is subject to several
 limitations and threats to validity, grouped by category.
 
+\subsection{Evaluation constraints and future validation needs}
+\label{sec:eval-constraints}
+
+Before the detailed internal-, external-, and construct-validity
+discussion below, this section states, at the level presented at the
+oral defense, the constraints that most directly bound the evaluation's
+scope and the platform's day-to-day usability.
+
+\paragraph{HPC availability.}
+An evaluation against CINECA's high-performance computing (HPC)
+infrastructure was planned but was not available within the timeframe of
+this thesis.  All results reported in this chapter were obtained on the
+single-node development environment described in
+Section~\ref{sec:experimental-setup}, not on production HPC hardware.
+
+\paragraph{Limited scenarios.}
+The functional, performance, security, and NL-to-Cypher evaluations
+exercise a limited set of representative scenarios and benchmark
+queries rather than the full space of prompts and workloads that a
+production deployment would eventually encounter.
+
+\paragraph{Local model latency.}
+During development and evaluation, more powerful local (Ollama-hosted)
+models proved too slow to use interactively on the laptop-class hardware
+described in Section~\ref{sec:experimental-setup}, which constrained
+which local models could realistically be exercised end-to-end.
+
+\paragraph{Long run time.}
+Multi-step agent runs and jobs that chain several LLM calls, tool
+invocations, and graph queries could take more than twenty minutes to
+complete end-to-end on the test hardware, which is an important
+practical constraint for interactive use and for repeated evaluation
+runs.
+
+\paragraph{Model trade-off.}
+Given the latency constraint above, the evaluation standardised on a
+lightweight model (Section~\ref{sec:experimental-setup}) that offered an
+acceptable balance between response speed and answer quality, rather
+than the largest available model.
+
+\paragraph{Prompt handling.}
+Unclear, ambiguous, or potentially risky prompts are not yet handled with
+a dedicated strategy beyond the existing \textsc{dangerous} intent
+category (Section~\ref{sec:orchestration-engine}); more nuanced handling
+of borderline requests remains an open problem, addressed further in
+Chapter~\ref{ch:future-work}.
+
+\paragraph{Clarification logic.}
+The orchestrator does not yet ask clarifying questions when a prompt is
+under-specified; it currently falls back to a safe default behaviour
+(for example, routing ambiguous prompts to the chat handler,
+Section~\ref{sec:functional-results}) rather than requesting
+disambiguation from the user, and this clarification logic and its safe
+defaults need further refinement.
+
+\paragraph{LLM variability.}
+Because the orchestration engine and the NL-to-Cypher pipeline both rely
+on LLM generation, different model choices---or different versions of
+the same model---may produce different plans, tool-call sequences, or
+Cypher queries for the same prompt, which is a source of variability that
+the deterministic test mode (Section~\ref{sec:functional-protocol})
+only partially controls for.
+
+\paragraph{Residual risk.}
+The six-layer NL-to-Cypher safety validation and the eight-stage security
+middleware stack substantially reduce the risk of unsafe or unauthorised
+behaviour, but---consistent with the security results in
+Section~\ref{sec:security-results}---they do not, and are not claimed to,
+remove that risk entirely; residual risk from LLM variability, novel
+prompt phrasings, and threats outside the defined threat model remains.
+
 \subsection{Internal validity}
 
 \paragraph{Confounding variables.}
@@ -4402,7 +4611,7 @@ with the domain vocabulary.
 The workloads used in performance testing are synthetic, generated by
 deterministic seed scripts.  They may not capture all edge cases,
 adversarial inputs, or rare failure modes encountered in production.
-The comprehensive test coverage (more than 3{,}000 automated test cases
+The comprehensive test coverage (\TestCount{} automated test cases
 across 27~categories) and the security penetration tests with common
 attack patterns partially mitigate this threat, but production
 deployments should implement additional monitoring and gradual rollout.
@@ -4479,7 +4688,7 @@ future work.
 
 This chapter draws together the problem, the solution, and the evidence
 presented in the preceding chapters.  Section~\ref{sec:recap} recaps the
-production gap, summarises how the Cineca Agentic Platform addresses it,
+production gap, summarises how the CINECA Agentic Platform addresses it,
 and highlights the principal evaluation outcomes.
 Section~\ref{sec:takeaways} distils the findings into five concrete
 takeaways that answer the central research question posed in
@@ -4513,7 +4722,7 @@ architecture?}
 
 \subsection{What was built}
 
-The Cineca Agentic Platform (CAP) answers this question with a full-stack
+The CINECA Agentic Platform (CAP) answers this question with a full-stack
 system organised into three architectural layers---presentation, business
 logic, and data infrastructure---with cross-cutting modules for security,
 configuration, and observability.  At its core, a four-phase orchestration
@@ -4537,7 +4746,8 @@ in-memory store, processed by dedicated workers, and streamed to clients via Ser
 Events (SSE); their state survives process restarts and supports horizontal
 scaling (FR-JB-02, FR-JB-05).
 
-The MCP tool runtime hosts 34~tools across seventeen capability categories.
+The MCP tool runtime hosts 34~tools across \CategoryCount{} official
+high-level tool families.
 Each tool is registered with a JSON input schema, protected by role-based
 access control (RBAC), rate-limited, and audit-logged on every invocation
 (FR-TL-01 through FR-TL-06, EC-FC-06).  This governed approach extends the
@@ -4563,12 +4773,13 @@ rate limiting across three dimensions (per-user, per-tenant,
 per-endpoint), tenant resolution with query-level data isolation, input
 validation with injection prevention, output sanitisation with PII
 scrubbing, and centralised error handling (NFR-SE-01 through NFR-SE-07).
-Observability is a first-class concern: over 50~Prometheus metrics, six
+Observability is treated as a core requirement rather than an
+afterthought: over 50~Prometheus metrics, six
 Grafana dashboards, OpenTelemetry tracing, and structured logging with
 request-to-trace correlation provide the operational visibility required
 for production deployment (NFR-OB-01 through NFR-OB-08).
 
-The platform is LLM-agnostic.  Provider adapters abstract the differences
+The architecture is LLM-agnostic.  Provider adapters abstract the differences
 between cloud-hosted, enterprise, and locally self-hosted models, and a
 resilience layer adds circuit breakers, exponential-backoff retries, and
 provider fallback chains so that a transient failure in one provider can
@@ -4582,8 +4793,8 @@ The evaluation, defined by five evaluation questions (EQ1--EQ5) mapped to
 the following principal outcomes.
 
 \paragraph{Functional completeness (EQ1).}
-The test suite comprises more than 3{,}000 automated test cases
-(approximately 2{,}720 test functions) across 236~test files.  The overall
+The test suite comprises \TestCount{} automated test cases
+spanning unit, integration, security, and end-to-end scenarios.  The overall
 pass rate is 96.2\%, exceeding the $\geq$\,96\% threshold (EC-FC-01
 through EC-FC-08).  Both execution
 workflows were exercised end-to-end, and all six intent categories were
@@ -4712,14 +4923,14 @@ eight.
 
 \bigskip
 \noindent
-In summary, this thesis presented the Cineca Agentic Platform, a
+In summary, this thesis presented the CINECA Agentic Platform, a
 full-stack, enterprise-grade AI agent orchestration system that closes the
 production gap between research-oriented agent frameworks and the
 requirements of a multi-tenant supercomputing centre.  The platform's
 four-phase orchestration engine, governed MCP tool runtime, six-stage
 NL-to-Cypher pipeline, eight-stage security middleware stack, and
-integrated observability infrastructure were validated through more than
-3{,}000 automated tests, a structured security audit, and a comparative
+integrated observability infrastructure were validated through
+\TestCount{} automated tests, a structured security audit, and a comparative
 capability analysis.  The evidence confirms that the five deficiencies
 identified at the outset are addressed within a single, coherent
 architecture, with bounded and measurable enterprise overhead.
@@ -4733,7 +4944,7 @@ and strengthening the platform.
 \chapter{Future Work}
 \label{ch:future-work}
 
-The evaluation in Chapter~\ref{ch:results} confirmed that the Cineca
+The evaluation in Chapter~\ref{ch:results} confirmed that the CINECA
 Agentic Platform (CAP) addresses the five production-gap deficiencies
 within a unified architecture, but it also exposed bounded limitations:
 the NL-to-Cypher pipeline's 17\% failure rate on multi-hop traversals and
@@ -4774,15 +4985,40 @@ the operational model: a single execution path means one set of monitoring
 dashboards, one set of alerting rules, and one recovery procedure rather
 than two.
 
-A complementary extension is the introduction of a lightweight ``ask
-mode''---a user-facing default configuration that sets the existing
-planning mode to ``none'' and disables tool calls unless explicitly
-requested, thereby providing a non-agentic, direct question-answering
-path for simple factual queries (e.g., ``How many workflows are
-there?'').  This path would still enforce the eight-stage security
-middleware stack but would skip the planning phase entirely, reducing
-latency for single-step questions and lowering LLM costs for queries
-that do not require multi-step reasoning.
+\paragraph{Ask Mode.}
+A complementary extension, and one of the most immediately impactful
+items on this platform's future-work agenda, is the introduction of a
+lightweight ``Ask Mode''---a user-facing default configuration that sets
+the existing planning mode to ``none'' and disables tool calls unless
+explicitly requested, thereby providing a non-agentic, direct
+question-answering path for simple factual queries (e.g., ``How many
+workflows are there?'').  This path would still enforce the eight-stage
+security middleware stack but would skip the planning phase entirely,
+reducing latency for single-step questions and lowering LLM costs for
+queries that do not require multi-step reasoning.
+
+\paragraph{Handling unclear, mixed, and risky prompts.}
+The evaluation constraints noted in Section~\ref{sec:eval-constraints}
+(prompt handling, clarification logic) point to a second priority: making
+the orchestrator's handling of imperfect prompts more autonomous and
+reliable, from easy and unambiguous requests through to ambiguous,
+multi-intent, and risky ones.  Concretely, an \emph{ambiguous} prompt
+such as ``Show top collaborations'' should either trigger a targeted
+clarifying question (e.g., ``top by what metric?'') or fall back to a
+documented safe default rather than guessing silently; a
+\emph{multi-intent} prompt such as ``Find top institutions and export to
+CSV'' should be decomposed into an explicit plan (query, then export)
+rather than only the first intent being honoured; and a \emph{risky}
+prompt such as ``Delete failed jobs'' should be refused or routed through
+an explicit admin-confirmation step, extending the existing
+\textsc{dangerous}-intent handling
+(Section~\ref{sec:orchestration-engine}) with a general-purpose
+clarification-and-safe-default layer rather than a fixed set of
+special-cased rules.  Because different LLM providers and model sizes
+may classify or answer the same borderline prompt differently
+(Section~\ref{sec:eval-constraints}), this clarification logic should be
+evaluated across multiple providers before being relied upon in
+production.
 
 %----------------------------------------------------------------------
 \section{Strengthening the NL-to-Cypher pipeline}
@@ -4881,7 +5117,7 @@ between 100 and 500~concurrent users, with the error rate exceeding
 2\% at 500~users.  The reliability evaluation
 (Section~\ref{sec:reliability-results}) also revealed that restarted jobs
 re-execute from the beginning rather than resuming from the interrupted
-step, because step-level checkpointing is not implemented.  Four
+step, because step-level checkpointing is not implemented.  Five
 infrastructure improvements address these findings.
 
 \emph{Distributed worker architecture.}  The current worker subsystem
@@ -4892,21 +5128,38 @@ job processing and eliminate the single-worker bottleneck.  Combined with the wo
 Section~\ref{sec:fw-workflow}, this would allow every request---not just
 explicitly submitted jobs---to benefit from horizontal scaling.
 
-\emph{Step-level checkpointing.}  Currently, when a worker crashes
-mid-job, the supervisor detects the orphaned job via the heartbeat
-mechanism and re-enqueues it, but the recovered job restarts from
-Phase~1 rather than from the interrupted step (EC-RE-07).  Persisting
-a checkpoint after each step (recording which to-do items have been
-completed and their outputs) would allow recovery to resume from the
-last successfully completed step, significantly reducing recovery time
-for long-running jobs.
+\emph{Recover interrupted workflows from the last completed step.}
+Currently, when a worker crashes mid-job, the supervisor detects the
+orphaned job via the heartbeat mechanism and re-enqueues it, but the
+recovered job restarts from Phase~1 rather than from the interrupted step
+(EC-RE-07).  Persisting a checkpoint after each step (recording which
+to-do items have been completed and their outputs) would let the platform
+recover interrupted workflows from the last completed step instead of
+restarting the entire multi-step run, significantly reducing recovery
+time for long-running jobs.
+
+\emph{Priority-aware job scheduling.}  The job queue currently treats all
+jobs of a given type equally, in strict first-in-first-out order.
+Managing job queues with priorities, per-tenant concurrency limits, and
+overload protection would let the platform make better use of shared
+capacity under load: short, interactive jobs (e.g., chat-style agent
+runs) could be prioritised ahead of long-running batch or export jobs, and
+per-tenant caps (for example, Tenant~A limited to twenty concurrent jobs
+while Tenant~B is limited to five) would prevent a single noisy tenant
+from starving the others.  Combined with backpressure signalling when the
+queue depth approaches capacity, this would give operators the overload
+protection that the current, unbounded FIFO queue does not provide.
 
 \emph{Additional LLM providers.}  The adapter layer currently supports
-three provider families: cloud-hosted, enterprise, and locally
-self-hosted.  Extending it with adapters for additional providers
-(commercial and on-premises) would broaden deployment flexibility and
-strengthen the fallback chain by offering more alternatives when one
-provider is degraded.
+three provider families---cloud-hosted (OpenAI), enterprise (Azure
+OpenAI), and locally self-hosted (Ollama, with local model families such
+as Phi-3, Mistral, LLaMA, Qwen, and Gemma)---of which the evaluation in
+Chapter~\ref{ch:results} exercised only a smaller representative subset
+(\texttt{gpt-4o-mini} and \texttt{llama3.2}).  Extending the adapter
+layer with additional commercial and on-premises providers, and
+evaluating a broader set of the already-supported local model families,
+would broaden deployment flexibility and strengthen the fallback chain by
+offering more alternatives when one provider is degraded.
 
 \emph{Advanced cost governance.}  The platform currently tracks token
 consumption per LLM call and per run, but does not enforce per-tenant
@@ -4954,11 +5207,15 @@ in Section~\ref{sec:fw-nl-cypher}.
 \noindent
 In summary, this chapter has identified five concrete directions for
 future work: unifying the two execution workflows into a single durable
-path, strengthening the NL-to-Cypher pipeline with embedding-based
-matching and schema-evolution awareness, extending agent capabilities
+path and adding a lightweight Ask Mode, strengthening prompt handling
+(unclear, mixed, and risky prompts) with clarification logic and safe
+defaults alongside the NL-to-Cypher pipeline's embedding-based matching
+and schema-evolution awareness, extending agent capabilities
 with multi-agent collaboration, advanced memory, and document RAG,
-hardening the infrastructure with distributed workers and step-level
-checkpointing, and deepening the evaluation with production-environment
+hardening the infrastructure by recovering interrupted workflows from
+the last completed step, adding priority-aware job scheduling with
+tenant limits and overload protection, and distributing the worker
+architecture, and deepening the evaluation with production-environment
 benchmarks, broader NL-to-Cypher datasets, independent security audits,
 and user studies.  Together, these directions build on the foundation
 validated in this thesis and chart a path toward broader deployment
@@ -4974,6 +5231,27 @@ across CINECA's high-performance-computing software environments.
 \addcontentsline{toc}{chapter}{Appendices}
 \renewcommand{\thesection}{\Alph{section}}
 \setcounter{section}{0}
+
+% \chapter* does not step the chapter counter, so \thechapter is left
+% empty by \appendix (which sets \c@chapter to 0); with the default
+% \thetable = \thechapter.\arabic{table}, this rendered as "Table .1"
+% instead of "Table A.1".  Number tables and figures by appendix section
+% (A, B, C, ...) instead, resetting each counter whenever a new section
+% starts.
+\renewcommand{\thetable}{\thesection.\arabic{table}}
+\renewcommand{\thefigure}{\thesection.\arabic{figure}}
+\makeatletter
+\@addtoreset{table}{section}
+\@addtoreset{figure}{section}
+\makeatother
+
+% \chapter* also does not call \chaptermark, so the even-page running
+% header would otherwise keep showing the previous numbered chapter
+% (e.g. "7. Future Work") for the whole appendix, even though the
+% odd-page header is correctly updated by \sectionmark at each
+% \section.  Set both marks explicitly so the appendix headers are
+% consistent on every page.
+\markboth{Appendices}{Appendices}
 
 This appendix collects the reference material that supports the
 problem analysis, design decisions, and evaluation results presented in
@@ -4994,9 +5272,9 @@ procedure required to reproduce the evaluation.
 \label{app:tool-inventory}
 %----------------------------------------------------------------------
 
-The platform exposes 34 Model Context Protocol (MCP) tools organised
-into seventeen functional categories (EC-FC-06 requires at least 30
-tools across at least 15 categories).  Each tool is registered under a
+The platform exposes 34 Model Context Protocol (MCP) tools (EC-FC-06
+requires at least 30 tools with valid JSON schemas across the 12
+official tool families).  Each tool is registered under a
 dotted name, a required authorisation scope, and a JSON input schema.
 At runtime the tool dispatcher resolves the name, validates the
 caller's scopes against the tool's requirement, schema-validates the
@@ -5005,13 +5283,20 @@ FR-TL-05).  The inventory lists all deployed tools; two
 (\texttt{security.allowed\_operations} and
 \texttt{security.describe\_principal}) are registered at runtime
 but are not yet included in the declarative tool manifest.
-Table~\ref{tab:app-tool-inventory} lists every tool
-together with its category, required scope, and a brief functional
-description.
+Table~\ref{tab:app-tool-inventory} lists every tool together with its
+implementation-level category label, required scope, and a brief
+functional description.  These implementation-level labels are a
+finer-grained internal breakdown; for headline reporting purposes
+(Section~\ref{sec:mcp-tools}), they are grouped into the \CategoryCount{}
+official high-level tool families reported throughout this thesis and in
+the defense presentation: Graph, Security, System, Cache, Catalog, Model,
+Agent, Analytics, Admin, ETL, CRUD, and Export.
 
 {\footnotesize
 \begin{longtable}{@{}l l l p{4.0cm}@{}}
-\caption{Complete MCP tool inventory (34~tools, 17~categories).}
+\caption{Complete MCP tool inventory (34~tools; implementation-level
+category labels shown, grouped into 12~official high-level tool
+families).}
 \label{tab:app-tool-inventory} \\
 \hline
 \textbf{Tool name} & \textbf{Category} & \textbf{Scope} &
@@ -5401,8 +5686,8 @@ launched with environment variables pointing to the three services and
 to the OIDC provider used for authentication.
 
 \paragraph{Running the test suite.}
-The full test suite (3\,078~tests at the snapshot commit) is executed
-through a single invocation of the test runner.  Tests are organised
+The full test suite (\TestCount{} tests at the snapshot commit) is
+executed through a single invocation of the test runner.  Tests are organised
 into directories that mirror the evaluation structure:
 \emph{security} tests (EC-SE), \emph{api} contract tests,
 \emph{jobs} lifecycle tests, \emph{integration} tests for tool

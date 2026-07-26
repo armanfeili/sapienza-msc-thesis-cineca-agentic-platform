@@ -1,5 +1,5 @@
 \babel@toc {english}{}\relax 
-\contentsline {chapter}{List of Acronyms and Glossary}{ix}{chapter*.2}%
+\contentsline {chapter}{List of Acronyms and Glossary}{xi}{chapter*.2}%
 \contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}%
 \contentsline {section}{\numberline {1.1}Context and motivation}{1}{section.1.1}%
 \contentsline {section}{\numberline {1.2}Problem statement}{2}{section.1.2}%
@@ -39,7 +39,7 @@
 \contentsline {section}{\numberline {2.5}Positioning and gap analysis}{16}{section.2.5}%
 \contentsline {subsection}{\numberline {2.5.1}Capability comparison}{17}{subsection.2.5.1}%
 \contentsline {subsection}{\numberline {2.5.2}The integration gap}{18}{subsection.2.5.2}%
-\contentsline {subsection}{\numberline {2.5.3}Positioning of the Cineca Agentic Platform}{18}{subsection.2.5.3}%
+\contentsline {subsection}{\numberline {2.5.3}Positioning of the CINECA Agentic Platform}{18}{subsection.2.5.3}%
 \contentsline {chapter}{\numberline {3}Proposed Solution: The CINECA Agentic Platform (CAP)}{21}{chapter.3}%
 \contentsline {section}{\numberline {3.1}Requirements and design goals}{21}{section.3.1}%
 \contentsline {subsection}{\numberline {3.1.1}Stakeholders}{21}{subsection.3.1.1}%
@@ -74,7 +74,7 @@
 \contentsline {section}{\numberline {3.6}NL-to-Cypher subsystem}{36}{section.3.6}%
 \contentsline {subsection}{\numberline {3.6.1}Stage~1: natural-language normalisation}{36}{subsection.3.6.1}%
 \contentsline {subsection}{\numberline {3.6.2}Stage~2: catalog lookup}{36}{subsection.3.6.2}%
-\contentsline {subsection}{\numberline {3.6.3}Stage~3: LLM-based Cypher generation}{36}{subsection.3.6.3}%
+\contentsline {subsection}{\numberline {3.6.3}Stage~3: LLM-based Cypher generation}{37}{subsection.3.6.3}%
 \contentsline {subsection}{\numberline {3.6.4}Stage~4: safety validation}{37}{subsection.3.6.4}%
 \contentsline {paragraph}{Layer~1: syntax validation.}{37}{section*.25}%
 \contentsline {paragraph}{Layer~2: read-only enforcement.}{37}{section*.26}%
@@ -82,7 +82,7 @@
 \contentsline {paragraph}{Layer~4: depth limit.}{37}{section*.28}%
 \contentsline {paragraph}{Layer~5: timeout.}{37}{section*.29}%
 \contentsline {paragraph}{Layer~6: result cap.}{37}{section*.30}%
-\contentsline {subsection}{\numberline {3.6.5}Stage~5: query execution}{37}{subsection.3.6.5}%
+\contentsline {subsection}{\numberline {3.6.5}Stage~5: query execution}{38}{subsection.3.6.5}%
 \contentsline {subsection}{\numberline {3.6.6}Stage~6: result summarisation}{38}{subsection.3.6.6}%
 \contentsline {subsection}{\numberline {3.6.7}Design alternatives considered}{38}{subsection.3.6.7}%
 \contentsline {subsection}{\numberline {3.6.8}Known limitations}{38}{subsection.3.6.8}%
@@ -90,31 +90,32 @@
 \contentsline {subsection}{\numberline {3.7.1}Control plane: relational database}{38}{subsection.3.7.1}%
 \contentsline {subsection}{\numberline {3.7.2}Data plane: in-memory store}{39}{subsection.3.7.2}%
 \contentsline {subsection}{\numberline {3.7.3}Relationship layer: graph database}{39}{subsection.3.7.3}%
-\contentsline {section}{\numberline {3.8}Security, multi-tenancy, and governance}{39}{section.3.8}%
+\contentsline {section}{\numberline {3.8}Security, multi-tenancy, and governance}{40}{section.3.8}%
 \contentsline {subsection}{\numberline {3.8.1}Eight-stage middleware stack}{40}{subsection.3.8.1}%
 \contentsline {paragraph}{Stage~1: CORS handler.}{40}{section*.31}%
 \contentsline {paragraph}{Stage~2: trace context.}{40}{section*.32}%
 \contentsline {paragraph}{Stage~3: authentication and RBAC.}{40}{section*.33}%
-\contentsline {paragraph}{Stage~4: rate limiter.}{40}{section*.34}%
+\contentsline {paragraph}{Stage~4: rate limiter.}{41}{section*.34}%
 \contentsline {paragraph}{Stage~5: tenant resolver.}{41}{section*.35}%
 \contentsline {paragraph}{Stage~6: input guard.}{41}{section*.36}%
 \contentsline {paragraph}{Stage~7: output guard.}{41}{section*.37}%
 \contentsline {paragraph}{Stage~8: error handler.}{41}{section*.38}%
-\contentsline {subsection}{\numberline {3.8.2}Threat model}{41}{subsection.3.8.2}%
+\contentsline {subsection}{\numberline {3.8.2}Threat model}{42}{subsection.3.8.2}%
 \contentsline {subsection}{\numberline {3.8.3}Acknowledged Security Limitations}{42}{subsection.3.8.3}%
 \contentsline {section}{\numberline {3.9}Observability and operational readiness}{42}{section.3.9}%
 \contentsline {subsection}{\numberline {3.9.1}Metrics}{42}{subsection.3.9.1}%
-\contentsline {subsection}{\numberline {3.9.2}Structured logging}{42}{subsection.3.9.2}%
+\contentsline {subsection}{\numberline {3.9.2}Structured logging}{43}{subsection.3.9.2}%
 \contentsline {subsection}{\numberline {3.9.3}Distributed tracing}{43}{subsection.3.9.3}%
-\contentsline {subsection}{\numberline {3.9.4}Health probes}{43}{subsection.3.9.4}%
-\contentsline {subsection}{\numberline {3.9.5}Service-level objectives}{43}{subsection.3.9.5}%
-\contentsline {section}{\numberline {3.10}Design trade-offs summary}{43}{section.3.10}%
-\contentsline {paragraph}{Safety versus flexibility.}{43}{section*.39}%
+\contentsline {subsection}{\numberline {3.9.4}Scheduled background tasks and observability}{43}{subsection.3.9.4}%
+\contentsline {subsection}{\numberline {3.9.5}Health probes}{44}{subsection.3.9.5}%
+\contentsline {subsection}{\numberline {3.9.6}Service-level objectives}{44}{subsection.3.9.6}%
+\contentsline {section}{\numberline {3.10}Design trade-offs summary}{44}{section.3.10}%
+\contentsline {paragraph}{Safety versus flexibility.}{44}{section*.39}%
 \contentsline {paragraph}{Latency versus durability.}{44}{section*.40}%
 \contentsline {paragraph}{Extensibility versus governance.}{44}{section*.41}%
-\contentsline {paragraph}{Centralised orchestrator versus microservice decomposition.}{44}{section*.42}%
-\contentsline {paragraph}{Dependency tolerance versus type safety.}{44}{section*.43}%
-\contentsline {paragraph}{LLM-agnostic design versus provider optimisation.}{44}{section*.44}%
+\contentsline {paragraph}{Centralised orchestrator versus microservice decomposition.}{45}{section*.42}%
+\contentsline {paragraph}{Dependency tolerance versus type safety.}{45}{section*.43}%
+\contentsline {paragraph}{LLM-agnostic design versus provider optimisation.}{45}{section*.44}%
 \contentsline {chapter}{\numberline {4}Tests (Evaluation Methodology)}{47}{chapter.4}%
 \contentsline {section}{\numberline {4.1}Experimental setup and reproducibility}{47}{section.4.1}%
 \contentsline {subsection}{\numberline {4.1.1}Test environment}{47}{subsection.4.1.1}%
@@ -158,89 +159,108 @@
 \contentsline {subsection}{\numberline {5.1.4}Session continuity (EC-FC-03)}{60}{subsection.5.1.4}%
 \contentsline {subsection}{\numberline {5.1.5}Step recording (EC-FC-04)}{60}{subsection.5.1.5}%
 \contentsline {subsection}{\numberline {5.1.6}NL-to-Cypher accuracy (EC-FC-05)}{60}{subsection.5.1.6}%
-\contentsline {subsection}{\numberline {5.1.7}Tool registry (EC-FC-06)}{61}{subsection.5.1.7}%
-\contentsline {subsection}{\numberline {5.1.8}Job state machine (EC-FC-07)}{61}{subsection.5.1.8}%
-\contentsline {subsection}{\numberline {5.1.9}SSE event delivery (EC-FC-08)}{61}{subsection.5.1.9}%
-\contentsline {subsection}{\numberline {5.1.10}API-contract compliance}{62}{subsection.5.1.10}%
-\contentsline {section}{\numberline {5.2}Performance results}{62}{section.5.2}%
-\contentsline {subsection}{\numberline {5.2.1}Baseline latency}{62}{subsection.5.2.1}%
+\contentsline {subsection}{\numberline {5.1.7}End-to-End NL-to-Graph Validation Example}{61}{subsection.5.1.7}%
+\contentsline {paragraph}{User request.}{61}{section*.65}%
+\contentsline {paragraph}{1. Intent classification.}{61}{section*.66}%
+\contentsline {paragraph}{2. Cypher generation.}{61}{section*.67}%
+\contentsline {paragraph}{3. Safety validation.}{61}{section*.68}%
+\contentsline {paragraph}{4. Memgraph execution.}{62}{section*.69}%
+\contentsline {paragraph}{5. Final summary.}{62}{section*.70}%
+\contentsline {subsection}{\numberline {5.1.8}Tool registry (EC-FC-06)}{62}{subsection.5.1.8}%
+\contentsline {subsection}{\numberline {5.1.9}Job state machine (EC-FC-07)}{62}{subsection.5.1.9}%
+\contentsline {subsection}{\numberline {5.1.10}SSE event delivery (EC-FC-08)}{62}{subsection.5.1.10}%
+\contentsline {subsection}{\numberline {5.1.11}API-contract compliance}{62}{subsection.5.1.11}%
+\contentsline {section}{\numberline {5.2}Performance results}{63}{section.5.2}%
+\contentsline {subsection}{\numberline {5.2.1}Baseline latency}{63}{subsection.5.2.1}%
 \contentsline {subsection}{\numberline {5.2.2}Concurrent-load performance}{63}{subsection.5.2.2}%
-\contentsline {subsection}{\numberline {5.2.3}Job queue-to-start latency (EC-PF-05)}{63}{subsection.5.2.3}%
+\contentsline {subsection}{\numberline {5.2.3}Job queue-to-start latency (EC-PF-05)}{64}{subsection.5.2.3}%
 \contentsline {subsection}{\numberline {5.2.4}Resource utilisation (EC-PF-07)}{64}{subsection.5.2.4}%
-\contentsline {subsection}{\numberline {5.2.5}Ablation study}{64}{subsection.5.2.5}%
+\contentsline {subsection}{\numberline {5.2.5}Ablation study}{65}{subsection.5.2.5}%
 \contentsline {section}{\numberline {5.3}Reliability results}{65}{section.5.3}%
-\contentsline {subsection}{\numberline {5.3.1}Circuit breaker and provider fallback (EC-RE-01, EC-RE-02, EC-RE-03)}{65}{subsection.5.3.1}%
+\contentsline {subsection}{\numberline {5.3.1}Circuit breaker and provider fallback (EC-RE-01, EC-RE-02, EC-RE-03)}{66}{subsection.5.3.1}%
 \contentsline {subsection}{\numberline {5.3.2}In-memory store unavailability (EC-RE-04)}{66}{subsection.5.3.2}%
-\contentsline {subsection}{\numberline {5.3.3}Relational database reconnection (EC-RE-05)}{66}{subsection.5.3.3}%
-\contentsline {subsection}{\numberline {5.3.4}Graph database unavailability (EC-RE-06)}{66}{subsection.5.3.4}%
-\contentsline {subsection}{\numberline {5.3.5}Worker crash and job recovery (EC-RE-07)}{66}{subsection.5.3.5}%
-\contentsline {subsection}{\numberline {5.3.6}Graceful shutdown (EC-RE-08)}{67}{subsection.5.3.6}%
-\contentsline {section}{\numberline {5.4}Security results}{67}{section.5.4}%
-\contentsline {subsection}{\numberline {5.4.1}Authentication (EC-SE-01)}{67}{subsection.5.4.1}%
-\contentsline {subsection}{\numberline {5.4.2}Authorisation and RBAC (EC-SE-02)}{67}{subsection.5.4.2}%
+\contentsline {subsection}{\numberline {5.3.3}Relational database reconnection (EC-RE-05)}{67}{subsection.5.3.3}%
+\contentsline {subsection}{\numberline {5.3.4}Graph database unavailability (EC-RE-06)}{67}{subsection.5.3.4}%
+\contentsline {subsection}{\numberline {5.3.5}Worker crash and job recovery (EC-RE-07)}{67}{subsection.5.3.5}%
+\contentsline {subsection}{\numberline {5.3.6}Graceful shutdown (EC-RE-08)}{68}{subsection.5.3.6}%
+\contentsline {section}{\numberline {5.4}Security results}{68}{section.5.4}%
+\contentsline {subsection}{\numberline {5.4.1}Authentication (EC-SE-01)}{68}{subsection.5.4.1}%
+\contentsline {subsection}{\numberline {5.4.2}Authorisation and RBAC (EC-SE-02)}{68}{subsection.5.4.2}%
 \contentsline {subsection}{\numberline {5.4.3}Tenant isolation (EC-SE-03)}{68}{subsection.5.4.3}%
-\contentsline {subsection}{\numberline {5.4.4}PII scrubbing (EC-SE-04)}{68}{subsection.5.4.4}%
-\contentsline {subsection}{\numberline {5.4.5}Injection prevention (EC-SE-05)}{68}{subsection.5.4.5}%
-\contentsline {subsection}{\numberline {5.4.6}Rate limiting (EC-SE-06)}{68}{subsection.5.4.6}%
+\contentsline {subsection}{\numberline {5.4.4}PII scrubbing (EC-SE-04)}{69}{subsection.5.4.4}%
+\contentsline {subsection}{\numberline {5.4.5}Injection prevention (EC-SE-05)}{69}{subsection.5.4.5}%
+\contentsline {subsection}{\numberline {5.4.6}Rate limiting (EC-SE-06)}{69}{subsection.5.4.6}%
 \contentsline {subsection}{\numberline {5.4.7}Output guard (EC-SE-07)}{69}{subsection.5.4.7}%
-\contentsline {subsection}{\numberline {5.4.8}Audit completeness (EC-SE-08, EC-SE-09, EC-SE-10)}{69}{subsection.5.4.8}%
-\contentsline {section}{\numberline {5.5}Observability results}{69}{section.5.5}%
-\contentsline {paragraph}{Prometheus metrics (EC-OB-01).}{69}{section*.69}%
-\contentsline {paragraph}{Structured logging (EC-OB-02).}{70}{section*.70}%
-\contentsline {paragraph}{Distributed tracing (EC-OB-03, EC-OB-04).}{70}{section*.71}%
-\contentsline {paragraph}{Dashboards and alerting (EC-OB-05).}{70}{section*.72}%
-\contentsline {paragraph}{Health probes (EC-OB-06).}{70}{section*.73}%
-\contentsline {paragraph}{Trace sampling (EC-OB-07).}{70}{section*.74}%
-\contentsline {paragraph}{Trace-ID header (EC-OB-08).}{71}{section*.75}%
-\contentsline {section}{\numberline {5.6}Comparative results vs baselines}{71}{section.5.6}%
-\contentsline {subsection}{\numberline {5.6.1}Internal baselines}{71}{subsection.5.6.1}%
-\contentsline {subsection}{\numberline {5.6.2}Cross-platform comparison}{71}{subsection.5.6.2}%
-\contentsline {section}{\numberline {5.7}Limitations and threats to validity}{73}{section.5.7}%
-\contentsline {subsection}{\numberline {5.7.1}Internal validity}{73}{subsection.5.7.1}%
-\contentsline {paragraph}{Confounding variables.}{73}{section*.77}%
-\contentsline {paragraph}{Test environment versus production.}{73}{section*.78}%
-\contentsline {paragraph}{Co-located load generator.}{74}{section*.79}%
-\contentsline {subsection}{\numberline {5.7.2}External validity}{74}{subsection.5.7.2}%
-\contentsline {paragraph}{Context-specific workloads.}{74}{section*.80}%
-\contentsline {paragraph}{Synthetic versus real-world workloads.}{74}{section*.81}%
-\contentsline {paragraph}{LLM-provider dependency.}{74}{section*.82}%
-\contentsline {subsection}{\numberline {5.7.3}Construct validity}{74}{subsection.5.7.3}%
-\contentsline {paragraph}{Capability presence versus depth.}{74}{section*.83}%
-\contentsline {paragraph}{Comparator selection.}{74}{section*.84}%
-\contentsline {subsection}{\numberline {5.7.4}Acknowledged limitations of the platform}{75}{subsection.5.7.4}%
-\contentsline {chapter}{\numberline {6}Conclusions}{77}{chapter.6}%
-\contentsline {section}{\numberline {6.1}Problem, solution, and key results}{77}{section.6.1}%
-\contentsline {subsection}{\numberline {6.1.1}The problem revisited}{77}{subsection.6.1.1}%
-\contentsline {subsection}{\numberline {6.1.2}What was built}{77}{subsection.6.1.2}%
-\contentsline {subsection}{\numberline {6.1.3}What was measured}{79}{subsection.6.1.3}%
-\contentsline {paragraph}{Functional completeness (EQ1).}{79}{section*.85}%
-\contentsline {paragraph}{Performance (EQ2).}{79}{section*.86}%
-\contentsline {paragraph}{Security (EQ3).}{79}{section*.87}%
-\contentsline {paragraph}{Reliability (EQ4).}{79}{section*.88}%
-\contentsline {paragraph}{Comparative positioning (EQ5).}{79}{section*.89}%
-\contentsline {paragraph}{Enterprise overhead.}{80}{section*.90}%
-\contentsline {section}{\numberline {6.2}Final takeaways}{80}{section.6.2}%
-\contentsline {paragraph}{1.\ A unified platform can close the production gap.}{80}{section*.91}%
-\contentsline {paragraph}{2.\ Natural-language graph access is viable but bounded.}{80}{section*.92}%
-\contentsline {paragraph}{3.\ Enterprise governance imposes bounded overhead.}{80}{section*.93}%
-\contentsline {paragraph}{4.\ Governed tool ecosystems require first-class treatment.}{81}{section*.94}%
-\contentsline {paragraph}{5.\ The integration gap in the current landscape is real.}{81}{section*.95}%
-\contentsline {chapter}{\numberline {7}Future Work}{83}{chapter.7}%
-\contentsline {section}{\numberline {7.1}Workflow unification}{83}{section.7.1}%
-\contentsline {section}{\numberline {7.2}Strengthening the NL-to-Cypher pipeline}{84}{section.7.2}%
-\contentsline {section}{\numberline {7.3}Extending agent capabilities}{84}{section.7.3}%
-\contentsline {section}{\numberline {7.4}Infrastructure hardening}{85}{section.7.4}%
-\contentsline {section}{\numberline {7.5}Deeper evaluation}{86}{section.7.5}%
-\contentsline {chapter}{Appendices}{87}{appendix*.96}%
-\contentsline {section}{\numberline {A}Full tool inventory}{87}{section.Alph0.1}%
-\contentsline {section}{\numberline {B}API catalog}{89}{section.Alph0.2}%
-\contentsline {section}{\numberline {C}Lifecycle state machines}{89}{section.Alph0.3}%
-\contentsline {section}{\numberline {D}Extended tables}{91}{section.Alph0.4}%
-\contentsline {paragraph}{Requirements coverage by category.}{91}{section*.102}%
-\contentsline {paragraph}{Partially implemented requirements.}{91}{section*.104}%
-\contentsline {paragraph}{Functional-requirements priority distribution.}{91}{section*.106}%
-\contentsline {section}{\numberline {E}Reproducibility notes}{91}{section.Alph0.5}%
-\contentsline {paragraph}{Environment setup.}{92}{section*.109}%
-\contentsline {paragraph}{Running the test suite.}{92}{section*.110}%
-\contentsline {paragraph}{Load testing.}{92}{section*.111}%
-\contentsline {paragraph}{Threat to reproducibility.}{93}{section*.112}%
+\contentsline {subsection}{\numberline {5.4.8}Audit completeness (EC-SE-08, EC-SE-09, EC-SE-10)}{70}{subsection.5.4.8}%
+\contentsline {section}{\numberline {5.5}Observability results}{70}{section.5.5}%
+\contentsline {paragraph}{Prometheus metrics (EC-OB-01).}{70}{section*.75}%
+\contentsline {paragraph}{Structured logging (EC-OB-02).}{71}{section*.76}%
+\contentsline {paragraph}{Distributed tracing (EC-OB-03, EC-OB-04).}{71}{section*.77}%
+\contentsline {paragraph}{Dashboards and alerting (EC-OB-05).}{71}{section*.78}%
+\contentsline {paragraph}{Health probes (EC-OB-06).}{71}{section*.79}%
+\contentsline {paragraph}{Trace sampling (EC-OB-07).}{71}{section*.80}%
+\contentsline {paragraph}{Trace-ID header (EC-OB-08).}{71}{section*.81}%
+\contentsline {section}{\numberline {5.6}Comparative results vs baselines}{72}{section.5.6}%
+\contentsline {subsection}{\numberline {5.6.1}Internal baselines}{72}{subsection.5.6.1}%
+\contentsline {subsection}{\numberline {5.6.2}Cross-platform comparison}{72}{subsection.5.6.2}%
+\contentsline {section}{\numberline {5.7}Limitations and threats to validity}{74}{section.5.7}%
+\contentsline {subsection}{\numberline {5.7.1}Evaluation constraints and future validation needs}{74}{subsection.5.7.1}%
+\contentsline {paragraph}{HPC availability.}{74}{section*.83}%
+\contentsline {paragraph}{Limited scenarios.}{74}{section*.84}%
+\contentsline {paragraph}{Local model latency.}{74}{section*.85}%
+\contentsline {paragraph}{Long run time.}{75}{section*.86}%
+\contentsline {paragraph}{Model trade-off.}{75}{section*.87}%
+\contentsline {paragraph}{Prompt handling.}{75}{section*.88}%
+\contentsline {paragraph}{Clarification logic.}{75}{section*.89}%
+\contentsline {paragraph}{LLM variability.}{75}{section*.90}%
+\contentsline {paragraph}{Residual risk.}{75}{section*.91}%
+\contentsline {subsection}{\numberline {5.7.2}Internal validity}{75}{subsection.5.7.2}%
+\contentsline {paragraph}{Confounding variables.}{75}{section*.92}%
+\contentsline {paragraph}{Test environment versus production.}{75}{section*.93}%
+\contentsline {paragraph}{Co-located load generator.}{76}{section*.94}%
+\contentsline {subsection}{\numberline {5.7.3}External validity}{76}{subsection.5.7.3}%
+\contentsline {paragraph}{Context-specific workloads.}{76}{section*.95}%
+\contentsline {paragraph}{Synthetic versus real-world workloads.}{76}{section*.96}%
+\contentsline {paragraph}{LLM-provider dependency.}{76}{section*.97}%
+\contentsline {subsection}{\numberline {5.7.4}Construct validity}{76}{subsection.5.7.4}%
+\contentsline {paragraph}{Capability presence versus depth.}{76}{section*.98}%
+\contentsline {paragraph}{Comparator selection.}{77}{section*.99}%
+\contentsline {subsection}{\numberline {5.7.5}Acknowledged limitations of the platform}{77}{subsection.5.7.5}%
+\contentsline {chapter}{\numberline {6}Conclusions}{79}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Problem, solution, and key results}{79}{section.6.1}%
+\contentsline {subsection}{\numberline {6.1.1}The problem revisited}{79}{subsection.6.1.1}%
+\contentsline {subsection}{\numberline {6.1.2}What was built}{79}{subsection.6.1.2}%
+\contentsline {subsection}{\numberline {6.1.3}What was measured}{81}{subsection.6.1.3}%
+\contentsline {paragraph}{Functional completeness (EQ1).}{81}{section*.100}%
+\contentsline {paragraph}{Performance (EQ2).}{81}{section*.101}%
+\contentsline {paragraph}{Security (EQ3).}{81}{section*.102}%
+\contentsline {paragraph}{Reliability (EQ4).}{81}{section*.103}%
+\contentsline {paragraph}{Comparative positioning (EQ5).}{81}{section*.104}%
+\contentsline {paragraph}{Enterprise overhead.}{82}{section*.105}%
+\contentsline {section}{\numberline {6.2}Final takeaways}{82}{section.6.2}%
+\contentsline {paragraph}{1.\ A unified platform can close the production gap.}{82}{section*.106}%
+\contentsline {paragraph}{2.\ Natural-language graph access is viable but bounded.}{82}{section*.107}%
+\contentsline {paragraph}{3.\ Enterprise governance imposes bounded overhead.}{82}{section*.108}%
+\contentsline {paragraph}{4.\ Governed tool ecosystems require first-class treatment.}{83}{section*.109}%
+\contentsline {paragraph}{5.\ The integration gap in the current landscape is real.}{83}{section*.110}%
+\contentsline {chapter}{\numberline {7}Future Work}{85}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Workflow unification}{85}{section.7.1}%
+\contentsline {paragraph}{Ask Mode.}{85}{section*.111}%
+\contentsline {paragraph}{Handling unclear, mixed, and risky prompts.}{86}{section*.112}%
+\contentsline {section}{\numberline {7.2}Strengthening the NL-to-Cypher pipeline}{86}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Extending agent capabilities}{87}{section.7.3}%
+\contentsline {section}{\numberline {7.4}Infrastructure hardening}{88}{section.7.4}%
+\contentsline {section}{\numberline {7.5}Deeper evaluation}{89}{section.7.5}%
+\contentsline {chapter}{Appendices}{91}{appendix*.113}%
+\contentsline {section}{\numberline {A}Full tool inventory}{91}{section.Alph0.1}%
+\contentsline {section}{\numberline {B}API catalog}{93}{section.Alph0.2}%
+\contentsline {section}{\numberline {C}Lifecycle state machines}{94}{section.Alph0.3}%
+\contentsline {section}{\numberline {D}Extended tables}{95}{section.Alph0.4}%
+\contentsline {paragraph}{Requirements coverage by category.}{95}{section*.119}%
+\contentsline {paragraph}{Partially implemented requirements.}{95}{section*.121}%
+\contentsline {paragraph}{Functional-requirements priority distribution.}{95}{section*.123}%
+\contentsline {section}{\numberline {E}Reproducibility notes}{96}{section.Alph0.5}%
+\contentsline {paragraph}{Environment setup.}{96}{section*.126}%
+\contentsline {paragraph}{Running the test suite.}{96}{section*.127}%
+\contentsline {paragraph}{Load testing.}{97}{section*.128}%
+\contentsline {paragraph}{Threat to reproducibility.}{97}{section*.129}%
